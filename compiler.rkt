@@ -54,14 +54,12 @@
 (define (uniquify-update-env env x)
   (define cnt (dict-ref env x #f))
   (match cnt
-    [#f (dict-set env x 1)]
+    [#f (uniquify-update-env (dict-set env x 0) x)]
     [else 
-      (define new-x (string->symbol (~a x (+ cnt 1))))
-      (match (dict-ref env new-x #f)
+      (define new-x-str (~a x (+ cnt 1)))
+      (match (member new-x-str (for/list ([(k v) (in-dict env)]) (~a k v)))
         [#f (dict-set env x (+ cnt 1))]
-        [else
-          (define new-env (dict-set env x (+ cnt 1)))
-          (uniquify-update-env new-env x)])]))
+        [else (uniquify-update-env (dict-set env x (+ cnt 1)) x)])]))
 
 (define (uniquify-exp env)
   (lambda (e)
