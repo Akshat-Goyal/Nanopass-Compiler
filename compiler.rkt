@@ -51,14 +51,30 @@
 ;; HW1 Passes
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define (uniquify-update-env env x)
+  (define cnt (dict-ref env x #f))
+  (match cnt
+    [#f (dict-set env x 1)]
+    [else 
+      (define new-x (string->symbol (~a x (+ cnt 1))))
+      (match (dict-ref env new-x #f)
+        [#f (dict-set env x (+ cnt 1))]
+        [else
+          (define new-env (dict-set env x (+ cnt 1)))
+          (uniquify-update-env new-env x)])]))
+
 (define (uniquify-exp env)
   (lambda (e)
     (match e
       [(Var x)
-       (error "TODO: code goes here (uniquify-exp, symbol?)")]
+       (Var (string->symbol (~a x (dict-ref env x))))]
       [(Int n) (Int n)]
       [(Let x e body)
-       (error "TODO: code goes here (uniquify-exp, let)")]
+       (define new-e ((uniquify-exp env) e))
+       (define new-env (uniquify-update-env env x))
+       (define new-x (string->symbol (~a x (dict-ref new-env x))))
+       (define new-body ((uniquify-exp new-env) body))
+       (Let new-x new-e new-body)]
       [(Prim op es)
        (Prim op (for/list ([e es]) ((uniquify-exp env) e)))])))
 
