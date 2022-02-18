@@ -55,22 +55,18 @@
   (define cnt (dict-ref env x #f))
   (match cnt
     [#f (update-env (dict-set env x 0) x)]
-    [else 
-      (define new-x-str (~a x (+ cnt 1)))
-      (match (member new-x-str (for/list ([(k v) (in-dict env)]) (~a k v)))
-        [#f (dict-set env x (+ cnt 1))]
-        [else (update-env (dict-set env x (+ cnt 1)) x)])]))
+    [else (dict-set env x (+ cnt 1))]))
 
 (define (uniquify-exp env)
   (lambda (e)
     (match e
       [(Var x)
-       (Var (string->symbol (~a x (dict-ref env x))))]
+       (Var (string->symbol (~a x "." (dict-ref env x))))]
       [(Int n) (Int n)]
       [(Let x e body)
        (define new-e ((uniquify-exp env) e))
        (define new-env (update-env env x))
-       (define new-x (string->symbol (~a x (dict-ref new-env x))))
+       (define new-x (string->symbol (~a x "." (dict-ref new-env x))))
        (define new-body ((uniquify-exp new-env) body))
        (Let new-x new-e new-body)]
       [(Prim op es)
@@ -83,8 +79,8 @@
 
 (define (rco-atom env)
   (lambda (e)
-    (define temp-var (string->symbol (~a 'tmp (dict-ref env 'tmp))))
-    (values temp-var (dict-set '() temp-var e))))
+    (define tmp-var (string->symbol (~a 'tmp "$" (dict-ref env 'tmp))))
+    (values tmp-var (dict-set '() tmp-var e))))
 
 (define (rco-exp env)
   (lambda (e)
@@ -99,19 +95,19 @@
         [(or (Var? e1) (Int? e1)) (Prim '- (list e1))]
         [else
          (define new-env (update-env env 'tmp))
-         (define-values (temp-var exp-dict) ((rco-atom new-env) e1))
-         (Let temp-var ((rco-exp new-env) (dict-ref exp-dict temp-var)) (Prim '- (list (Var temp-var))))])]
-      [(Prim '+ (list e1 e2))
+         (define-values (tmp-var exp-dict) ((rco-atom new-env) e1))
+         (Let tmp-var ((rco-exp new-env) (dict-ref exp-dict tmp-var)) (Prim '- (list (Var tmp-var))))])]
+      [(Prim op (list e1 e2))
        (cond
-        [(not (atm? e1))
+        [(not (or (Var? e1) (Int? e1)))
          (define new-env (update-env env 'tmp))
-         (define-values (temp-var exp-dict) ((rco-atom new-env) e1))
-         (Let temp-var ((rco-exp new-env) (dict-ref exp-dict temp-var)) ((rco-exp new-env) (Prim '+ (list (Var temp-var) e2))))]
-        [(not (atm? e2))
+         (define-values (tmp-var exp-dict) ((rco-atom new-env) e1))
+         (Let tmp-var ((rco-exp new-env) (dict-ref exp-dict tmp-var)) ((rco-exp new-env) (Prim op (list (Var tmp-var) e2))))]
+        [(not (or (Var? e2) (Int? e2)))
          (define new-env (update-env env 'tmp))
-         (define-values (temp-var exp-dict) ((rco-atom new-env) e2))
-         (Let temp-var ((rco-exp new-env) (dict-ref exp-dict temp-var)) ((rco-exp new-env) (Prim '+ (list e1 (Var temp-var)))))]
-        [else (Prim '+ (list e1 e2))])])))
+         (define-values (tmp-var exp-dict) ((rco-atom new-env) e2))
+         (Let tmp-var ((rco-exp new-env) (dict-ref exp-dict tmp-var)) ((rco-exp new-env) (Prim op (list e1 (Var tmp-var)))))]
+        [else (Prim op (list e1 e2))])])))
 
 ;; remove-complex-opera* : R1 -> R1
 (define (remove-complex-opera* p)
