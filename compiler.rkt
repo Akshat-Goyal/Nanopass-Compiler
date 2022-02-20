@@ -5,6 +5,8 @@
 (require "interp-Lvar.rkt")
 (require "interp-Cvar.rkt")
 (require "interp.rkt")
+(require "type-check-Lvar.rkt")
+(require "type-check-Cvar.rkt")
 (require "utilities.rkt")
 (provide (all-defined-out))
 
@@ -171,12 +173,35 @@
 ;; select-instructions : C0 -> pseudo-x86
 (define (select-instructions p)
   (match p
-    [(CProgram info label-tail-dict) 
-     (X86Program info `((start . ,(Block info (si-tail (dict-ref label-tail-dict 'start))))))]))
+    [(CProgram info e) 
+     (X86Program info `((start . ,(Block info (si-tail (dict-ref e 'start))))))]))
+
+(define (assign-home-to-locals locals-types)
+  (define-values (stack-space locals-home) 
+    (for/fold ([offset 0]
+               [locals-home '()])
+              ([(local type) (in-dict locals-types)])
+      (values (- offset 8) (dict-set locals-home local (Deref 'rbp (- offset 8))))))
+  (if (zero? (remainder stack-space 16)) 
+    (values stack-space locals-home)
+    (values (- stack-space 8) locals-home)))
+
+(define (assign-homes-instr instrs locals-home)
+  (match instrs
+    [(cons (Instr x86-op args) ss)
+     (cons (Instr x86-op (for/list ([arg args]) 
+                          (if (Var? arg) (dict-ref locals-home (Var-name arg)) arg))) 
+           (assign-homes-instr ss locals-home))]
+    [else instrs]))
 
 ;; assign-homes : pseudo-x86 -> pseudo-x86
 (define (assign-homes p)
-  (error "TODO: code goes here (assign-homes)"))
+  (match p
+    [(X86Program info e)
+     (match e
+      [`((start . ,(Block info instrs)))
+        (define-values (stack-space locals-home) (assign-home-to-locals (dict-ref info 'locals-types)))
+        (X86Program info `((start . ,(Block (dict-set info 'stack-space stack-space) (assign-homes-instr instrs locals-home)))))])]))
 
 ;; patch-instructions : psuedo-x86 -> x86
 (define (patch-instructions p)
@@ -190,12 +215,12 @@
 ;; Note that your compiler file (the file that defines the passes)
 ;; must be named "compiler.rkt"
 (define compiler-passes
-  `( ("uniquify" ,uniquify ,interp-Lvar)
+  `( ("uniquify" ,uniquify ,interp-Lvar ,type-check-Lvar)
      ;; Uncomment the following passes as you finish them.
-     ("remove complex opera*" ,remove-complex-opera* ,interp-Lvar)
-     ("explicate control" ,explicate-control ,interp-Cvar)
+     ("remove complex opera*" ,remove-complex-opera* ,interp-Lvar ,type-check-Lvar)
+     ("explicate control" ,explicate-control ,interp-Cvar ,type-check-Cvar)
      ("instruction selection" ,select-instructions ,interp-x86-0)
-     ;; ("assign homes" ,assign-homes ,interp-x86-0)
+     ("assign homes" ,assign-homes ,interp-x86-0)
      ;; ("patch instructions" ,patch-instructions ,interp-x86-0)
      ;; ("prelude-and-conclusion" ,prelude-and-conclusion ,interp-x86-0)
      ))
