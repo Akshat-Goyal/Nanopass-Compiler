@@ -192,6 +192,7 @@
      (cons (Instr x86-op (for/list ([arg args]) 
                           (if (Var? arg) (dict-ref locals-home (Var-name arg)) arg))) 
            (assign-homes-instr ss locals-home))]
+    [(cons instr ss) (cons instr (assign-homes-instr ss locals-home))]
     [else instrs]))
 
 ;; assign-homes : pseudo-x86 -> pseudo-x86
@@ -205,9 +206,9 @@
 
 (define (pi-instr instrs)
   (match instrs
-    [(cons (Instr x86-op (list arg1 arg2)) ss)
-     #:when (and (Deref? arg1) (Deref? arg2)) 
-     (append (list (Instr 'movq (list arg1 (Reg 'rax)) (Instr x86-op (list (Reg 'rax) arg2)))) (pi-instr ss))]
+    [(cons (Instr x86-op (list (Deref arg1 n1) (Deref arg2 n2))) ss)
+     (append (list (Instr 'movq (list (Deref arg1 n1) (Reg 'rax))) (Instr x86-op (list (Reg 'rax) (Deref arg2 n2)))) (pi-instr ss))]
+    [(cons instr ss) (cons instr (pi-instr ss))]
     [else instrs]))
 
 ;; patch-instructions : psuedo-x86 -> x86
@@ -220,6 +221,7 @@
 
 (define (pac-main stack-space macosx?)
   (list
+    (Instr 'movq (list (Reg 'rsp) (Reg 'rbp)))
     (Instr 'subq (list (Imm stack-space) (Reg 'rsp)))
     (if macosx? (Jmp '_start) (Jmp 'start))))
 
