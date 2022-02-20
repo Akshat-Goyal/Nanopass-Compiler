@@ -4,6 +4,7 @@
 (require "interp-Lint.rkt")
 (require "interp-Lvar.rkt")
 (require "interp-Cvar.rkt")
+(require "interp.rkt")
 (require "utilities.rkt")
 (provide (all-defined-out))
 
@@ -136,9 +137,42 @@
   (match p 
     [(Program info e) (CProgram info `((start . ,(explicate-tail e))))]))
 
+(define (si-atm e)
+  (match e
+    [(Var x) (Var x)]
+    [(Int n) (Imm n)]))
+
+(define (si-exp v e cont [op-x86-dict '((+ . addq) (- . subq))])
+  (match e
+    [(Var y) (cons (Instr 'movq (list (si-atm e) v)) cont)]
+    [(Int n) (cons (Instr 'movq (list (si-atm e) v)) cont)]
+    [(Prim 'read '()) 
+      (append (list (Callq 'read_int '()) (Instr 'movq (list (Reg 'rax) v))) cons)]
+    [(Prim '- (list e1))
+      #:when (equal? e1 v) (append (Instr 'negq (list v)) cont)]
+    [(Prim '- (list e1)) 
+      (append (list (Instr 'movq (list (si-atm e1) v)) (Instr 'negq (list v))) cont)]
+    [(Prim op (list e1 e2))
+      #:when (equal? e1 v) (cons (Instr (dict-ref op-x86-dict op) (list (si-atm e2) v)) cont)]
+    [(Prim op (list e1 e2))
+      #:when (equal? e2 v) (cons (Instr (dict-ref op-x86-dict op) (list (si-atm e1) v)) cont)]
+    [(Prim op (list e1 e2))
+      (append (list (Instr 'movq (list (si-atm e1) v)) (Instr (dict-ref op-x86-dict op) (list (si-atm e2) v))) cont)]))
+
+(define (si-stmt e cont)
+  (match e
+    [(Assign (Var x) exp) (si-exp (Var x) exp cont)]))
+
+(define (si-tail e)
+  (match e
+    [(Return exp) (si-exp (Reg 'rax) exp (list (Jmp 'conclusion)))]
+    [(Seq stmt tail) (si-stmt stmt (si-tail tail))]))
+
 ;; select-instructions : C0 -> pseudo-x86
 (define (select-instructions p)
-  (error "TODO: code goes here (select-instructions)"))
+  (match p
+    [(CProgram info label-tail-dict) 
+     (X86Program info `((start . ,(Block info (si-tail (dict-ref label-tail-dict 'start))))))]))
 
 ;; assign-homes : pseudo-x86 -> pseudo-x86
 (define (assign-homes p)
@@ -160,7 +194,7 @@
      ;; Uncomment the following passes as you finish them.
      ("remove complex opera*" ,remove-complex-opera* ,interp-Lvar)
      ("explicate control" ,explicate-control ,interp-Cvar)
-     ;; ("instruction selection" ,select-instructions ,interp-x86-0)
+     ("instruction selection" ,select-instructions ,interp-x86-0)
      ;; ("assign homes" ,assign-homes ,interp-x86-0)
      ;; ("patch instructions" ,patch-instructions ,interp-x86-0)
      ;; ("prelude-and-conclusion" ,prelude-and-conclusion ,interp-x86-0)
