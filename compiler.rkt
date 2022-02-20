@@ -203,9 +203,20 @@
         (define-values (stack-space locals-home) (assign-home-to-locals (dict-ref info 'locals-types)))
         (X86Program info `((start . ,(Block (dict-set info 'stack-space stack-space) (assign-homes-instr instrs locals-home)))))])]))
 
+(define (pi-instr instrs)
+  (match instrs
+    [(cons (Instr x86-op (list arg1 arg2)) ss)
+     #:when (and (Deref? arg1) (Deref? arg2)) 
+     (append (list (Instr 'movq (list arg1 (Reg 'rax)) (Instr x86-op (list (Reg 'rax) arg2)))) (pi-instr ss))]
+    [else instrs]))
+
 ;; patch-instructions : psuedo-x86 -> x86
 (define (patch-instructions p)
-  (error "TODO: code goes here (patch-instructions)"))
+  (match p
+    [(X86Program info e)
+     (match e
+      [`((start . ,(Block info instrs)))
+        (X86Program info `((start . ,(Block info (pi-instr instrs)))))])]))
 
 ;; prelude-and-conclusion : x86 -> x86
 (define (prelude-and-conclusion p)
