@@ -200,9 +200,9 @@
   (match p
     [(X86Program info e)
      (match e
-      [`((start . ,(Block info instrs)))
+      [`((start . ,(Block sinfo instrs)))
         (define-values (stack-space locals-home) (assign-home-to-locals (dict-ref info 'locals-types)))
-        (X86Program info `((start . ,(Block (dict-set info 'stack-space stack-space) (assign-homes-instr instrs locals-home)))))])]))
+        (X86Program (dict-set info 'stack-space stack-space) `((start . ,(Block sinfo (assign-homes-instr instrs locals-home)))))])]))
 
 (define (pi-instr instrs)
   (match instrs
@@ -216,8 +216,8 @@
   (match p
     [(X86Program info e)
      (match e
-      [`((start . ,(Block info instrs)))
-        (X86Program info `((start . ,(Block info (pi-instr instrs)))))])]))
+      [`((start . ,(Block sinfo instrs)))
+        (X86Program info `((start . ,(Block sinfo (pi-instr instrs)))))])]))
 
 (define (pac-main stack-space macosx?)
   (list
@@ -229,6 +229,7 @@
   (match instrs
     [(cons (Jmp label) ss)
       #:when macosx? (cons (string->symbol (~a "_" label)) (pac-start ss macosx?))]
+    [(cons instr ss) (cons instr (pac-start ss macosx?))]
     [else instrs]))
 
 (define (pac-conclusion stack-space macosx?)
@@ -241,9 +242,10 @@
   (match p
     [(X86Program info blocks)
       (define macosx? (equal? (system-type 'os) 'macosx))
-      (define start (Block info (pac-start (Block-instr* (dict-ref blocks 'start)) macosx?)))
-      (define main (Block info (pac-main (dict-ref info 'stack-space) macosx?)))
-      (define conclusion (Block info (pac-conclusion (dict-ref info 'stack-space) macosx?)))
+      (define stack-space (dict-ref info 'stack-space))
+      (define start (Block (Block-info (dict-ref blocks 'start)) (pac-start (Block-instr* (dict-ref blocks 'start)) macosx?)))
+      (define main (Block info (pac-main stack-space macosx?)))
+      (define conclusion (Block info (pac-conclusion stack-space macosx?)))
       (if macosx?
         (X86Program info `((_start . ,start) (_main . ,main) (_conclusion . ,conclusion)))
         (X86Program info `((start . ,start) (main . ,main) (conclusion . ,conclusion))))]))
