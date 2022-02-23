@@ -256,13 +256,14 @@
 ;; Note that your compiler file (the file that defines the passes)
 ;; must be named "compiler.rkt"
 (define compiler-passes
-  `( ("uniquify" ,uniquify ,interp-Lvar ,type-check-Lvar)
-     ;; Uncomment the following passes as you finish them.
-     ("remove complex opera*" ,remove-complex-opera* ,interp-Lvar ,type-check-Lvar)
-     ("explicate control" ,explicate-control ,interp-Cvar ,type-check-Cvar)
-     ("instruction selection" ,select-instructions ,interp-x86-0)
-     ("assign homes" ,assign-homes ,interp-x86-0)
-     ("patch instructions" ,patch-instructions ,interp-x86-0)
-     ;;("prelude-and-conclusion" ,prelude-and-conclusion ,interp-x86-0)
-     ))
+  `(("partial evaluator", pe-Lint, interp-Lvar)
+    ("uniquify" ,uniquify ,interp-Lvar ,type-check-Lvar)
+    ;; Uncomment the following passes as you finish them.
+    ("remove complex opera*" ,remove-complex-opera* ,interp-Lvar ,type-check-Lvar)
+    ("explicate control" ,explicate-control ,interp-Cvar ,type-check-Cvar)
+    ("instruction selection" ,select-instructions ,interp-x86-0)
+    ("assign homes" ,assign-homes ,interp-x86-0)
+    ("patch instructions" ,patch-instructions ,interp-x86-0)
+    ;;("prelude-and-conclusion" ,prelude-and-conclusion ,interp-x86-0)
+    ))
 
