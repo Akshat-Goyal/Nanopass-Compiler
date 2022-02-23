@@ -223,20 +223,22 @@
 
 (define (pac-main stack-space macosx?)
   (list
+    (Instr 'pushq (list (Reg 'rbp)))
     (Instr 'movq (list (Reg 'rsp) (Reg 'rbp)))
     (Instr 'subq (list (Imm stack-space) (Reg 'rsp)))
-    (if macosx? (Jmp '_start) (Jmp 'start))))
+    (if macosx? (Jmp 'start) (Jmp 'start))))
 
 (define (pac-start instrs macosx?)
   (match instrs
-    [(cons (Jmp label) ss)
-      #:when macosx? (cons (string->symbol (~a "_" label)) (pac-start ss macosx?))]
+    ;;[(cons (Jmp label) ss)
+    ;; #:when macosx? (cons (string->symbol (~a "_" label)) (pac-start ss macosx?))]
     [(cons instr ss) (cons instr (pac-start ss macosx?))]
     [else instrs]))
 
 (define (pac-conclusion stack-space macosx?)
   (list
     (Instr 'addq (list (Imm stack-space) (Reg 'rsp)))
+    (Instr 'popq (list (Reg 'rbp)))
     (Retq)))
 
 ;; prelude-and-conclusion : x86 -> x86
@@ -248,22 +250,22 @@
       (define start (Block (Block-info (dict-ref blocks 'start)) (pac-start (Block-instr* (dict-ref blocks 'start)) macosx?)))
       (define main (Block info (pac-main stack-space macosx?)))
       (define conclusion (Block info (pac-conclusion stack-space macosx?)))
-      (if macosx?
-        (X86Program info `((_start . ,start) (_main . ,main) (_conclusion . ,conclusion)))
-        (X86Program info `((start . ,start) (main . ,main) (conclusion . ,conclusion))))]))
+      ;;(if macosx?
+        ;;(X86Program info `((_start . ,start) (_main . ,main) (_conclusion . ,conclusion)))
+        (X86Program info `((start . ,start) (main . ,main) (conclusion . ,conclusion)))]))
 
 ;; Define the compiler passes to be used by interp-tests and the grader
 ;; Note that your compiler file (the file that defines the passes)
 ;; must be named "compiler.rkt"
 (define compiler-passes
-  `(("partial evaluator", pe-Lint, interp-Lvar)
-    ("uniquify" ,uniquify ,interp-Lvar ,type-check-Lvar)
-    ;; Uncomment the following passes as you finish them.
-    ("remove complex opera*" ,remove-complex-opera* ,interp-Lvar ,type-check-Lvar)
-    ("explicate control" ,explicate-control ,interp-Cvar ,type-check-Cvar)
-    ("instruction selection" ,select-instructions ,interp-x86-0)
-    ("assign homes" ,assign-homes ,interp-x86-0)
-    ("patch instructions" ,patch-instructions ,interp-x86-0)
-    ;;("prelude-and-conclusion" ,prelude-and-conclusion ,interp-x86-0)
-    ))
+  `( ("partial evaluator", pe-Lint, interp-Lvar)
+     ("uniquify" ,uniquify ,interp-Lvar ,type-check-Lvar)
+     ;; Uncomment the following passes as you finish them.
+     ("remove complex opera*" ,remove-complex-opera* ,interp-Lvar ,type-check-Lvar)
+     ("explicate control" ,explicate-control ,interp-Cvar ,type-check-Cvar)
+     ("instruction selection" ,select-instructions ,interp-x86-0)
+     ("assign homes" ,assign-homes ,interp-x86-0)
+     ("patch instructions" ,patch-instructions ,interp-x86-0)
+     ("prelude-and-conclusion" ,prelude-and-conclusion ,interp-x86-0)
+     ))
 
