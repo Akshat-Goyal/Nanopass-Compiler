@@ -158,7 +158,7 @@
       (append (list (Instr 'movq (list (si-atm e1) v)) (Instr 'negq (list v))) cont)]
     [(Prim op (list e1 e2))
       #:when (equal? e1 v) (cons (Instr (dict-ref op-x86-dict op) (list (si-atm e2) v)) cont)]
-    [(Prim op (list e1 e2))
+    [(Prim '+ (list e1 e2))
       #:when (equal? e2 v) (cons (Instr (dict-ref op-x86-dict op) (list (si-atm e1) v)) cont)]
     [(Prim op (list e1 e2))
       (append (list (Instr 'movq (list (si-atm e1) v)) (Instr (dict-ref op-x86-dict op) (list (si-atm e2) v))) cont)]))
