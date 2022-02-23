@@ -43,6 +43,8 @@
 (define (pe-exp e)
   (match e
     [(Int n) (Int n)]
+    [(Var x) (Var x)]
+    [(Let var rhs body) (Let var (pe-exp rhs) (pe-exp body))]
     [(Prim 'read '()) (Prim 'read '())]
     [(Prim '- (list e1)) (pe-neg (pe-exp e1))]
     [(Prim '+ (list e1 e2)) (pe-add (pe-exp e1) (pe-exp e2))]))
@@ -261,6 +263,6 @@
      ("instruction selection" ,select-instructions ,interp-x86-0)
      ("assign homes" ,assign-homes ,interp-x86-0)
      ("patch instructions" ,patch-instructions ,interp-x86-0)
-     ("prelude-and-conclusion" ,prelude-and-conclusion ,interp-x86-0)
+     ;;("prelude-and-conclusion" ,prelude-and-conclusion ,interp-x86-0)
      ))
 
