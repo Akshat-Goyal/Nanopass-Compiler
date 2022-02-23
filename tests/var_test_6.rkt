@@ -1,2 +1,1 @@
-(let ([y 22])
-    (let ([x 20]) (+ x y)))
+(let ((x (let ((x (let ((x 1)) (+ x x)))) (+ x x)))) (+ x x))

@@ -151,7 +151,7 @@
     [(Var y) (cons (Instr 'movq (list (si-atm e) v)) cont)]
     [(Int n) (cons (Instr 'movq (list (si-atm e) v)) cont)]
     [(Prim 'read '()) 
-      (append (list (Callq 'read_int '()) (Instr 'movq (list (Reg 'rax) v))) cont)]
+      (append (list (Callq 'read_int 0) (Instr 'movq (list (Reg 'rax) v))) cont)]
     [(Prim '- (list e1))
       #:when (equal? e1 v) (append (Instr 'negq (list v)) cont)]
     [(Prim '- (list e1)) 
