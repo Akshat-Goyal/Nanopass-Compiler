@@ -221,21 +221,21 @@
       [`((start . ,(Block sinfo instrs)))
         (X86Program info `((start . ,(Block sinfo (pi-instr instrs)))))])]))
 
-(define (pac-main stack-space macosx?)
+(define (pac-main stack-space)
   (list
     (Instr 'pushq (list (Reg 'rbp)))
     (Instr 'movq (list (Reg 'rsp) (Reg 'rbp)))
     (Instr 'subq (list (Imm stack-space) (Reg 'rsp)))
-    (if macosx? (Jmp 'start) (Jmp 'start))))
+    (Jmp 'start)))
 
-(define (pac-start instrs macosx?)
+(define (pac-start instrs)
   (match instrs
     ;;[(cons (Jmp label) ss)
     ;; #:when macosx? (cons (string->symbol (~a "_" label)) (pac-start ss macosx?))]
-    [(cons instr ss) (cons instr (pac-start ss macosx?))]
+    [(cons instr ss) (cons instr (pac-start ss))]
     [else instrs]))
 
-(define (pac-conclusion stack-space macosx?)
+(define (pac-conclusion stack-space)
   (list
     (Instr 'addq (list (Imm stack-space) (Reg 'rsp)))
     (Instr 'popq (list (Reg 'rbp)))
@@ -245,11 +245,11 @@
 (define (prelude-and-conclusion p)
   (match p
     [(X86Program info blocks)
-      (define macosx? (equal? (system-type 'os) 'macosx))
+      ;;(define macosx? (equal? (system-type 'os) 'macosx))
       (define stack-space (dict-ref info 'stack-space))
-      (define start (Block (Block-info (dict-ref blocks 'start)) (pac-start (Block-instr* (dict-ref blocks 'start)) macosx?)))
-      (define main (Block info (pac-main stack-space macosx?)))
-      (define conclusion (Block info (pac-conclusion stack-space macosx?)))
+      (define start (Block (Block-info (dict-ref blocks 'start)) (pac-start (Block-instr* (dict-ref blocks 'start)))))
+      (define main (Block info (pac-main stack-space)))
+      (define conclusion (Block info (pac-conclusion stack-space)))
       ;;(if macosx?
         ;;(X86Program info `((_start . ,start) (_main . ,main) (_conclusion . ,conclusion)))
         (X86Program info `((start . ,start) (main . ,main) (conclusion . ,conclusion)))]))
