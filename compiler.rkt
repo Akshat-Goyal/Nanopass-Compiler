@@ -66,13 +66,12 @@
 (define (uniquify-exp env)
   (lambda (e)
     (match e
-      [(Var x)
-       (Var (string->symbol (~a x "." (dict-ref env x))))]
+      [(Var x) (Var (dict-ref env x))]
       [(Int n) (Int n)]
       [(Let x e body)
        (define new-e ((uniquify-exp env) e))
-       (define new-env (update-env env x))
-       (define new-x (string->symbol (~a x "." (dict-ref new-env x))))
+       (define new-x (gensym x))
+       (define new-env (dict-set env x new-x))
        (define new-body ((uniquify-exp new-env) body))
        (Let new-x new-e new-body)]
       [(Prim op es)
@@ -176,7 +175,7 @@
 (define (select-instructions p)
   (match p
     [(CProgram info e) 
-     (X86Program info `((start . ,(Block info (si-tail (dict-ref e 'start))))))]))
+     (X86Program info `((start . ,(Block '() (si-tail (dict-ref e 'start))))))]))
 
 (define (assign-home-to-locals locals-types)
   (define-values (stack-space locals-home) 
@@ -248,8 +247,8 @@
       ;;(define macosx? (equal? (system-type 'os) 'macosx))
       (define stack-space (dict-ref info 'stack-space))
       (define start (Block (Block-info (dict-ref blocks 'start)) (pac-start (Block-instr* (dict-ref blocks 'start)))))
-      (define main (Block info (pac-main stack-space)))
-      (define conclusion (Block info (pac-conclusion stack-space)))
+      (define main (Block '() (pac-main stack-space)))
+      (define conclusion (Block '() (pac-conclusion stack-space)))
       ;;(if macosx?
         ;;(X86Program info `((_start . ,start) (_main . ,main) (_conclusion . ,conclusion)))
         (X86Program info `((start . ,start) (main . ,main) (conclusion . ,conclusion)))]))
