@@ -227,13 +227,6 @@
     (Instr 'subq (list (Imm stack-space) (Reg 'rsp)))
     (Jmp 'start)))
 
-(define (pac-start instrs)
-  (match instrs
-    ;;[(cons (Jmp label) ss)
-    ;; #:when macosx? (cons (string->symbol (~a "_" label)) (pac-start ss macosx?))]
-    [(cons instr ss) (cons instr (pac-start ss))]
-    [else instrs]))
-
 (define (pac-conclusion stack-space)
   (list
     (Instr 'addq (list (Imm stack-space) (Reg 'rsp)))
@@ -244,14 +237,11 @@
 (define (prelude-and-conclusion p)
   (match p
     [(X86Program info blocks)
-      ;;(define macosx? (equal? (system-type 'os) 'macosx))
       (define stack-space (dict-ref info 'stack-space))
-      (define start (Block (Block-info (dict-ref blocks 'start)) (pac-start (Block-instr* (dict-ref blocks 'start)))))
+      (define start (dict-ref blocks 'start))
       (define main (Block '() (pac-main stack-space)))
       (define conclusion (Block '() (pac-conclusion stack-space)))
-      ;;(if macosx?
-        ;;(X86Program info `((_start . ,start) (_main . ,main) (_conclusion . ,conclusion)))
-        (X86Program info `((start . ,start) (main . ,main) (conclusion . ,conclusion)))]))
+      (X86Program info `((start . ,start) (main . ,main) (conclusion . ,conclusion)))]))
 
 ;; Define the compiler passes to be used by interp-tests and the grader
 ;; Note that your compiler file (the file that defines the passes)
