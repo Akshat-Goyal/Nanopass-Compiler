@@ -43,11 +43,12 @@
     [((Int n1) (Int n2)) (Int (fx+ n1 n2))]
     [((Prim '+ (list (Int n1) e)) (Int n2)) (Prim '+ (list (Int (fx+ n1 n2)) e))]
     [((Int n1) (Prim '+ (list (Int n2) e))) (Prim '+ (list (Int (fx+ n1 n2)) e))]
-    [((Prim '+ (list (Int n1) e1)) (Prim '+ (list (Int n2) e2))) (Prim '+ (list (fx+ n1 n2) (pe-add e1 e2)))]
+    [((Prim '+ (list (Int n1) e1)) (Prim '+ (list (Int n2) e2))) (Prim '+ (list (Int (fx+ n1 n2)) (pe-add e1 e2)))]
     [(e (Int n)) (Prim '+ (list (Int n) e))]
     [((Prim '+ (list (Int n) e1)) e2) (Prim '+ (list (Int n) (pe-add e1 e2)))]
     [(e1 (Prim '+ (list (Int n) e2))) (Prim '+ (list (Int n) (pe-add e1 e2)))]
     [(_ _) (Prim '+ (list r1 r2))]))
+
 
 (define (pe-exp e)
   (match e
