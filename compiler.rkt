@@ -8,6 +8,7 @@
 (require "type-check-Lvar.rkt")
 (require "type-check-Cvar.rkt")
 (require "utilities.rkt")
+(require graph)
 (provide (all-defined-out))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -276,9 +277,45 @@
     [(X86Program info e)
      (match e
       [`((start . ,(Block sinfo instrs)))
-        (X86Program info `((start . ,(Block (find-live-sets (reverse instrs) '()) instrs))))])]))
+        (X86Program info `((start . ,(Block `((live-sets . ,(cdr (find-live-sets (reverse instrs) (list (set)))))) instrs))))])]))
 
+(define (print-graph graph)
+  (for ([u (in-vertices graph)])
+    (for ([v (in-neighbors graph u)])
+      (display (format "~a -> ~a;\n" u v))
+      )))
+
+(define (build-graph instrs live-sets)
+  (define graph (undirected-graph '()))
+  (for ([live-set live-sets]
+        [instr instrs])
+    (match instr
+      [(Instr 'movq (list arg1 arg2))
+       (for ([live-location (set->list live-set)])
+         (cond
+           [(not (or (equal? arg1 live-location) (equal? arg2 live-location)))
+            (add-edge! graph arg2 live-location)]))]
+      [else
+       (define write-locations (compute-write-locations instr))
+       (for* ([live-location live-set]
+              [write-location write-locations])
+         (cond
+           [(not (equal? live-location write-location))
+            (add-edge! graph live-location write-location)]))]))
+  graph)
+       
  
+;; build_interference: pseudo-x86 -> pseudo-x86
+(define (build_interference p)
+  (match p
+    [(X86Program info e)
+     (match e
+      [`((start . ,(Block sinfo instrs)))
+       (define live-sets (dict-ref sinfo 'live-sets))
+       (define interference-graph (build-graph instrs live-sets))
+       (print-graph interference-graph)
+       (X86Program (dict-set info 'conflicts interference-graph) e)])]))
+
 (define (assign-home-to-locals locals-types)
   (define-values (stack-space locals-home) 
     (for/fold ([offset 0]
@@ -360,6 +397,7 @@
      ("explicate control" ,explicate-control ,interp-Cvar ,type-check-Cvar)
      ("instruction selection" ,select-instructions ,interp-x86-0)
      ("liveness analysis" ,uncover_live ,interp-x86-0)
+     ("build interference" ,build_interference ,interp-x86-0)
      ;; ("assign homes" ,assign-homes ,interp-x86-0)
      ;; ("patch instructions" ,patch-instructions ,interp-x86-0)
      ;; ("prelude-and-conclusion" ,prelude-and-conclusion ,interp-x86-0)
