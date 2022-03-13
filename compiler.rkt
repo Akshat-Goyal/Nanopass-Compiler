@@ -9,6 +9,7 @@
 (require "type-check-Cvar.rkt")
 (require "utilities.rkt")
 (require graph)
+(require "./priority_queue.rkt")
 (provide (all-defined-out))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -202,58 +203,37 @@
     [(Instr x86-op (list arg1 arg2))
      ; arg2 cannot be immediate since we are writing into arg2
      (match arg1
-       [(Imm n)
-        (set arg2)]
-       [else
-        (set arg1 arg2)])]
-    [(Instr 'negq (list arg1))
-     ; arg1 cannot be immediate
-     (set arg1)]
-    [else
-     ; for callq
-     (set)]))
+       [(Imm n) (set arg2)]
+       [else (set arg1 arg2)])]
+    [(Instr 'negq (list arg1)) (set arg1)] ; arg1 cannot be immediate
+    [else (set)])) ;; for callq
 
 (define (compute-write-locations instr)
   ; TODO: handle retq instruction
   (match instr
-    [(Instr x86-op (list arg1 arg2))
-     ; arg2 cannot be immediate since we are writing into arg2
-     (set arg2)]
-    [(Instr 'negq (list arg1))
-     ; arg1 cannot be immediate
-     (set arg1)]
-    [(Callq func-name n)
-     (list->set caller-saved-registers)]
-    [else
-     (set)]))
+    [(Instr x86-op (list arg1 arg2)) (set arg2)] ; arg2 cannot be immediate since we are writing into arg2
+    [(Instr 'negq (list arg1)) (set arg1)] ; arg1 cannot be immediate
+    [(Callq func-name n) (list->set caller-saved-registers)]
+    [else (set)]))
 
 (define (compute-read-locations instr)
   ; TODO: handle retq instruction
   (match instr
     [(Instr 'movq (list arg1 arg2))
      (match arg1
-       [(Imm n)
-        (set)]
-       [else
-        (set arg1)])]
+       [(Imm n) (set)]
+       [else (set arg1)])]
     [(Instr x86-op (list arg1 arg2))
      ; arg2 cannot be immediate since we are writing into arg2
      (match arg1
-       [(Imm n)
-        (set arg2)]
-       [else
-        (set arg1 arg2)])]
-    [(Instr 'negq (list arg1))
-     ; arg1 cannot be immediate
-     (set arg1)]
+       [(Imm n) (set arg2)]
+       [else (set arg1 arg2)])]
+    [(Instr 'negq (list arg1)) (set arg1)] ; arg1 cannot be immediate
     [(Callq func-name n)
      (cond
-       [(<= n 6)
-        (list->set (take argument-registers n))]
-       [else
-        (list->set (take argument-registers 6))])]
-    [else
-     (set)]))
+       [(<= n 6) (list->set (take argument-registers n))]
+       [else (list->set (take argument-registers 6))])]
+    [else (set)]))
 
 (define (find-live-sets instrs live-after)
   (match instrs
@@ -315,6 +295,16 @@
        (define interference-graph (build-graph instrs live-sets))
        (print-graph interference-graph)
        (X86Program (dict-set info 'conflicts interference-graph) e)])]))
+
+
+;; allocate_registers: pseudo-x86 -> pseudo-x86
+(define (allocate_registers p)
+  (match p
+    [(X86Program info e)
+     (match e
+      [`((start . ,(Block sinfo instrs)))
+       
+       (X86Program info e)])]))
 
 (define (assign-home-to-locals locals-types)
   (define-values (stack-space locals-home) 
@@ -385,7 +375,6 @@
       (X86Program info `((start . ,start) (main . ,main) (conclusion . ,conclusion)))]))
 
 
-
 ;; Define the compiler passes to be used by interp-tests and the grader
 ;; Note that your compiler file (the file that defines the passes)
 ;; must be named "compiler.rkt"
@@ -397,7 +386,7 @@
      ("explicate control" ,explicate-control ,interp-Cvar ,type-check-Cvar)
      ("instruction selection" ,select-instructions ,interp-x86-0)
      ("liveness analysis" ,uncover_live ,interp-x86-0)
-     ("build interference" ,build_interference ,interp-x86-0)
+     ("build interference graph" ,build_interference ,interp-x86-0)
      ;; ("assign homes" ,assign-homes ,interp-x86-0)
      ;; ("patch instructions" ,patch-instructions ,interp-x86-0)
      ;; ("prelude-and-conclusion" ,prelude-and-conclusion ,interp-x86-0)
