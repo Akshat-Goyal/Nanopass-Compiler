@@ -242,14 +242,11 @@
      (define read-locations (compute-read-locations instr))
      (define write-locations (compute-write-locations instr))
      (define live-after-cur (cond
-       [(empty? live-after)
-        (set)]
-       [else
-        (car live-after)]))
+       [(empty? live-after) (set)]
+       [else (car live-after)]))
      (define live-before (set-union (set-subtract live-after-cur write-locations) read-locations))
      (find-live-sets rest (cons live-before live-after))]
-    [else
-     live-after]))
+    [else live-after]))
     
 ;; uncover_live: pseudo-x86 -> pseudo-x86
 (define (uncover_live p)
@@ -297,13 +294,18 @@
        (X86Program (dict-set info 'conflicts interference-graph) e)])]))
 
 
+(define (color-graph interference-graph locals)
+  
+
 ;; allocate_registers: pseudo-x86 -> pseudo-x86
 (define (allocate_registers p)
   (match p
     [(X86Program info e)
      (match e
       [`((start . ,(Block sinfo instrs)))
-       
+       (define locals (dict-keys (dict-ref info 'locals-types)))
+       (define interference-graph (dict-ref info 'conflicts))
+       (define variable_colors (color-graph interference-graph locals))
        (X86Program info e)])]))
 
 (define (assign-home-to-locals locals-types)
@@ -324,8 +326,6 @@
            (assign-homes-instr ss locals-home))]
     [(cons instr ss) (cons instr (assign-homes-instr ss locals-home))]
     [else instrs]))
-
-
 
 ;; assign-homes : pseudo-x86 -> pseudo-x86
 (define (assign-homes p)
