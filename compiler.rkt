@@ -50,6 +50,40 @@
                             (Reg 'r8)
                             (Reg 'r9)))
 
+(define color-to-register '((0. (Reg 'rbx)),
+                                           (1. (Reg 'rcx)),
+                                           (2. (Reg 'rdx)),
+                                           (3. (Reg 'rsi)),
+                                           (4. (Reg 'rdi)),
+                                           (5. (Reg 'r8)),
+                                           (6. (Reg 'r9)),
+                                           (7. (Reg 'r10)),
+                                           (8. (Reg 'r11)),
+                                           (9. (Reg 'r12)),
+                                           (10. (Reg 'r13)),
+                                           (11. (Reg 'r14))))
+
+
+(define register-to-color '(((Reg 'rbx). 0),
+                            ((Reg 'rcx). 1),
+                                           ((Reg 'rdx). 2),
+                                           ((Reg 'rsi). 3),
+                                           ((Reg 'rdi). 4),
+                                           ((Reg 'r8). 5),
+                                           ((Reg 'r9). 6),
+                                           ((Reg 'r10). 7),
+                                           ((Reg 'r11). 8),
+                                           ((Reg 'r12). 9),
+                                           ((Reg 'r13). 10),
+                                           ((Reg 'r14). 11),
+                                           ((Reg 'rax). -1),
+                                           ((Reg 'rsp). -2),
+                                           ((Reg 'rbp). -3),
+                                           ((Reg 'r15). -4)))
+
+(struct color_priority_node (name saturation move_bias))
+
+
 ;; Next we have the partial evaluation pass described in the book.
 (define (pe-neg r)
   (match r
@@ -259,8 +293,7 @@
 (define (print-graph graph)
   (for ([u (in-vertices graph)])
     (for ([v (in-neighbors graph u)])
-      (display (format "~a -> ~a;\n" u v))
-      )))
+      (display (format "~a -> ~a;\n" u v)))))
 
 (define (build-graph instrs live-sets)
   (define graph (undirected-graph '()))
@@ -293,8 +326,151 @@
        (print-graph interference-graph)
        (X86Program (dict-set info 'conflicts interference-graph) e)])]))
 
+(define graph-coloring-comparator                         
+  (lambda (node1 node2)
+    (cond
+      [(= (color_priority_node-saturation node1) (color_priority_node-saturation node2))
+       (< (color_priority_node-move_bias node1) (color_priority_node-move_bias node2))]
+      [else
+       (< (color_priority_node-saturation node1) (color_priority_node-saturation node2))])))
 
-(define (color-graph interference-graph locals)
+(define (build-move-graph instrs)
+  (define graph (undirected-graph '()))
+  (for ([instr instrs])
+    (match instr
+      [(Instr 'movq (list arg1 arg2))
+       (match* (arg1 arg2)
+         [((Var x) (Var y))
+          (add-edge! graph arg1 arg2)]
+         [((Var x) (Reg r))
+          (add-edge! graph arg1 arg2)]
+         [((Reg r) (Var x))
+          (add-edge! graph arg1 arg2)])]))
+  graph)
+
+(define (find-mex s cur)
+  (cond
+    [(set-member? s cur)
+     (find-mex s (+ cur 1))]
+    [else
+     cur]))
+
+(define (find-correct-color potential-colors interfering-colors)
+  (define allowed-colors (set-subtract potential-colors interfering-colors))
+  (define mex (find-mex interfering-colors 0))
+  (cond
+    [(set-empty? allowed-colors)
+     mex]
+    [else
+     (let ([move-bias-color (set-first allowed-colors)])
+       (cond
+         [(< move-bias-color 13)
+          move-bias-color]
+         [(< mex 13)
+          mex]
+         [else
+          move-bias-color]))]))
+
+; conflicts is a set of neighbors of node in interference graph
+(define (find-move-biasing-colors graph node color conflicts)
+  (for/set ([v (in-neighbors graph node)]
+            #:when (not (set-member? conflicts node))
+            #:when (not (equal? (dict-ref color v) -1))) 
+                             (dict-ref color v)))
+
+(define (find-interfering-colors color conflicts)
+  (for/set ([u conflicts]
+            #:when (not (equal? (dict-ref color u) -1)))
+    (dict-ref color u)))
+
+(define (update-saturation saturation color neighbors)
+  (match neighbors
+    [(cons cur rest)
+     (let* ([my-saturation (dict-ref saturation cur)]
+            [my-saturation-updated (set-add my-saturation color)]
+            [updated-saturation (dict-set saturation cur my-saturation-updated)])
+       (update-saturation updated-saturation color rest))]
+    [else
+     saturation]))
+
+(define (update-move-bias move-bias neighbors)
+  (match neighbors
+    [(cons cur rest)
+     (let* ([my-bias (dict-ref move-bias cur)]
+            [my-bias-updated (+ my-bias 1)]
+            [updated-move-bias (dict-set move-bias cur my-bias-updated)])
+       (update-move-bias updated-move-bias rest))]
+    [else
+     move-bias]))
+
+(define (update-pq pq saturation move-bias neighbors)
+  (match neighbors
+    [(cons cur rest)
+     (let* ([my-saturation (dict-ref saturation cur)]
+            [my-bias (dict-ref move-bias cur)]
+            [new-node (color_priority_node cur my-saturation my-bias)]
+            [updated-pq (pqueue-push! pq new-node)])
+       (update-pq updated-pq saturation move-bias rest))]
+    [else
+     pq]))
+  
+
+(define (color-recur interference-graph move-graph saturation move-bias visited color pq)
+  (cond
+    [(equal? (pqueue-count pq) 0)
+     (color)]
+    [else
+     (let* ([cur-node (pqueue-pop! pq)]
+            [vis (dict-ref visited cur-node)])
+       (match vis
+         [#t
+          (color-recur interference-graph move-graph saturation move-bias visited color pq)]
+         [else
+          (define neighbors (in-neighbors interference-graph cur-node))
+          (define potential-colors (find-move-biasing-colors move-graph cur-node color (list->set neighbors))) ; returns a set
+          (define interfering-colors (find-interfering-colors color neighbors)); returns a set
+          (define cur-color (find-correct-color potential-colors interfering-colors))
+          (define updated-saturation (update-saturation saturation cur-color neighbors))
+          (define updated-move-bias (update-move-bias move-bias (in-neighbors move-graph cur-node)))
+          (define updated-visited (dict-set visited cur-node #t))
+          (define updated-color (dict-set color cur-node cur-color))
+          (define updated-pq (update-pq pq updated-saturation updated-move-bias neighbors))
+          (color-recur interference-graph move-graph updated-saturation updated-move-bias updated-visited updated-color updated-pq)]))]))
+          
+          
+          
+
+(define (color-graph interference-graph locals move-graph)
+  (define saturation '())
+  (define move-bias '())
+  (define visited '())
+  (define color '())
+
+  (for ([var locals])
+    (dict-set saturation var (set))
+    (dict-set visited var #f)
+    (dict-set color var -1))
+  
+  (for ([u (in-vertices interference-graph)])
+    (match u
+      [(Reg r)
+       (define color (dict-ref register-to-color u))
+       (for ([v (in-neighbors interference-graph u)])
+         (match v
+           [(Var x)
+            (define old-saturation (dict-ref saturation v))
+            (define new-saturation (set-add old-saturation color))
+            (dict-set saturation v new-saturation)]))]))
+  
+  (define pq (make-pqueue graph-coloring-comparator))     
+  (for ([var locals])
+    (define cur-saturation (set-count (dict-ref saturation var)))
+    (define cur-move-bias 0)
+    (define cur-node (color_priority_node var cur-saturation cur-move-bias))
+    (pqueue-push! pq cur-node))
+
+  (color-recur interference-graph move-graph saturation move-bias visited color pq))
+    
   
 
 ;; allocate_registers: pseudo-x86 -> pseudo-x86
@@ -305,7 +481,8 @@
       [`((start . ,(Block sinfo instrs)))
        (define locals (dict-keys (dict-ref info 'locals-types)))
        (define interference-graph (dict-ref info 'conflicts))
-       (define variable_colors (color-graph interference-graph locals))
+       (define move-graph (build-move-graph instrs))
+       (define variable-colors (color-graph interference-graph locals move-graph))
        (X86Program info e)])]))
 
 (define (assign-home-to-locals locals-types)
