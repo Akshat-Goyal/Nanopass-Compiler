@@ -464,7 +464,8 @@
      (displayln u)
      (match u
        [(Reg r)
-        (define updated-saturation (get-initial-saturation-helper cur-saturation u (dict-ref register-to-color u) (in-neighbors interference-graph u)))
+        (define v-list (for/list ([v (in-neighbors interference-graph u)]) v))
+        (define updated-saturation (get-initial-saturation-helper cur-saturation u (dict-ref register-to-color u) v-list))
         (get-initial-saturation updated-saturation rest interference-graph)]
        [_ (get-initial-saturation cur-saturation rest interference-graph)])]
     [_ cur-saturation]))
@@ -492,7 +493,8 @@
 ;  (displayln (dict-values register-to-color))
 ;  (displayln locals)
 
-  (define saturation (get-initial-saturation prev-saturation (in-vertices interference-graph) interference-graph))
+  (define u-list (for/list ([u (in-vertices interference-graph)]) u))
+  (define saturation (get-initial-saturation prev-saturation u-list interference-graph))
 
   (displayln prev-saturation)
   (displayln "new-saturation")
