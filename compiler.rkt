@@ -50,6 +50,26 @@
                             (Reg 'r8)
                             (Reg 'r9)))
 
+
+(define all-registers (list
+                       (Reg 'rcx)
+                       (Reg 'rdx)
+                       (Reg 'rsi)
+                       (Reg 'rdi)
+                       (Reg 'r8)
+                       (Reg 'r9)
+                       (Reg 'r10)
+                       (Reg 'r11)
+                       (Reg 'rbx)
+                       (Reg 'r12)
+                       (Reg 'r13)
+                       (Reg 'r14)
+                       (Reg 'rax)
+                       (Reg 'rsp)
+                       (Reg 'rbp)
+                       (Reg 'r15)))
+
+
 (define registers-for-coloring (list
                                 (Reg 'rcx)
                                 (Reg 'rdx)
@@ -339,8 +359,10 @@
       [else
        (< (color_priority_node-saturation node1) (color_priority_node-saturation node2))])))
 
-(define (build-move-graph instrs)
+(define (build-move-graph instrs locals)
   (define graph (undirected-graph '()))
+  (for ([var locals])
+    (add-vertex! graph (Var var)))
   (for ([instr instrs])
     (match instr
       [(Instr 'movq (list arg1 arg2))
@@ -379,8 +401,8 @@
           move-bias-color]))]))
 
 ; conflicts is a set of neighbors of node in interference graph
-(define (find-move-biasing-colors graph node color conflicts)
-  (for/set ([v (in-neighbors graph node)]
+(define (find-move-biasing-colors move-graph node color conflicts)
+  (for/set ([v (in-neighbors move-graph node)]
             #:when (not (set-member? conflicts node))
             #:when (not (equal? (dict-ref color v) -1))) ; check if node is visited or not (we can set registers to be visited)
                              (dict-ref color v)))
@@ -427,13 +449,13 @@
     [(equal? (pqueue-count pq) 0)
      color]
     [else
-     (let* ([cur-node (pqueue-pop! pq)] ; check if pq is modified here or if we need to set it to a new pq
+     (let* ([cur-node (color_priority_node-name (pqueue-pop! pq))] ; check if pq is modified here or if we need to set it to a new pq
             [vis (dict-ref visited cur-node)])
        (match vis
          [#t
           (color-recur interference-graph move-graph saturation move-bias visited color pq)]
          [else
-          (define neighbors (in-neighbors interference-graph cur-node)) ; maybe modify here to return only variables that are interfering
+          (define neighbors (for/list ([u (in-neighbors interference-graph cur-node)]) u)) ; maybe modify here to return only variables that are interfering
           (define potential-colors (find-move-biasing-colors move-graph cur-node color (list->set neighbors))) ; returns a set
           (define interfering-colors (find-interfering-colors color neighbors)); returns a set
           (define cur-color (find-correct-color potential-colors interfering-colors))
@@ -456,12 +478,12 @@
     [_ cur-saturation]))
   
 (define (get-initial-saturation cur-saturation u-list interference-graph)
-  (displayln "u-list")
-  (displayln u-list)
+  ;(displayln "u-list")
+  ;(displayln u-list)
   (match u-list
     [(cons u rest)
-     (displayln "u")
-     (displayln u)
+     ;(displayln "u")
+     ;(displayln u)
      (match u
        [(Reg r)
         (define v-list (for/list ([v (in-neighbors interference-graph u)]) v))
@@ -475,15 +497,19 @@
  
   (define move-bias '())
 
-  ; set color of registers to their actual color
-  ; set visited of registers to true
-  (define-values (prev-saturation visited color) (for/fold ([saturation '()]
+  ; set color of registers to their actual color: DONE
+  ; set visited of registers to true: DONE
+  (define-values (prev-saturation visited-prev color-prev) (for/fold ([saturation '()]
                                                        [visited '()]
                                                        [color '()])
                                                       ([var locals])
                                               (values (dict-set saturation (Var var) (set)) (dict-set visited (Var var) #f) (dict-set color (Var var) -1))))
                                               
-                       
+  (define color (for/fold ([color color-prev]) ([reg all-registers]) (dict-set color reg (dict-ref register-to-color reg))))
+  (define visited (for/fold ([visited visited-prev]) ([reg all-registers]) (dict-set visited reg #t)))
+  
+  ;(display "color: ")
+  ;(displayln color)
 
 ;  (displayln "visited")
 ;  (displayln visited)
@@ -496,9 +522,9 @@
   (define u-list (for/list ([u (in-vertices interference-graph)]) u))
   (define saturation (get-initial-saturation prev-saturation u-list interference-graph))
 
-  (displayln prev-saturation)
-  (displayln "new-saturation")
-  (displayln saturation)
+  ;(displayln prev-saturation)
+  ;(displayln "new-saturation")
+  ;(displayln saturation)
     
 ;  (for ([u (in-vertices interference-graph)])
 ;    (match u
@@ -530,7 +556,7 @@
       [`((start . ,(Block sinfo instrs)))
        (define locals (dict-keys (dict-ref info 'locals-types)))
        (define interference-graph (dict-ref info 'conflicts))
-       (define move-graph (build-move-graph instrs))
+       (define move-graph (build-move-graph instrs locals))
        (define variable-colors (color-graph interference-graph locals move-graph))
        (displayln variable-colors)
        (X86Program info e)])]))
