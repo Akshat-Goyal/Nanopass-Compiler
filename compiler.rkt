@@ -50,39 +50,44 @@
                             (Reg 'r8)
                             (Reg 'r9)))
 
-(define color-to-register '((0. (Reg 'rbx)),
-                                           (1. (Reg 'rcx)),
-                                           (2. (Reg 'rdx)),
-                                           (3. (Reg 'rsi)),
-                                           (4. (Reg 'rdi)),
-                                           (5. (Reg 'r8)),
-                                           (6. (Reg 'r9)),
-                                           (7. (Reg 'r10)),
-                                           (8. (Reg 'r11)),
-                                           (9. (Reg 'r12)),
-                                           (10. (Reg 'r13)),
-                                           (11. (Reg 'r14))))
+(define registers-for-coloring (list
+                                (Reg 'rcx)
+                                (Reg 'rdx)
+                                (Reg 'rsi)
+                                (Reg 'rdi)
+                                (Reg 'r8)
+                                (Reg 'r9)
+                                (Reg 'r10)
+                                (Reg 'r11)
+                                (Reg 'rbx)
+                                (Reg 'r12)
+                                (Reg 'r13)
+                                (Reg 'r14)))
 
 
-(define register-to-color '(((Reg 'rbx). 0),
-                            ((Reg 'rcx). 1),
-                                           ((Reg 'rdx). 2),
-                                           ((Reg 'rsi). 3),
-                                           ((Reg 'rdi). 4),
-                                           ((Reg 'r8). 5),
-                                           ((Reg 'r9). 6),
-                                           ((Reg 'r10). 7),
-                                           ((Reg 'r11). 8),
-                                           ((Reg 'r12). 9),
-                                           ((Reg 'r13). 10),
-                                           ((Reg 'r14). 11),
-                                           ((Reg 'rax). -1),
-                                           ((Reg 'rsp). -2),
-                                           ((Reg 'rbp). -3),
-                                           ((Reg 'r15). -4)))
+(define unavailable-registers-for-coloring (list
+                                (Reg 'rax)
+                                (Reg 'rsp)
+                                (Reg 'rbp)
+                                (Reg 'r15)))
+
+(define-values (color-to-register register-to-color-prev) (for/fold ([color-to-register '()]
+                                                                [register-to-color '()])
+                                                               ([reg registers-for-coloring]
+                                                                [cur-color (in-range 0 12)])
+                                                       (values (dict-set color-to-register cur-color reg) (dict-set register-to-color reg cur-color))))
+
+(define register-to-color (for/fold ([register-to-color register-to-color-prev])
+                                    ([reg unavailable-registers-for-coloring]
+                                     [cur-color (in-range -1 -5 -1)])
+                            (dict-set register-to-color reg cur-color)))
+
+
+;(displayln "hallo")
+;(displayln color-to-register)
+;(displayln register-to-color)
 
 (struct color_priority_node (name saturation move_bias))
-
 
 ;; Next we have the partial evaluation pass described in the book.
 (define (pe-neg r)
@@ -345,7 +350,9 @@
          [((Var x) (Reg r))
           (add-edge! graph arg1 arg2)]
          [((Reg r) (Var x))
-          (add-edge! graph arg1 arg2)])]))
+          (add-edge! graph arg1 arg2)]
+         [(_ _) (void)])]
+      [_ (void)]))
   graph)
 
 (define (find-mex s cur)
@@ -375,12 +382,12 @@
 (define (find-move-biasing-colors graph node color conflicts)
   (for/set ([v (in-neighbors graph node)]
             #:when (not (set-member? conflicts node))
-            #:when (not (equal? (dict-ref color v) -1))) 
+            #:when (not (equal? (dict-ref color v) -1))) ; check if node is visited or not (we can set registers to be visited)
                              (dict-ref color v)))
 
 (define (find-interfering-colors color conflicts)
   (for/set ([u conflicts]
-            #:when (not (equal? (dict-ref color u) -1)))
+            #:when (not (equal? (dict-ref color u) -1))) ; should be visited.
     (dict-ref color u)))
 
 (define (update-saturation saturation color neighbors)
@@ -418,15 +425,15 @@
 (define (color-recur interference-graph move-graph saturation move-bias visited color pq)
   (cond
     [(equal? (pqueue-count pq) 0)
-     (color)]
+     color]
     [else
-     (let* ([cur-node (pqueue-pop! pq)]
+     (let* ([cur-node (pqueue-pop! pq)] ; check if pq is modified here or if we need to set it to a new pq
             [vis (dict-ref visited cur-node)])
        (match vis
          [#t
           (color-recur interference-graph move-graph saturation move-bias visited color pq)]
          [else
-          (define neighbors (in-neighbors interference-graph cur-node))
+          (define neighbors (in-neighbors interference-graph cur-node)) ; maybe modify here to return only variables that are interfering
           (define potential-colors (find-move-biasing-colors move-graph cur-node color (list->set neighbors))) ; returns a set
           (define interfering-colors (find-interfering-colors color neighbors)); returns a set
           (define cur-color (find-correct-color potential-colors interfering-colors))
@@ -436,37 +443,77 @@
           (define updated-color (dict-set color cur-node cur-color))
           (define updated-pq (update-pq pq updated-saturation updated-move-bias neighbors))
           (color-recur interference-graph move-graph updated-saturation updated-move-bias updated-visited updated-color updated-pq)]))]))
-          
-          
-          
+
+(define (get-initial-saturation-helper cur-saturation u u-color v-list)
+  (match v-list
+    [(cons v rest)
+     (match v
+       [(Var x)
+        (define old-saturation (dict-ref cur-saturation v))
+        (define new-saturation (set-add old-saturation u-color))
+        (get-initial-saturation-helper (dict-set cur-saturation v new-saturation) u u-color rest)]
+       [_ (get-initial-saturation-helper cur-saturation u u-color rest)])]
+    [_ cur-saturation]))
+  
+(define (get-initial-saturation cur-saturation u-list interference-graph)
+  (displayln "u-list")
+  (displayln u-list)
+  (match u-list
+    [(cons u rest)
+     (displayln "u")
+     (displayln u)
+     (match u
+       [(Reg r)
+        (define updated-saturation (get-initial-saturation-helper cur-saturation u (dict-ref register-to-color u) (in-neighbors interference-graph u)))
+        (get-initial-saturation updated-saturation rest interference-graph)]
+       [_ (get-initial-saturation cur-saturation rest interference-graph)])]
+    [_ cur-saturation]))
+  
 
 (define (color-graph interference-graph locals move-graph)
-  (define saturation '())
+ 
   (define move-bias '())
-  (define visited '())
-  (define color '())
 
-  (for ([var locals])
-    (dict-set saturation var (set))
-    (dict-set visited var #f)
-    (dict-set color var -1))
-  
-  (for ([u (in-vertices interference-graph)])
-    (match u
-      [(Reg r)
-       (define color (dict-ref register-to-color u))
-       (for ([v (in-neighbors interference-graph u)])
-         (match v
-           [(Var x)
-            (define old-saturation (dict-ref saturation v))
-            (define new-saturation (set-add old-saturation color))
-            (dict-set saturation v new-saturation)]))]))
-  
+  ; set color of registers to their actual color
+  ; set visited of registers to true
+  (define-values (prev-saturation visited color) (for/fold ([saturation '()]
+                                                       [visited '()]
+                                                       [color '()])
+                                                      ([var locals])
+                                              (values (dict-set saturation (Var var) (set)) (dict-set visited (Var var) #f) (dict-set color (Var var) -1))))
+                                              
+                       
+
+;  (displayln "visited")
+;  (displayln visited)
+;  (displayln prev-saturation)
+;  (displayln color)
+;  (displayln (dict-keys register-to-color))
+;  (displayln (dict-values register-to-color))
+;  (displayln locals)
+
+  (define saturation (get-initial-saturation prev-saturation (in-vertices interference-graph) interference-graph))
+
+  (displayln prev-saturation)
+  (displayln "new-saturation")
+  (displayln saturation)
+    
+;  (for ([u (in-vertices interference-graph)])
+;    (match u
+;      [(Reg r)
+;       (define color (dict-ref register-to-color u))
+;       (for ([v (in-neighbors interference-graph u)])
+;         (match v
+;           [(Var x)
+;            (define old-saturation (dict-ref saturation v))
+;            (define new-saturation (set-add old-saturation color))
+;            (dict-set saturation v new-saturation)]))])) ; do this with recursion as 'saturation' will not be modified here
+
   (define pq (make-pqueue graph-coloring-comparator))     
   (for ([var locals])
-    (define cur-saturation (set-count (dict-ref saturation var)))
+    (define cur-saturation (set-count (dict-ref saturation (Var var))))
     (define cur-move-bias 0)
-    (define cur-node (color_priority_node var cur-saturation cur-move-bias))
+    (define cur-node (color_priority_node (Var var) cur-saturation cur-move-bias))
     (pqueue-push! pq cur-node))
 
   (color-recur interference-graph move-graph saturation move-bias visited color pq))
@@ -483,6 +530,7 @@
        (define interference-graph (dict-ref info 'conflicts))
        (define move-graph (build-move-graph instrs))
        (define variable-colors (color-graph interference-graph locals move-graph))
+       (displayln variable-colors)
        (X86Program info e)])]))
 
 (define (assign-home-to-locals locals-types)
@@ -564,6 +612,7 @@
      ("instruction selection" ,select-instructions ,interp-x86-0)
      ("liveness analysis" ,uncover_live ,interp-x86-0)
      ("build interference graph" ,build_interference ,interp-x86-0)
+     ("register allocation" ,allocate_registers ,interp-x86-0)
      ;; ("assign homes" ,assign-homes ,interp-x86-0)
      ;; ("patch instructions" ,patch-instructions ,interp-x86-0)
      ;; ("prelude-and-conclusion" ,prelude-and-conclusion ,interp-x86-0)
