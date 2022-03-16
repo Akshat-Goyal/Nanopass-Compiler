@@ -620,6 +620,15 @@
     (define cur-node (color_priority_node (Var var) cur-saturation cur-move-bias))
     (pqueue-push! pq cur-node))
   (color-recur interference-graph move-graph saturation move-bias visited color pq))
+
+(define (get-used-callee-registers locals cur-used-callee variable-colors)
+  (match locals
+    [(cons var rest)
+     (define var-color (dict-ref variable-colors (Var var)))
+     (cond
+       [(and (>= var-color 8) (<= var-color 11)) (get-used-callee-registers rest (set-add cur-used-callee (dict-ref color-to-register var-color)) variable-colors)] ;TODO: change this hardcoded colors to something more general
+       [else (get-used-callee-registers rest cur-used-callee variable-colors)])] 
+    [_ cur-used-callee]))
   
 ;; allocate_registers: pseudo-x86 -> pseudo-x86
 (define (allocate_registers p)
@@ -633,7 +642,9 @@
        (define variable-colors (color-graph interference-graph locals move-graph))
        (display "variable-colors: ")
        (displayln variable-colors)
-       (X86Program info e)])]))
+       (define used-callee (get-used-callee-registers locals (set) variable-colors))
+       (define new-info (dict-set info 'used_callee used-callee))
+       (X86Program new-info e)])]))
 
 (define (assign-home-to-locals locals-types)
   (define-values (stack-space locals-home) 
