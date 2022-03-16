@@ -320,8 +320,12 @@
     (for ([v (in-neighbors graph u)])
       (display (format "~a -> ~a;\n" u v)))))
 
-(define (build-graph instrs live-sets)
+(define (build-graph instrs live-sets locals)
   (define graph (undirected-graph '()))
+  (for ([reg all-registers]) ;TODO: do we need to add vertices of all registers or only caller saved ones or none at all here?
+    (add-vertex! graph reg))
+  (for ([var locals]) ;need to do this otherwise error on var_test 6 or something
+    (add-vertex! graph (Var var)))
   (for ([live-set live-sets]
         [instr instrs])
     (match instr
@@ -347,7 +351,8 @@
      (match e
       [`((start . ,(Block sinfo instrs)))
        (define live-sets (dict-ref sinfo 'live-sets))
-       (define interference-graph (build-graph instrs live-sets))
+       (define locals (dict-keys (dict-ref info 'locals-types)))
+       (define interference-graph (build-graph instrs live-sets locals))
        (print-graph interference-graph)
        (X86Program (dict-set info 'conflicts interference-graph) e)])]))
 
@@ -426,26 +431,48 @@
     [_ saturation]))
 
 (define (update-move-bias move-bias neighbors)
+  ;(displayln "update-move-bias")
+  ;(displayln move-bias)
+  ;(displayln neighbors)
   (match neighbors
-    [(cons cur rest) ;TODO: check if we need to check if cur is variable or not
-     (let* ([my-bias (dict-ref move-bias cur)]
-            [my-bias-updated (+ my-bias 1)]
-            [updated-move-bias (dict-set move-bias cur my-bias-updated)])
-       (update-move-bias updated-move-bias rest))]
+    [(cons cur rest) ;TODO: check if we need to check if cur is variable or not: DONE
+     (match cur
+       [(Var x)
+        (let* ([my-bias (dict-ref move-bias cur)]
+               [my-bias-updated (+ my-bias 1)]
+               [updated-move-bias (dict-set move-bias cur my-bias-updated)])
+          (update-move-bias updated-move-bias rest))]
+       [_ (update-move-bias move-bias rest)])]
     [_ move-bias]))
 
 (define (update-pq pq saturation move-bias neighbors)
-  (match neighbors
-    [(cons cur rest)
-     (match cur
-       [(Var x)
-        (let* ([my-saturation (dict-ref saturation cur)]
-               [my-bias (dict-ref move-bias cur)]
-               [new-node (color_priority_node cur my-saturation my-bias)]
-               [updated-pq (pqueue-push! pq new-node)])
-          (update-pq updated-pq saturation move-bias rest))]
-       [_ (update-pq pq saturation move-bias rest)])]
-    [_ pq]))
+  (for ([cur neighbors])
+    (match cur
+      [(Var x)
+       (let* ([my-saturation (dict-ref saturation cur)]
+              [my-bias (dict-ref move-bias cur)]
+              [new-node (color_priority_node cur (set-count my-saturation) my-bias)])
+         (pqueue-push! pq new-node))]
+      [_ (void)]))
+  pq)
+         
+        
+; CANT DO THIS BECAUSE PROLLY pqueue-push DOESNT RETURN NEW PQ BUT UPDATES IN THE OLD PQ ITSELF       
+;  (match neighbors
+;    [(cons cur rest)
+;     (match cur
+;       [(Var x)
+;        (display "update-pq: ")
+;        (displayln cur)
+;        (displayln rest)
+;        (displayln saturation)
+;        (let* ([my-saturation (dict-ref saturation cur)]
+;               [my-bias (dict-ref move-bias cur)]
+;               [new-node (color_priority_node cur (set-count my-saturation) my-bias)]
+;               [updated-pq (pqueue-push! pq new-node)])
+;          (update-pq updated-pq saturation move-bias rest))]
+;       [_ (update-pq pq saturation move-bias rest)])]
+;    [_ pq]))
   
 
 (define (color-recur interference-graph move-graph saturation move-bias visited color pq)
@@ -463,8 +490,19 @@
           (define potential-colors (find-move-biasing-colors move-graph cur-node color (list->set neighbors) visited)) ; returns a set
           (define interfering-colors (find-interfering-colors color neighbors visited)); returns a set
           (define cur-color (find-correct-color potential-colors interfering-colors))
+          (displayln "cur-node neighbors potential-colors interfering-colors cur-color")
+          (displayln cur-node)
+          (displayln neighbors)
+          (displayln potential-colors)
+          (displayln interfering-colors)
+          (displayln cur-color)
           (define updated-saturation (update-saturation saturation cur-color neighbors))
-          (define updated-move-bias (update-move-bias move-bias (in-neighbors move-graph cur-node)))
+          (display "updated-saturation: ")
+          (displayln updated-saturation)
+          (define updated-move-bias (update-move-bias move-bias (for/list ([u (in-neighbors move-graph cur-node)]) u)))
+          (displayln "old and updated-move-bias: ")
+          (displayln move-bias)
+          (displayln updated-move-bias)
           (define updated-visited (dict-set visited cur-node #t))
           (define updated-color (dict-set color cur-node cur-color))
           (define updated-pq (update-pq pq updated-saturation updated-move-bias neighbors))
@@ -498,15 +536,16 @@
   
 
 (define (color-graph interference-graph locals move-graph)
- 
-  (define move-bias '())
 
   ; set color of registers to their actual color: DONE
   ; set visited of registers to true: DONE
-  (define-values (prev-saturation visited-prev) (for/fold ([saturation '()]
-                                                       [visited '()])
-                                                      ([var locals])
-                                              (values (dict-set saturation (Var var) (set)) (dict-set visited (Var var) #f))))
+  (define-values (prev-saturation visited-prev move-bias) (for/fold ([saturation '()]    
+                                                                     [visited '()]
+                                                                     [move-bias '()])
+                                                                    ([var locals])
+                                                            (values (dict-set saturation (Var var) (set)) (dict-set visited (Var var) #f) (dict-set move-bias (Var var) 0))))
+
+  ;TODO: update move-bias for register to variable or vive versa move operations
                                               
   (define color (for/fold ([color '()]) ([reg all-registers]) (dict-set color reg (dict-ref register-to-color reg))))
   (define visited (for/fold ([visited visited-prev]) ([reg all-registers]) (dict-set visited reg #t)))
@@ -514,10 +553,9 @@
   ;(display "color: ")
   ;(displayln color)
 
-;  (displayln "visited")
-;  (displayln visited)
-;  (displayln prev-saturation)
-;  (displayln color)
+  ;(display "visited: ")
+  ;(displayln visited)
+  
 ;  (displayln (dict-keys register-to-color))
 ;  (displayln (dict-values register-to-color))
 ;  (displayln locals)
@@ -538,7 +576,7 @@
 ;           [(Var x)
 ;            (define old-saturation (dict-ref saturation v))
 ;            (define new-saturation (set-add old-saturation color))
-;            (dict-set saturation v new-saturation)]))])) ; do this with recursion as 'saturation' will not be modified here
+;            (dict-set saturation v new-saturation)]))])) ; do this with recursion as 'saturation' will not be modified here: DONE
 
   (define pq (make-pqueue graph-coloring-comparator))     
   (for ([var locals])
@@ -546,11 +584,8 @@
     (define cur-move-bias 0)
     (define cur-node (color_priority_node (Var var) cur-saturation cur-move-bias))
     (pqueue-push! pq cur-node))
-
   (color-recur interference-graph move-graph saturation move-bias visited color pq))
-    
   
-
 ;; allocate_registers: pseudo-x86 -> pseudo-x86
 (define (allocate_registers p)
   (match p
@@ -636,7 +671,7 @@
 ;; Note that your compiler file (the file that defines the passes)
 ;; must be named "compiler.rkt"
 (define compiler-passes
-  `( ("partial evaluator", pe-Lint, interp-Lvar)
+  `( ;("partial evaluator", pe-Lint, interp-Lvar)
      ("uniquify" ,uniquify ,interp-Lvar ,type-check-Lvar)
      ;; Uncomment the following passes as you finish them.
      ("remove complex opera*" ,remove-complex-opera* ,interp-Lvar ,type-check-Lvar)
