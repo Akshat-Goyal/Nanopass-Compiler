@@ -711,6 +711,8 @@
 
 (define (pi-instr instrs)
   (match instrs
+    [(cons (Instr 'movq (list arg1 arg2)) ss)
+     #:when (equal? arg1 arg2) (pi-instr ss)]
     [(cons (Instr x86-op (list (Deref arg1 n1) (Deref arg2 n2))) ss)
      (append (list (Instr 'movq (list (Deref arg1 n1) (Reg 'rax))) (Instr x86-op (list (Reg 'rax) (Deref arg2 n2)))) (pi-instr ss))]
     [(cons instr ss) (cons instr (pi-instr ss))]
@@ -761,8 +763,7 @@
      ("liveness analysis" ,uncover_live ,interp-x86-0)
      ("build interference graph" ,build_interference ,interp-x86-0)
      ("register allocation" ,allocate_registers ,interp-x86-0)
-     ;; ("assign homes" ,assign-homes ,interp-x86-0)
-     ;; ("patch instructions" ,patch-instructions ,interp-x86-0)
+     ("patch instructions" ,patch-instructions ,interp-x86-0)
      ;; ("prelude-and-conclusion" ,prelude-and-conclusion ,interp-x86-0)
      ))
 
