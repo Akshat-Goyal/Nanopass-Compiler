@@ -19,6 +19,15 @@
 ;; The following compiler pass is just a silly one that doesn't change
 ;; anything important, but is nevertheless an example of a pass. It
 ;; flips the arguments of +. -Jeremy
+
+(define (display-pq pq)
+  (cond
+    [(equal? 0 (pqueue-count pq))
+     (displayln "-----")]
+    [else
+     (define top (pqueue-pop! pq))
+     (displayln (color_priority_node-name top))
+     (display-pq pq)]))
 (define (flip-exp e)
   (match e
     [(Var x) e]
@@ -360,9 +369,9 @@
   (lambda (node1 node2)
     (cond
       [(= (color_priority_node-saturation node1) (color_priority_node-saturation node2))
-       (< (color_priority_node-move_bias node1) (color_priority_node-move_bias node2))]
+       (> (color_priority_node-move_bias node1) (color_priority_node-move_bias node2))]
       [else
-       (< (color_priority_node-saturation node1) (color_priority_node-saturation node2))])))
+       (> (color_priority_node-saturation node1) (color_priority_node-saturation node2))])))
 
 (define (build-move-graph instrs locals)
   (define graph (undirected-graph '()))
@@ -566,8 +575,7 @@
 
 (define (color-graph interference-graph locals move-graph)
 
-  ; set color of registers to their actual color: DONE
-  ; set visited of registers to true: DONE
+  ; set default saturation, visited and move-bias of ONLY variables.
   (define-values (prev-saturation visited-prev move-bias-prev) (for/fold ([saturation '()]    
                                                                           [visited '()]
                                                                           [move-bias '()])
@@ -576,47 +584,30 @@
 
   ;TODO: update move-bias for register to variable or vive versa move operations: DONE
                                               
+  ; set default of color of ONLY registers. locals are not present as keys of color right now
   (define color (for/fold ([color '()]) ([reg all-registers]) (dict-set color reg (dict-ref register-to-color reg))))
+  ; set registers as visited. locals were set as unvisited before
   (define visited (for/fold ([visited visited-prev]) ([reg all-registers]) (dict-set visited reg #t)))
-  
-  ;(display "color: ")
-  ;(displayln color)
-
-  ;(display "visited: ")
-  ;(displayln visited)
-  
-;  (displayln (dict-keys register-to-color))
-;  (displayln (dict-values register-to-color))
-;  (displayln locals)
-
   (define u-list (for/list ([u (in-vertices interference-graph)]) u))
+  ; sets saturtation for variables adjacent to registers. This step is performed because registers can be ignored from the graph after this step
   (define saturation (get-initial-saturation prev-saturation u-list interference-graph))
   (define u-list-move-graph (for/list ([u (in-vertices move-graph)]) u))
+
+  ; IS THIS STEP REQUIRED ??
   (define move-bias (get-initial-move-bias move-bias-prev u-list-move-graph move-graph))
 
-  (displayln "old and updated move-bias")
-  (displayln move-bias-prev)
-  (displayln move-bias)
-
+  ; (displayln "old and updated move-bias")
+  ; (displayln move-bias-prev)
+  ; (displayln move-bias)
+ 
   ;(displayln prev-saturation)
   ;(displayln "new-saturation")
   ;(displayln saturation)
-    
-;  (for ([u (in-vertices interference-graph)])
-;    (match u
-;      [(Reg r)
-;       (define color (dict-ref register-to-color u))
-;       (for ([v (in-neighbors interference-graph u)])
-;         (match v
-;           [(Var x)
-;            (define old-saturation (dict-ref saturation v))
-;            (define new-saturation (set-add old-saturation color))
-;            (dict-set saturation v new-saturation)]))])) ; do this with recursion as 'saturation' will not be modified here: DONE
 
   (define pq (make-pqueue graph-coloring-comparator))     
   (for ([var locals])
     (define cur-saturation (set-count (dict-ref saturation (Var var))))
-    (define cur-move-bias 0)
+    (define cur-move-bias (dict-ref move-bias (Var var))) ; TODO: update move bias here using 'move-bias' ??
     (define cur-node (color_priority_node (Var var) cur-saturation cur-move-bias))
     (pqueue-push! pq cur-node))
   (color-recur interference-graph move-graph saturation move-bias visited color pq))
