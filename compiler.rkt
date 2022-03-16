@@ -685,7 +685,7 @@
        (define stack-variable-colors (get-stack-colors locals variable-colors (set)))
        (define stack-size (get-stack-space (set-count stack-variable-colors) (set-count used-callee)))
        
-       (X86Program (dict-set info 'stack-space stack-size) `((start . ,(Block sinfo (assign-homes-instr instrs locals-homes)))))])]))
+       (X86Program (dict-set new-info 'stack-space stack-size) `((start . ,(Block sinfo (assign-homes-instr instrs locals-homes)))))])]))
 
 ; assign homes of R1
 ;(define (assign-home-to-locals locals-types)
@@ -726,28 +726,37 @@
       [`((start . ,(Block sinfo instrs)))
         (X86Program info `((start . ,(Block sinfo (pi-instr instrs)))))])]))
 
-(define (pac-main stack-space)
-  (list
+(define (pac-main stack-space used-callee)
+  (define part-1 (list
     (Instr 'pushq (list (Reg 'rbp)))
-    (Instr 'movq (list (Reg 'rsp) (Reg 'rbp)))
+    (Instr 'movq (list (Reg 'rsp) (Reg 'rbp)))))
+  (define part-2 (for/list ([reg used-callee])
+                   (Instr 'pushq (list reg))))
+  (define part-3 (list
     (Instr 'subq (list (Imm stack-space) (Reg 'rsp)))
     (Jmp 'start)))
+  (append part-1 part-2 part-3))
 
-(define (pac-conclusion stack-space)
-  (list
-    (Instr 'addq (list (Imm stack-space) (Reg 'rsp)))
+(define (pac-conclusion stack-space reversed-used-callee)
+  (define part-1 (list
+    (Instr 'addq (list (Imm stack-space) (Reg 'rsp)))))
+  (define part-2 (for/list ([reg reversed-used-callee])
+                   (Instr 'popq (list reg))))
+  (define part-3 (list
     (Instr 'popq (list (Reg 'rbp)))
     (Retq)))
+  (append part-1 part-2 part-3))
 
 ;; prelude-and-conclusion : x86 -> x86
 (define (prelude-and-conclusion p)
   (match p
     [(X86Program info blocks)
-      (define stack-space (dict-ref info 'stack-space))
-      (define start (dict-ref blocks 'start))
-      (define main (Block '() (pac-main stack-space)))
-      (define conclusion (Block '() (pac-conclusion stack-space)))
-      (X86Program info `((start . ,start) (main . ,main) (conclusion . ,conclusion)))]))
+     (define used-callee (set->list (dict-ref info 'used_callee)))
+     (define stack-space (- (dict-ref info 'stack-space) (* 8 (length used-callee))))
+     (define start (dict-ref blocks 'start))
+     (define main (Block '() (pac-main stack-space used-callee)))
+     (define conclusion (Block '() (pac-conclusion stack-space (reverse used-callee))))
+     (X86Program info `((start . ,start) (main . ,main) (conclusion . ,conclusion)))]))
 
 
 ;; Define the compiler passes to be used by interp-tests and the grader
@@ -764,6 +773,6 @@
      ("build interference graph" ,build_interference ,interp-x86-0)
      ("register allocation" ,allocate_registers ,interp-x86-0)
      ("patch instructions" ,patch-instructions ,interp-x86-0)
-     ;; ("prelude-and-conclusion" ,prelude-and-conclusion ,interp-x86-0)
+     ("prelude-and-conclusion" ,prelude-and-conclusion ,interp-x86-0)
      ))
 
