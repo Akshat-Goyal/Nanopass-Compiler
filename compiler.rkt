@@ -629,7 +629,44 @@
        [(and (>= var-color 8) (<= var-color 11)) (get-used-callee-registers rest (set-add cur-used-callee (dict-ref color-to-register var-color)) variable-colors)] ;TODO: change this hardcoded colors to something more general
        [else (get-used-callee-registers rest cur-used-callee variable-colors)])] 
     [_ cur-used-callee]))
-  
+
+
+(define (assign-home-to-locals locals variable-colors used-callee cur-locals-homes)
+  (match locals
+    [(cons var rest)
+     (define var-color (dict-ref variable-colors (Var var)))
+     (cond
+       [(<= var-color 11)
+        (assign-home-to-locals rest variable-colors used-callee (dict-set cur-locals-homes var (dict-ref color-to-register var-color)))]
+       [else
+        (define offset (* -8 (- (+ var-color used-callee) 11)))
+        (assign-home-to-locals rest variable-colors used-callee (dict-set cur-locals-homes var (Deref 'rbp offset)))])]
+    [_ cur-locals-homes]))
+
+(define (get-stack-colors locals variable-colors cur-stack-colors)
+  (match locals
+    [(cons var rest)
+     (define var-color (dict-ref variable-colors (Var var)))
+     (cond
+       [(<= var-color 11)
+        (get-stack-colors rest variable-colors cur-stack-colors)]
+       [else
+        (get-stack-colors rest variable-colors (set-add cur-stack-colors var-color))])]
+    [_ cur-stack-colors]))
+
+(define (assign-homes-instr instrs locals-home)
+  (match instrs
+    [(cons (Instr x86-op args) ss)
+     (cons (Instr x86-op (for/list ([arg args]) 
+                          (if (Var? arg) (dict-ref locals-home (Var-name arg)) arg))) 
+           (assign-homes-instr ss locals-home))]
+    [(cons instr ss) (cons instr (assign-homes-instr ss locals-home))]
+    [else instrs]))
+
+(define (get-stack-space stack-color-size used-callee-size)
+  (define stack-size (+ (* 8 stack-color-size) (* 8 used-callee-size)))
+  (if (zero? (remainder stack-size 16)) stack-size (+ 8 stack-size)))
+     
 ;; allocate_registers: pseudo-x86 -> pseudo-x86
 (define (allocate_registers p)
   (match p
@@ -644,26 +681,24 @@
        (displayln variable-colors)
        (define used-callee (get-used-callee-registers locals (set) variable-colors))
        (define new-info (dict-set info 'used_callee used-callee))
-       (X86Program new-info e)])]))
+       (define locals-homes (assign-home-to-locals locals variable-colors (set-count used-callee) '()))
+       (define stack-variable-colors (get-stack-colors locals variable-colors (set)))
+       (define stack-size (get-stack-space (set-count stack-variable-colors) (set-count used-callee)))
+       
+       (X86Program (dict-set info 'stack-space stack-size) `((start . ,(Block sinfo (assign-homes-instr instrs locals-homes)))))])]))
 
-(define (assign-home-to-locals locals-types)
-  (define-values (stack-space locals-home) 
-    (for/fold ([offset 0]
-               [locals-home '()])
-              ([(local type) (in-dict locals-types)])
-      (values (- offset 8) (dict-set locals-home local (Deref 'rbp (- offset 8))))))
-  (if (zero? (remainder stack-space 16)) 
-    (values (abs stack-space) locals-home)
-    (values (abs (- stack-space 8)) locals-home)))
+; assign homes of R1
+;(define (assign-home-to-locals locals-types)
+;  (define-values (stack-space locals-home) 
+;    (for/fold ([offset 0]
+;               [locals-home '()])
+;              ([(local type) (in-dict locals-types)])
+;      (values (- offset 8) (dict-set locals-home local (Deref 'rbp (- offset 8))))))
+;  (if (zero? (remainder stack-space 16)) 
+;    (values (abs stack-space) locals-home)
+;    (values (abs (- stack-space 8)) locals-home)))
 
-(define (assign-homes-instr instrs locals-home)
-  (match instrs
-    [(cons (Instr x86-op args) ss)
-     (cons (Instr x86-op (for/list ([arg args]) 
-                          (if (Var? arg) (dict-ref locals-home (Var-name arg)) arg))) 
-           (assign-homes-instr ss locals-home))]
-    [(cons instr ss) (cons instr (assign-homes-instr ss locals-home))]
-    [else instrs]))
+
 
 ;; assign-homes : pseudo-x86 -> pseudo-x86
 (define (assign-homes p)
