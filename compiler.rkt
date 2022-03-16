@@ -366,8 +366,13 @@
 
 (define (build-move-graph instrs locals)
   (define graph (undirected-graph '()))
+
+  (for ([reg all-registers])
+    (add-vertex! graph reg))
+ 
   (for ([var locals])
     (add-vertex! graph (Var var)))
+  
   (for ([instr instrs])
     (match instr
       [(Instr 'movq (list arg1 arg2))
@@ -375,9 +380,11 @@
          [((Var x) (Var y))
           (add-edge! graph arg1 arg2)]
          [((Var x) (Reg r))
-          (add-edge! graph arg1 arg2)]
+          (cond
+            [(>= (dict-ref register-to-color arg2) 0) (add-edge! graph arg1 arg2)])]
          [((Reg r) (Var x))
-          (add-edge! graph arg1 arg2)]
+          (cond
+            [(>= (dict-ref register-to-color arg1) 0) (add-edge! graph arg1 arg2)])]
          [(_ _) (void)])]
       [_ (void)]))
   graph)
@@ -533,19 +540,41 @@
         (get-initial-saturation updated-saturation rest interference-graph)]
        [_ (get-initial-saturation cur-saturation rest interference-graph)])]
     [_ cur-saturation]))
+
+(define (get-initial-move-bias-helper cur-move-bias u v-list)
+  (match v-list
+    [(cons v rest)
+     (match v
+       [(Var x)
+        (define old-move-bias (dict-ref cur-move-bias v))
+        (define new-move-bias (+ 1 old-move-bias))
+        (get-initial-move-bias-helper (dict-set cur-move-bias v new-move-bias) u rest)]
+       [_ (get-initial-move-bias-helper cur-move-bias u rest)])]
+    [_ cur-move-bias]))
   
+(define (get-initial-move-bias cur-move-bias u-list move-graph)
+  (match u-list
+    [(cons u rest)
+     (match u
+       [(Reg r)
+        (define v-list (for/list ([v (in-neighbors move-graph u)]) v))
+        (define updated-move-bias (get-initial-move-bias-helper cur-move-bias u v-list))
+        (get-initial-move-bias updated-move-bias rest move-graph)]
+       [_ (get-initial-move-bias cur-move-bias rest move-graph)])]
+    [_ cur-move-bias]))
+
 
 (define (color-graph interference-graph locals move-graph)
 
   ; set color of registers to their actual color: DONE
   ; set visited of registers to true: DONE
-  (define-values (prev-saturation visited-prev move-bias) (for/fold ([saturation '()]    
-                                                                     [visited '()]
-                                                                     [move-bias '()])
-                                                                    ([var locals])
-                                                            (values (dict-set saturation (Var var) (set)) (dict-set visited (Var var) #f) (dict-set move-bias (Var var) 0))))
+  (define-values (prev-saturation visited-prev move-bias-prev) (for/fold ([saturation '()]    
+                                                                          [visited '()]
+                                                                          [move-bias '()])
+                                                                         ([var locals])
+                                                                 (values (dict-set saturation (Var var) (set)) (dict-set visited (Var var) #f) (dict-set move-bias (Var var) 0))))
 
-  ;TODO: update move-bias for register to variable or vive versa move operations
+  ;TODO: update move-bias for register to variable or vive versa move operations: DONE
                                               
   (define color (for/fold ([color '()]) ([reg all-registers]) (dict-set color reg (dict-ref register-to-color reg))))
   (define visited (for/fold ([visited visited-prev]) ([reg all-registers]) (dict-set visited reg #t)))
@@ -562,6 +591,12 @@
 
   (define u-list (for/list ([u (in-vertices interference-graph)]) u))
   (define saturation (get-initial-saturation prev-saturation u-list interference-graph))
+  (define u-list-move-graph (for/list ([u (in-vertices move-graph)]) u))
+  (define move-bias (get-initial-move-bias move-bias-prev u-list-move-graph move-graph))
+
+  (displayln "old and updated move-bias")
+  (displayln move-bias-prev)
+  (displayln move-bias)
 
   ;(displayln prev-saturation)
   ;(displayln "new-saturation")
