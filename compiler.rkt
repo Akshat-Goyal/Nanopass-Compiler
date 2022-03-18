@@ -204,26 +204,36 @@
   (lambda (e)
     (gensym 'tmp)))
 
+(define (Atm? e)
+  (match e
+    [(Int n) #t]
+    [(Var x) #t]
+    [(Bool b) #t]
+    [_ #f]))
+
 (define (rco-exp env)
   (lambda (e)
     (match e
       [(Var x) (Var x)]
       [(Int n) (Int n)]
+      [(Bool b) (Bool b)]
       [(Prim 'read '()) (Prim 'read '())]
       [(Let x e body) 
        (Let x ((rco-exp env) e) ((rco-exp env) body))]
-      [(Prim '- (list e1))
+      [(If cnd thn els)
+       (If ((rco-exp env) cnd) ((rco-exp env) thn) ((rco-exp env) els))]
+      [(Prim op (list e1))
        (cond
-        [(or (Var? e1) (Int? e1)) (Prim '- (list e1))]
+        [(Atm? e1) (Prim op (list e1))]
         [else
          (define tmp-var ((rco-atom env) e1))
-         (Let tmp-var ((rco-exp env) e1) (Prim '- (list (Var tmp-var))))])]
+         (Let tmp-var ((rco-exp env) e1) (Prim op (list (Var tmp-var))))])]
       [(Prim op (list e1 e2))
        (cond
-        [(not (or (Var? e1) (Int? e1)))
+        [(not (Atm? e1))
          (define tmp-var ((rco-atom env) e1))
          (Let tmp-var ((rco-exp env) e1) ((rco-exp env) (Prim op (list (Var tmp-var) e2))))]
-        [(not (or (Var? e2) (Int? e2)))
+        [(not (Atm? e2))
          (define tmp-var ((rco-atom env) e2))
          (Let tmp-var ((rco-exp env) e2) ((rco-exp env) (Prim op (list e1 (Var tmp-var)))))]
         [else (Prim op (list e1 e2))])])))
@@ -783,13 +793,13 @@
     ;("partial evaluator", pe-Lint, interp-Lvar)
     ("shrink" ,shrink ,interp-Lif ,type-check-Lif)
     ("uniquify" ,uniquify ,interp-Lif ,type-check-Lif)
-    ;("remove complex opera*" ,remove-complex-opera* ,interp-Lvar ,type-check-Lvar)
-    ;("explicate control" ,explicate-control ,interp-Cvar ,type-check-Cvar)
-    ;("instruction selection" ,select-instructions ,interp-x86-0)
-    ;("liveness analysis" ,uncover_live ,interp-x86-0)
-    ;("build interference graph" ,build_interference ,interp-x86-0)
-    ;("register allocation" ,allocate_registers ,interp-x86-0)
-    ;("patch instructions" ,patch-instructions ,interp-x86-0)
-    ;("prelude-and-conclusion" ,prelude-and-conclusion ,interp-x86-0)
+    ("remove complex opera*" ,remove-complex-opera* ,interp-Lif ,type-check-Lif)
+;    ("explicate control" ,explicate-control ,interp-Cvar ,type-check-Cvar)
+;    ("instruction selection" ,select-instructions ,interp-x86-0)
+;    ("liveness analysis" ,uncover_live ,interp-x86-0)
+;    ("build interference graph" ,build_interference ,interp-x86-0)
+;    ("register allocation" ,allocate_registers ,interp-x86-0)
+;    ("patch instructions" ,patch-instructions ,interp-x86-0)
+;    ("prelude-and-conclusion" ,prelude-and-conclusion ,interp-x86-0)
     ))
 
