@@ -183,12 +183,15 @@
     (match e
       [(Var x) (Var (dict-ref env x))]
       [(Int n) (Int n)]
+      [(Bool b) (Bool b)]
       [(Let x e body)
        (define new-e ((uniquify-exp env) e))
        (define new-x (gensym x))
        (define new-env (dict-set env x new-x))
        (define new-body ((uniquify-exp new-env) body))
        (Let new-x new-e new-body)]
+      [(If cnd thn els)
+       (If ((uniquify-exp env) cnd) ((uniquify-exp env) thn) ((uniquify-exp env) els))]
       [(Prim op es)
        (Prim op (for/list ([e es]) ((uniquify-exp env) e)))])))
 
@@ -779,8 +782,7 @@
   `(
     ;("partial evaluator", pe-Lint, interp-Lvar)
     ("shrink" ,shrink ,interp-Lif ,type-check-Lif)
-    ;("uniquify" ,uniquify ,interp-Lvar ,type-check-Lvar)
-    ;; Uncomment the following passes as you finish them.
+    ("uniquify" ,uniquify ,interp-Lif ,type-check-Lif)
     ;("remove complex opera*" ,remove-complex-opera* ,interp-Lvar ,type-check-Lvar)
     ;("explicate control" ,explicate-control ,interp-Cvar ,type-check-Cvar)
     ;("instruction selection" ,select-instructions ,interp-x86-0)
