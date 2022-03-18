@@ -31,6 +31,7 @@
      (define top (pqueue-pop! pq))
      (displayln (color_priority_node-name top))
      (display-pq pq)]))
+
 (define (flip-exp e)
   (match e
     [(Var x) e]
@@ -155,9 +156,27 @@
   (match p
     [(Program info e) (Program info (pe-exp e))]))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; HW1 Passes
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(define (shrink-exp e)
+  (match e
+    [(Var x) (Var x)]
+    [(Int n) (Int n)]
+    [(Bool b) (Bool b)]
+    [(Let x rhs body)
+     (Let x (shrink-exp rhs) (shrink-exp body))]
+    [(If cnd thn els)
+     (If (shrink-exp cnd) (shrink-exp thn) (shrink-exp els))]
+    [(Prim 'and (list e1 e2))
+     (If (shrink-exp e1) (shrink-exp e2) (Bool #f))]
+    [(Prim 'or (list e1 e2))
+     (If (shrink-exp e1) (Bool #t) (shrink-exp e2))]
+    [(Prim '- (list e1 e2))
+     (Prim '+ (list (shrink-exp e1) (Prim '- (list (shrink-exp e2)))))]
+    [(Prim op es)
+     (Prim op (for/list ([e es]) (shrink-exp e)))]))
+
+(define (shrink p)
+  (match p
+    [(Program info e) (Program info (shrink-exp e))]))
 
 (define (uniquify-exp env)
   (lambda (e)
@@ -757,16 +776,18 @@
 ;; Note that your compiler file (the file that defines the passes)
 ;; must be named "compiler.rkt"
 (define compiler-passes
-  `( ;("partial evaluator", pe-Lint, interp-Lvar)
-     ;("uniquify" ,uniquify ,interp-Lvar ,type-check-Lvar)
-     ;; Uncomment the following passes as you finish them.
-     ;("remove complex opera*" ,remove-complex-opera* ,interp-Lvar ,type-check-Lvar)
-     ;("explicate control" ,explicate-control ,interp-Cvar ,type-check-Cvar)
-     ;("instruction selection" ,select-instructions ,interp-x86-0)
-     ;("liveness analysis" ,uncover_live ,interp-x86-0)
-     ;("build interference graph" ,build_interference ,interp-x86-0)
-     ;("register allocation" ,allocate_registers ,interp-x86-0)
-     ;("patch instructions" ,patch-instructions ,interp-x86-0)
-     ;("prelude-and-conclusion" ,prelude-and-conclusion ,interp-x86-0)
-     ))
+  `(
+    ;("partial evaluator", pe-Lint, interp-Lvar)
+    ("shrink" ,shrink ,interp-Lif ,type-check-Lif)
+    ;("uniquify" ,uniquify ,interp-Lvar ,type-check-Lvar)
+    ;; Uncomment the following passes as you finish them.
+    ;("remove complex opera*" ,remove-complex-opera* ,interp-Lvar ,type-check-Lvar)
+    ;("explicate control" ,explicate-control ,interp-Cvar ,type-check-Cvar)
+    ;("instruction selection" ,select-instructions ,interp-x86-0)
+    ;("liveness analysis" ,uncover_live ,interp-x86-0)
+    ;("build interference graph" ,build_interference ,interp-x86-0)
+    ;("register allocation" ,allocate_registers ,interp-x86-0)
+    ;("patch instructions" ,patch-instructions ,interp-x86-0)
+    ;("prelude-and-conclusion" ,prelude-and-conclusion ,interp-x86-0)
+    ))
 
