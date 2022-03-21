@@ -383,6 +383,7 @@
      (define partial-x86-blocks (for/fold ([partial-x86-blocks '()]) ([blocks e]) (dict-set partial-x86-blocks (car blocks) (Block '() (si-tail (cdr blocks))))))
      (X86Program info partial-x86-blocks)]))
 
+
 (define (compute-locations instr)
   (match instr
     [(Instr x86-op (list arg1 arg2))
@@ -396,6 +397,10 @@
 (define (compute-write-locations instr)
   ; TODO: handle retq instruction
   (match instr
+    [(Instr 'cmpq es)
+     (set (Reg 'rax))]
+    [(Instr 'set es)
+     (set (Reg 'rax))]
     [(Instr x86-op (list arg1 arg2)) (set arg2)] ; arg2 cannot be immediate since we are writing into arg2
     [(Instr 'negq (list arg1)) (set arg1)] ; arg1 cannot be immediate
     [(Callq func-name n) (list->set caller-saved-registers)]
@@ -408,11 +413,21 @@
      (match arg1
        [(Imm n) (set)]
        [else (set arg1)])]
+    [(Instr 'set es)
+     (set)]
+    [(Instr 'movzbq es)
+     (set (Reg 'rax))]
     [(Instr x86-op (list arg1 arg2))
-     ; arg2 cannot be immediate since we are writing into arg2
-     (match arg1
-       [(Imm n) (set arg2)]
-       [else (set arg1 arg2)])]
+     ; handles xorq cmpq addq subq 
+     (match* (arg1 arg2)
+       [((Imm n1) (Imm n2))
+        (set)]
+       [((Imm n1) arg2)
+        (set arg2)]
+       [(arg1 (Imm n2))
+        (set arg2)]
+       [(_ _)
+        (set arg1 arg2)])]
     [(Instr 'negq (list arg1)) (set arg1)] ; arg1 cannot be immediate
     [(Callq func-name n)
      (cond
@@ -870,10 +885,6 @@
   (match instrs
     [(cons (Instr 'movq (list arg1 arg2)) ss)
      #:when (equal? arg1 arg2) (pi-instr ss)]
-    [(cons (Instr 'movzbq (list arg1 (Deref arg2 n2))) ss)
-     (append (list (Instr 'movzbq (list arg1 (Reg 'rax))) (Instr 'movq (list (Reg 'rax) (Deref arg2 n2)))) (pi-instr ss))]
-    [(cons (Instr 'cmpq (list arg1 (Imm n2))) ss)
-     (append (list (Instr 'movq (list (Imm n2) (Reg 'rax))) (Instr 'cmpq (list arg1 (Reg 'rax)))) (pi-instr ss))]
     [(cons (Instr x86-op (list (Deref arg1 n1) (Deref arg2 n2))) ss)
      (append (list (Instr 'movq (list (Deref arg1 n1) (Reg 'rax))) (Instr x86-op (list (Reg 'rax) (Deref arg2 n2)))) (pi-instr ss))]
     [(cons instr ss) (cons instr (pi-instr ss))]
@@ -932,7 +943,7 @@
     ("explicate control" ,explicate-control ,interp-Cif ,type-check-Cif)
     ("instruction selection" ,select-instructions ,interp-x86-1)
     ("liveness analysis" ,uncover_live ,interp-x86-1)
-;    ("build interference graph" ,build_interference ,interp-x86-0)
+    ("build interference graph" ,build_interference ,interp-x86-1)
 ;    ("register allocation" ,allocate_registers ,interp-x86-0)
 ;    ("patch instructions" ,patch-instructions ,interp-x86-0)
 ;    ("prelude-and-conclusion" ,prelude-and-conclusion ,interp-x86-0)
