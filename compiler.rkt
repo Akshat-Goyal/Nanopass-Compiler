@@ -376,22 +376,10 @@
      (list (Instr 'cmpq (list (si-atm atm2) (si-atm atm1))) (JmpIf 'ge thn) (Jmp els))]))
 
 ;; select-instructions : C0 -> pseudo-x86
-(define (make-partial-x86-blocks e res)
-  (match e
-    [(cons cur rest)
-     (define label (car cur))
-     (define partial-x86-block (si-tail (cdr cur)))
-     (make-partial-x86-blocks rest (dict-set res label (Block '() partial-x86-block)))]
-    [else
-     res]))
-
 (define (select-instructions p)
   (match p
     [(CProgram info e)
-;     (define partial-x86-blocks (for/fold ([partial-x86-blocks '()]) ([blocks e]) (dict-set partial-x86-blocks (car blocks) (Block '() (si-tail (cdr blocks))))))
-     (define partial-x86-blocks (make-partial-x86-blocks e '()))
-     (displayln partial-x86-blocks)
-;     (X86Program info `((start . ,(Block '() (si-tail (dict-ref e 'start))))))]))
+     (define partial-x86-blocks (for/fold ([partial-x86-blocks '()]) ([blocks e]) (dict-set partial-x86-blocks (car blocks) (Block '() (si-tail (cdr blocks))))))
      (X86Program info partial-x86-blocks)]))
 
 (define (compute-locations instr)
