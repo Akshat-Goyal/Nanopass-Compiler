@@ -8,6 +8,7 @@
 (require "interp-Lif.rkt")
 (require "interp-Cif.rkt")
 (require "type-check-Lif.rkt")
+(require "type-check-Cif.rkt")
 ;(require "type-check-Lvar.rkt")
 ;(require "type-check-Cvar.rkt")
 (require "utilities.rkt")
@@ -22,6 +23,8 @@
 ;; The following compiler pass is just a silly one that doesn't change
 ;; anything important, but is nevertheless an example of a pass. It
 ;; flips the arguments of +. -Jeremy
+
+(define basic-blocks (list))
 
 (define (display-pq pq)
   (cond
@@ -243,12 +246,48 @@
   (match p
     [(Program info e) (Program info ((rco-exp '()) e))]))
 
+(define (create_block tail)
+  (match tail
+    [(Goto label) (Goto label)]
+    [else
+     (let ([label (gensym 'block)])
+       (set! basic-blocks (cons (cons label tail) basic-blocks))
+       (Goto label))]))
+(define (explicate_pred cnd thn els)
+  (match cnd
+    [(Var x)
+     (IfStmt (Prim 'eq? (list (Var x) (Bool #t))) (create_block thn) (create_block els))]
+    [(Let x rhs body)
+     (explicate-assign rhs x (explicate_pred body thn els))]
+    [(Prim 'not (list e))
+     (match e
+       [(Bool b)
+        (if b els thn)]
+       [(Var x)
+        (IfStmt (Prim 'eq? (list (Var x) (Bool #f))) (create_block thn) (create_block els))])]
+    [(Prim op es) #:when (or (eq? op 'eq?) (eq? op '<))
+                  (IfStmt (Prim op es) (create_block thn)
+                          (create_block els))]
+    [(Bool b) (if b thn els)]
+    [(If cnd^ thn^ els^)
+     (define B1 (explicate_pred thn^ thn els))
+     (define B2 (explicate_pred els^ thn els))
+     (explicate_pred cnd^ B1 B2)]
+    [else (error "explicate_pred unhandled case" cnd)]))
+
+; (let ([x (if (let ([x #t]) (if x x (not x))) #t #f)]) (if x 10 (- 10)))
+
 (define (explicate-tail e)
   (match e
     [(Var x) (Return (Var x))]
     [(Int n) (Return (Int n))]
     [(Let x rhs body) (explicate-assign rhs x (explicate-tail body))]
     [(Prim op es) (Return (Prim op es))]
+    [(If cnd exp1 exp2)
+     (define B1 (explicate-tail exp1))
+     (define B2 (explicate-tail exp2))
+     (explicate_pred cnd B1 B2)]
+    [(Bool b) (Return (Bool b))]
     [else (error "explicate-tail unhandled case" e)]))
 
 (define (explicate-assign e x cont)
@@ -257,12 +296,23 @@
     [(Int n) (Seq (Assign (Var x) (Int n)) cont)]
     [(Let y rhs body) (explicate-assign rhs y (explicate-assign body x cont))]
     [(Prim op es) (Seq (Assign (Var x) (Prim op es)) cont)]
+    [(If cnd exp1 exp2)
+     (define tail-block (create_block cont))
+     (define B1 (explicate-assign exp1 x tail-block))
+     (define B2 (explicate-assign exp2 x tail-block))
+     (explicate_pred cnd B1 B2)]
+    [(Bool b) (Seq (Assign (Var x) (Bool b)) cont)]
     [else (error "explicate-assign unhandled case" e)]))
 
 ;; explicate-control : R1 -> C0
 (define (explicate-control p)
   (match p 
-    [(Program info e) (CProgram info `((start . ,(explicate-tail e))))]))
+    [(Program info e)
+     (set! basic-blocks (list))
+     (define tail (explicate-tail e))
+     (set! basic-blocks (cons (cons 'start tail) basic-blocks))
+     (displayln basic-blocks)
+     (CProgram info basic-blocks)]))
 
 (define (si-atm e)
   (match e
@@ -794,7 +844,7 @@
     ("shrink" ,shrink ,interp-Lif ,type-check-Lif)
     ("uniquify" ,uniquify ,interp-Lif ,type-check-Lif)
     ("remove complex opera*" ,remove-complex-opera* ,interp-Lif ,type-check-Lif)
-;    ("explicate control" ,explicate-control ,interp-Cvar ,type-check-Cvar)
+    ("explicate control" ,explicate-control ,interp-Cif ,type-check-Cif)
 ;    ("instruction selection" ,select-instructions ,interp-x86-0)
 ;    ("liveness analysis" ,uncover_live ,interp-x86-0)
 ;    ("build interference graph" ,build_interference ,interp-x86-0)
@@ -802,4 +852,6 @@
 ;    ("patch instructions" ,patch-instructions ,interp-x86-0)
 ;    ("prelude-and-conclusion" ,prelude-and-conclusion ,interp-x86-0)
     ))
+
+
 
