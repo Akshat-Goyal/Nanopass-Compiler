@@ -462,14 +462,33 @@
         (generate-label-graph rest graph)])]
     [else
      graph]))
+
+(define (uncover_live_after_per_block e live-afters blocks label-graph topo-order)
+  (match topo-order
+    [(cons label rest)
+     (define cur-block (dict-ref e label))
+     (define instrs (Block-instr* cur-block))
+     (define initial-live-after (dict-ref live-afters label))
+     (displayln initial-live-after)
+     (define live-sets (find-live-sets (reverse instrs) initial-live-after))
+     (define updated-cur-block (Block `((live-sets . ,(cdr live-sets))) instrs))
+     (define updated-blocks (dict-set blocks label updated-cur-block))
+     (define updated-live-afters (for/fold ([updated-live-afters live-afters])
+                                           ([adj (in-neighbors label-graph label)])
+                                   (dict-set updated-live-afters adj (list (set-union (car live-sets) (car (dict-ref live-afters adj))))))) 
+     (uncover_live_after_per_block e updated-live-afters updated-blocks label-graph rest)]
+    [else
+     blocks]))
+
 (define (uncover_live p)
   (match p
     [(X86Program info e)
      (define label-graph (generate-label-graph e (make-multigraph '())))
      (print-graph label-graph)
-     (match e
-      [`((start . ,(Block sinfo instrs)))
-        (X86Program info `((start . ,(Block `((live-sets . ,(cdr (find-live-sets (reverse instrs) (list (set)))))) instrs))))])]))
+     (define topo-order (tsort label-graph))
+     (define initial-live-after (for/fold ([initial-live-after '()]) ([label topo-order]) (dict-set initial-live-after label (list (set)))))
+     (define blocks (uncover_live_after_per_block e initial-live-after '() label-graph topo-order))
+     (X86Program info blocks)]))
 
 (define (print-graph graph)
   (for ([u (in-vertices graph)])
@@ -908,7 +927,7 @@
     ("remove complex opera*" ,remove-complex-opera* ,interp-Lif ,type-check-Lif)
     ("explicate control" ,explicate-control ,interp-Cif ,type-check-Cif)
     ("instruction selection" ,select-instructions ,interp-x86-1)
-;    ("liveness analysis" ,uncover_live ,interp-x86-1)
+    ("liveness analysis" ,uncover_live ,interp-x86-1)
 ;    ("build interference graph" ,build_interference ,interp-x86-0)
 ;    ("register allocation" ,allocate_registers ,interp-x86-0)
 ;    ("patch instructions" ,patch-instructions ,interp-x86-0)
