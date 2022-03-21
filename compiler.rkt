@@ -8,11 +8,13 @@
 (require "interp-Lif.rkt")
 (require "interp-Cif.rkt")
 (require "type-check-Lif.rkt")
+(require "type-check-Cif.rkt")
 ;(require "type-check-Lvar.rkt")
 ;(require "type-check-Cvar.rkt")
 (require "utilities.rkt")
 (require graph)
 (require "./priority_queue.rkt")
+(require "./multigraph.rkt")
 (provide (all-defined-out))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -22,6 +24,8 @@
 ;; The following compiler pass is just a silly one that doesn't change
 ;; anything important, but is nevertheless an example of a pass. It
 ;; flips the arguments of +. -Jeremy
+
+(define basic-blocks (list))
 
 (define (display-pq pq)
   (cond
@@ -243,12 +247,48 @@
   (match p
     [(Program info e) (Program info ((rco-exp '()) e))]))
 
+(define (create_block tail)
+  (match tail
+    [(Goto label) (Goto label)]
+    [else
+     (let ([label (gensym 'block)])
+       (set! basic-blocks (cons (cons label tail) basic-blocks))
+       (Goto label))]))
+(define (explicate_pred cnd thn els)
+  (match cnd
+    [(Var x)
+     (IfStmt (Prim 'eq? (list (Var x) (Bool #t))) (create_block thn) (create_block els))]
+    [(Let x rhs body)
+     (explicate-assign rhs x (explicate_pred body thn els))]
+    [(Prim 'not (list e))
+     (match e
+       [(Bool b)
+        (if b els thn)]
+       [(Var x)
+        (IfStmt (Prim 'eq? (list (Var x) (Bool #f))) (create_block thn) (create_block els))])]
+    [(Prim op es) #:when (or (eq? op 'eq?) (eq? op '<))
+                  (IfStmt (Prim op es) (create_block thn)
+                          (create_block els))]
+    [(Bool b) (if b thn els)]
+    [(If cnd^ thn^ els^)
+     (define B1 (explicate_pred thn^ thn els))
+     (define B2 (explicate_pred els^ thn els))
+     (explicate_pred cnd^ B1 B2)]
+    [else (error "explicate_pred unhandled case" cnd)]))
+
+; (let ([x (if (let ([x #t]) (if x x (not x))) #t #f)]) (if x 10 (- 10)))
+
 (define (explicate-tail e)
   (match e
     [(Var x) (Return (Var x))]
     [(Int n) (Return (Int n))]
     [(Let x rhs body) (explicate-assign rhs x (explicate-tail body))]
     [(Prim op es) (Return (Prim op es))]
+    [(If cnd exp1 exp2)
+     (define B1 (explicate-tail exp1))
+     (define B2 (explicate-tail exp2))
+     (explicate_pred cnd B1 B2)]
+    [(Bool b) (Return (Bool b))]
     [else (error "explicate-tail unhandled case" e)]))
 
 (define (explicate-assign e x cont)
@@ -257,22 +297,51 @@
     [(Int n) (Seq (Assign (Var x) (Int n)) cont)]
     [(Let y rhs body) (explicate-assign rhs y (explicate-assign body x cont))]
     [(Prim op es) (Seq (Assign (Var x) (Prim op es)) cont)]
+    [(If cnd exp1 exp2)
+     (define tail-block (create_block cont))
+     (define B1 (explicate-assign exp1 x tail-block))
+     (define B2 (explicate-assign exp2 x tail-block))
+     (explicate_pred cnd B1 B2)]
+    [(Bool b) (Seq (Assign (Var x) (Bool b)) cont)]
     [else (error "explicate-assign unhandled case" e)]))
 
 ;; explicate-control : R1 -> C0
 (define (explicate-control p)
   (match p 
-    [(Program info e) (CProgram info `((start . ,(explicate-tail e))))]))
+    [(Program info e)
+     (set! basic-blocks (list))
+     (define tail (explicate-tail e))
+     (set! basic-blocks (cons (cons 'start tail) basic-blocks))
+     (CProgram info basic-blocks)]))
 
 (define (si-atm e)
   (match e
     [(Var x) (Var x)]
-    [(Int n) (Imm n)]))
+    [(Int n) (Imm n)]
+    [(Bool #t) (Imm 1)]
+    [(Bool #f) (Imm 0)]))
 
 (define (si-exp v e cont [op-x86-dict '((+ . addq) (- . subq))])
   (match e
     [(Var y) (cons (Instr 'movq (list (si-atm e) v)) cont)]
     [(Int n) (cons (Instr 'movq (list (si-atm e) v)) cont)]
+    [(Bool b) (cons (Instr 'movq (list (si-atm e) v)) cont)]
+    [(Prim 'not (list e1))
+     (cond
+       [(equal? v e1)
+        (cons (Instr 'xorq (list (Imm 1) v)) cont)]
+       [else
+        (append (list (Instr 'movq (list (si-atm e1) v)) (Instr 'xor (list (Imm 1) v))) cont)])]
+    [(Prim 'eq? (list e1 e2))
+     (append (list (Instr 'cmpq (list (si-atm e1) (si-atm e2))) (Instr 'set (list 'e (ByteReg 'al))) (Instr 'movzbq (list (ByteReg 'al) v))) cont)]
+    [(Prim '< (list e1 e2))
+     (append (list (Instr 'cmpq (list (si-atm e1) (si-atm e2))) (Instr 'set (list 'l (ByteReg 'al))) (Instr 'movzbq (list (ByteReg 'al) v))) cont)]
+    [(Prim '<= (list e1 e2))
+     (append (list (Instr 'cmpq (list (si-atm e1) (si-atm e2))) (Instr 'set (list 'le (ByteReg 'al))) (Instr 'movzbq (list (ByteReg 'al) v))) cont)]
+    [(Prim '> (list e1 e2))
+     (append (list (Instr 'cmpq (list (si-atm e1) (si-atm e2))) (Instr 'set (list 'g (ByteReg 'al))) (Instr 'movzbq (list (ByteReg 'al) v))) cont)]
+    [(Prim '>= (list e1 e2))
+     (append (list (Instr 'cmpq (list (si-atm e1) (si-atm e2))) (Instr 'set (list 'ge (ByteReg 'al))) (Instr 'movzbq (list (ByteReg 'al) v))) cont)]
     [(Prim 'read '()) 
       (append (list (Callq 'read_int 0) (Instr 'movq (list (Reg 'rax) v))) cont)]
     [(Prim '- (list e1))
@@ -293,13 +362,27 @@
 (define (si-tail e)
   (match e
     [(Return exp) (si-exp (Reg 'rax) exp (list (Jmp 'conclusion)))]
-    [(Seq stmt tail) (si-stmt stmt (si-tail tail))]))
+    [(Seq stmt tail) (si-stmt stmt (si-tail tail))]
+    [(Goto label)
+     (list (Jmp label))]
+    [(IfStmt (Prim 'eq? (list atm1 atm2)) (Goto thn) (Goto els))
+     (list (Instr 'cmpq (list (si-atm atm2) (si-atm atm1))) (JmpIf 'e thn) (Jmp els))]
+    [(IfStmt (Prim '< (list atm1 atm2)) (Goto thn) (Goto els))
+     (list (Instr 'cmpq (list (si-atm atm2) (si-atm atm1))) (JmpIf 'l thn) (Jmp els))]
+    [(IfStmt (Prim '<= (list atm1 atm2)) (Goto thn) (Goto els))
+     (list (Instr 'cmpq (list (si-atm atm2) (si-atm atm1))) (JmpIf 'le thn) (Jmp els))]
+    [(IfStmt (Prim '> (list atm1 atm2)) (Goto thn) (Goto els))
+     (list (Instr 'cmpq (list (si-atm atm2) (si-atm atm1))) (JmpIf 'g thn) (Jmp els))]
+    [(IfStmt (Prim '>= (list atm1 atm2)) (Goto thn) (Goto els))
+     (list (Instr 'cmpq (list (si-atm atm2) (si-atm atm1))) (JmpIf 'ge thn) (Jmp els))]))
 
 ;; select-instructions : C0 -> pseudo-x86
 (define (select-instructions p)
   (match p
-    [(CProgram info e) 
-     (X86Program info `((start . ,(Block '() (si-tail (dict-ref e 'start))))))]))
+    [(CProgram info e)
+     (define partial-x86-blocks (for/fold ([partial-x86-blocks '()]) ([blocks e]) (dict-set partial-x86-blocks (car blocks) (Block '() (si-tail (cdr blocks))))))
+     (X86Program info partial-x86-blocks)]))
+
 
 (define (compute-locations instr)
   (match instr
@@ -314,6 +397,10 @@
 (define (compute-write-locations instr)
   ; TODO: handle retq instruction
   (match instr
+    [(Instr 'cmpq es)
+     (set (Reg 'rax))]
+    [(Instr 'set es)
+     (set (Reg 'rax))]
     [(Instr x86-op (list arg1 arg2)) (set arg2)] ; arg2 cannot be immediate since we are writing into arg2
     [(Instr 'negq (list arg1)) (set arg1)] ; arg1 cannot be immediate
     [(Callq func-name n) (list->set caller-saved-registers)]
@@ -326,11 +413,21 @@
      (match arg1
        [(Imm n) (set)]
        [else (set arg1)])]
+    [(Instr 'set es)
+     (set)]
+    [(Instr 'movzbq es)
+     (set (Reg 'rax))]
     [(Instr x86-op (list arg1 arg2))
-     ; arg2 cannot be immediate since we are writing into arg2
-     (match arg1
-       [(Imm n) (set arg2)]
-       [else (set arg1 arg2)])]
+     ; handles xorq cmpq addq subq 
+     (match* (arg1 arg2)
+       [((Imm n1) (Imm n2))
+        (set)]
+       [((Imm n1) arg2)
+        (set arg2)]
+       [(arg1 (Imm n2))
+        (set arg2)]
+       [(_ _)
+        (set arg1 arg2)])]
     [(Instr 'negq (list arg1)) (set arg1)] ; arg1 cannot be immediate
     [(Callq func-name n)
      (cond
@@ -352,12 +449,61 @@
     [else live-after]))
     
 ;; uncover_live: pseudo-x86 -> pseudo-x86
+(define (generate-label-graph e graph)
+  (match e
+    [(cons cur rest)
+     (match cur
+       [(cons label (Block sinfo instrs))
+        (add-vertex! graph label)
+        (define reverse-instrs (reverse instrs))
+        (define last-instr (car reverse-instrs))
+        (define second-last-instr (car (cdr reverse-instrs)))
+
+        ; last instruction is always a jmp instruction
+        (define label1 (Jmp-target last-instr))
+        (cond
+          [(not (eq? label1 'conclusion))
+           (add-vertex! graph label1)
+           (add-directed-edge! graph label1 label)]
+          [else
+           #f])
+        ; second last instruction might be a JmpIf instruction
+        (match second-last-instr
+          [(JmpIf cc l)
+           (add-vertex! graph l)
+           (add-directed-edge! graph l label)]
+          [else
+           #f])
+        (generate-label-graph rest graph)])]
+    [else
+     graph]))
+
+(define (uncover_live_after_per_block e live-afters blocks label-graph topo-order)
+  (match topo-order
+    [(cons label rest)
+     (define cur-block (dict-ref e label))
+     (define instrs (Block-instr* cur-block))
+     (define initial-live-after (dict-ref live-afters label))
+     (displayln initial-live-after)
+     (define live-sets (find-live-sets (reverse instrs) initial-live-after))
+     (define updated-cur-block (Block `((live-sets . ,(cdr live-sets))) instrs))
+     (define updated-blocks (dict-set blocks label updated-cur-block))
+     (define updated-live-afters (for/fold ([updated-live-afters live-afters])
+                                           ([adj (in-neighbors label-graph label)])
+                                   (dict-set updated-live-afters adj (list (set-union (car live-sets) (car (dict-ref live-afters adj))))))) 
+     (uncover_live_after_per_block e updated-live-afters updated-blocks label-graph rest)]
+    [else
+     blocks]))
+
 (define (uncover_live p)
   (match p
     [(X86Program info e)
-     (match e
-      [`((start . ,(Block sinfo instrs)))
-        (X86Program info `((start . ,(Block `((live-sets . ,(cdr (find-live-sets (reverse instrs) (list (set)))))) instrs))))])]))
+     (define label-graph (generate-label-graph e (make-multigraph '())))
+     (print-graph label-graph)
+     (define topo-order (tsort label-graph))
+     (define initial-live-after (for/fold ([initial-live-after '()]) ([label topo-order]) (dict-set initial-live-after label (list (set)))))
+     (define blocks (uncover_live_after_per_block e initial-live-after '() label-graph topo-order))
+     (X86Program info blocks)]))
 
 (define (print-graph graph)
   (for ([u (in-vertices graph)])
@@ -794,10 +940,10 @@
     ("shrink" ,shrink ,interp-Lif ,type-check-Lif)
     ("uniquify" ,uniquify ,interp-Lif ,type-check-Lif)
     ("remove complex opera*" ,remove-complex-opera* ,interp-Lif ,type-check-Lif)
-;    ("explicate control" ,explicate-control ,interp-Cvar ,type-check-Cvar)
-;    ("instruction selection" ,select-instructions ,interp-x86-0)
-;    ("liveness analysis" ,uncover_live ,interp-x86-0)
-;    ("build interference graph" ,build_interference ,interp-x86-0)
+    ("explicate control" ,explicate-control ,interp-Cif ,type-check-Cif)
+    ("instruction selection" ,select-instructions ,interp-x86-1)
+    ("liveness analysis" ,uncover_live ,interp-x86-1)
+    ("build interference graph" ,build_interference ,interp-x86-1)
 ;    ("register allocation" ,allocate_registers ,interp-x86-0)
 ;    ("patch instructions" ,patch-instructions ,interp-x86-0)
 ;    ("prelude-and-conclusion" ,prelude-and-conclusion ,interp-x86-0)
