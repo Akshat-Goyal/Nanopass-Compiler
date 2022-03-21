@@ -311,18 +311,36 @@
      (set! basic-blocks (list))
      (define tail (explicate-tail e))
      (set! basic-blocks (cons (cons 'start tail) basic-blocks))
-     (displayln basic-blocks)
      (CProgram info basic-blocks)]))
 
 (define (si-atm e)
   (match e
     [(Var x) (Var x)]
-    [(Int n) (Imm n)]))
+    [(Int n) (Imm n)]
+    [(Bool #t) (Imm 1)]
+    [(Bool #f) (Imm 0)]))
 
 (define (si-exp v e cont [op-x86-dict '((+ . addq) (- . subq))])
   (match e
     [(Var y) (cons (Instr 'movq (list (si-atm e) v)) cont)]
     [(Int n) (cons (Instr 'movq (list (si-atm e) v)) cont)]
+    [(Bool b) (cons (Instr 'movq (list (si-atm e) v)) cont)]
+    [(Prim 'not (list e1))
+     (cond
+       [(equal? v e1)
+        (cons (Instr 'xorq (list (Imm 1) v)) cont)]
+       [else
+        (append (list (Instr 'movq (list (si-atm e1) v)) (Instr 'xor (list (Imm 1) v))) cont)])]
+    [(Prim 'eq? (list e1 e2))
+     (append (list (Instr 'cmpq (list (si-atm e1) (si-atm e2))) (Instr 'set (list 'e (ByteReg 'al))) (Instr 'movzbq (list (ByteReg 'al) v))) cont)]
+    [(Prim '< (list e1 e2))
+     (append (list (Instr 'cmpq (list (si-atm e1) (si-atm e2))) (Instr 'set (list 'l (ByteReg 'al))) (Instr 'movzbq (list (ByteReg 'al) v))) cont)]
+    [(Prim '<= (list e1 e2))
+     (append (list (Instr 'cmpq (list (si-atm e1) (si-atm e2))) (Instr 'set (list 'le (ByteReg 'al))) (Instr 'movzbq (list (ByteReg 'al) v))) cont)]
+    [(Prim '> (list e1 e2))
+     (append (list (Instr 'cmpq (list (si-atm e1) (si-atm e2))) (Instr 'set (list 'g (ByteReg 'al))) (Instr 'movzbq (list (ByteReg 'al) v))) cont)]
+    [(Prim '>= (list e1 e2))
+     (append (list (Instr 'cmpq (list (si-atm e1) (si-atm e2))) (Instr 'set (list 'ge (ByteReg 'al))) (Instr 'movzbq (list (ByteReg 'al) v))) cont)]
     [(Prim 'read '()) 
       (append (list (Callq 'read_int 0) (Instr 'movq (list (Reg 'rax) v))) cont)]
     [(Prim '- (list e1))
@@ -343,13 +361,38 @@
 (define (si-tail e)
   (match e
     [(Return exp) (si-exp (Reg 'rax) exp (list (Jmp 'conclusion)))]
-    [(Seq stmt tail) (si-stmt stmt (si-tail tail))]))
+    [(Seq stmt tail) (si-stmt stmt (si-tail tail))]
+    [(Goto label)
+     (list (Jmp label))]
+    [(IfStmt (Prim 'eq? (list atm1 atm2)) (Goto thn) (Goto els))
+     (list (Instr 'cmpq (list (si-atm atm2) (si-atm atm1))) (JmpIf 'e thn) (Jmp els))]
+    [(IfStmt (Prim '< (list atm1 atm2)) (Goto thn) (Goto els))
+     (list (Instr 'cmpq (list (si-atm atm2) (si-atm atm1))) (JmpIf 'l thn) (Jmp els))]
+    [(IfStmt (Prim '<= (list atm1 atm2)) (Goto thn) (Goto els))
+     (list (Instr 'cmpq (list (si-atm atm2) (si-atm atm1))) (JmpIf 'le thn) (Jmp els))]
+    [(IfStmt (Prim '> (list atm1 atm2)) (Goto thn) (Goto els))
+     (list (Instr 'cmpq (list (si-atm atm2) (si-atm atm1))) (JmpIf 'g thn) (Jmp els))]
+    [(IfStmt (Prim '>= (list atm1 atm2)) (Goto thn) (Goto els))
+     (list (Instr 'cmpq (list (si-atm atm2) (si-atm atm1))) (JmpIf 'ge thn) (Jmp els))]))
 
 ;; select-instructions : C0 -> pseudo-x86
+(define (make-partial-x86-blocks e res)
+  (match e
+    [(cons cur rest)
+     (define label (car cur))
+     (define partial-x86-block (si-tail (cdr cur)))
+     (make-partial-x86-blocks rest (dict-set res label (Block '() partial-x86-block)))]
+    [else
+     res]))
+
 (define (select-instructions p)
   (match p
-    [(CProgram info e) 
-     (X86Program info `((start . ,(Block '() (si-tail (dict-ref e 'start))))))]))
+    [(CProgram info e)
+;     (define partial-x86-blocks (for/fold ([partial-x86-blocks '()]) ([blocks e]) (dict-set partial-x86-blocks (car blocks) (Block '() (si-tail (cdr blocks))))))
+     (define partial-x86-blocks (make-partial-x86-blocks e '()))
+     (displayln partial-x86-blocks)
+;     (X86Program info `((start . ,(Block '() (si-tail (dict-ref e 'start))))))]))
+     (X86Program info partial-x86-blocks)]))
 
 (define (compute-locations instr)
   (match instr
@@ -845,13 +888,11 @@
     ("uniquify" ,uniquify ,interp-Lif ,type-check-Lif)
     ("remove complex opera*" ,remove-complex-opera* ,interp-Lif ,type-check-Lif)
     ("explicate control" ,explicate-control ,interp-Cif ,type-check-Cif)
-;    ("instruction selection" ,select-instructions ,interp-x86-0)
+    ("instruction selection" ,select-instructions ,interp-x86-1)
 ;    ("liveness analysis" ,uncover_live ,interp-x86-0)
 ;    ("build interference graph" ,build_interference ,interp-x86-0)
 ;    ("register allocation" ,allocate_registers ,interp-x86-0)
 ;    ("patch instructions" ,patch-instructions ,interp-x86-0)
 ;    ("prelude-and-conclusion" ,prelude-and-conclusion ,interp-x86-0)
     ))
-
-
 
