@@ -14,6 +14,7 @@
 (require "utilities.rkt")
 (require graph)
 (require "./priority_queue.rkt")
+(require "./multigraph.rkt")
 (provide (all-defined-out))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -433,9 +434,39 @@
     [else live-after]))
     
 ;; uncover_live: pseudo-x86 -> pseudo-x86
+(define (generate-label-graph e graph)
+  (match e
+    [(cons cur rest)
+     (match cur
+       [(cons label (Block sinfo instrs))
+        (add-vertex! graph label)
+        (define reverse-instrs (reverse instrs))
+        (define last-instr (car reverse-instrs))
+        (define second-last-instr (car (cdr reverse-instrs)))
+
+        ; last instruction is always a jmp instruction
+        (define label1 (Jmp-target last-instr))
+        (cond
+          [(not (eq? label1 'conclusion))
+           (add-vertex! graph label1)
+           (add-directed-edge! graph label1 label)]
+          [else
+           #f])
+        ; second last instruction might be a JmpIf instruction
+        (match second-last-instr
+          [(JmpIf cc l)
+           (add-vertex! graph l)
+           (add-directed-edge! graph l label)]
+          [else
+           #f])
+        (generate-label-graph rest graph)])]
+    [else
+     graph]))
 (define (uncover_live p)
   (match p
     [(X86Program info e)
+     (define label-graph (generate-label-graph e (make-multigraph '())))
+     (print-graph label-graph)
      (match e
       [`((start . ,(Block sinfo instrs)))
         (X86Program info `((start . ,(Block `((live-sets . ,(cdr (find-live-sets (reverse instrs) (list (set)))))) instrs))))])]))
@@ -877,7 +908,7 @@
     ("remove complex opera*" ,remove-complex-opera* ,interp-Lif ,type-check-Lif)
     ("explicate control" ,explicate-control ,interp-Cif ,type-check-Cif)
     ("instruction selection" ,select-instructions ,interp-x86-1)
-;    ("liveness analysis" ,uncover_live ,interp-x86-0)
+    ("liveness analysis" ,uncover_live ,interp-x86-1)
 ;    ("build interference graph" ,build_interference ,interp-x86-0)
 ;    ("register allocation" ,allocate_registers ,interp-x86-0)
 ;    ("patch instructions" ,patch-instructions ,interp-x86-0)
