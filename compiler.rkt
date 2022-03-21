@@ -908,7 +908,7 @@
     ("remove complex opera*" ,remove-complex-opera* ,interp-Lif ,type-check-Lif)
     ("explicate control" ,explicate-control ,interp-Cif ,type-check-Cif)
     ("instruction selection" ,select-instructions ,interp-x86-1)
-    ("liveness analysis" ,uncover_live ,interp-x86-1)
+;    ("liveness analysis" ,uncover_live ,interp-x86-1)
 ;    ("build interference graph" ,build_interference ,interp-x86-0)
 ;    ("register allocation" ,allocate_registers ,interp-x86-0)
 ;    ("patch instructions" ,patch-instructions ,interp-x86-0)
