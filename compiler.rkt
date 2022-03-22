@@ -770,8 +770,8 @@
 
 (define (color-graph interference-graph locals move-graph)
 
-  (display "locals: ")
-  (displayln locals)
+  ;(display "locals: ")
+  ;(displayln locals)
 
   ; set default saturation, visited and move-bias of ONLY variables.
   (define-values (prev-saturation visited-prev move-bias-prev) (for/fold ([saturation '()]    
@@ -918,10 +918,16 @@
 ;; patch-instructions : psuedo-x86 -> x86
 (define (patch-instructions p)
   (match p
-    [(X86Program info e)
-     (match e
-      [`((start . ,(Block sinfo instrs)))
-        (X86Program info `((start . ,(Block sinfo (pi-instr instrs)))))])]))
+    [(X86Program info blocks)
+
+     (for ([block_key (dict-keys blocks)])
+       (define block (dict-ref blocks block_key))
+       (match block
+         [(Block sinfo instrs)
+          (set! blocks (dict-set blocks block_key (Block sinfo (pi-instr instrs))))
+          ]))
+
+     (X86Program info blocks)]))
 
 (define (pac-main stack-space used-callee)
   (define part-1 (list
@@ -950,10 +956,12 @@
     [(X86Program info blocks)
      (define used-callee (set->list (dict-ref info 'used_callee)))
      (define stack-space (- (dict-ref info 'stack-space) (* 8 (length used-callee))))
-     (define start (dict-ref blocks 'start))
+     ;(define start (dict-ref blocks 'start))
      (define main (Block '() (pac-main stack-space used-callee)))
      (define conclusion (Block '() (pac-conclusion stack-space (reverse used-callee))))
-     (X86Program info `((start . ,start) (main . ,main) (conclusion . ,conclusion)))]))
+     (set! blocks (dict-set blocks 'main main))
+     (set! blocks (dict-set blocks 'conclusion conclusion))
+     (X86Program info blocks)]))
 
 
 ;; Define the compiler passes to be used by interp-tests and the grader
@@ -970,7 +978,7 @@
     ("liveness analysis" ,uncover_live ,interp-pseudo-x86-1)
     ("build interference graph" ,build_interference ,interp-pseudo-x86-1)
     ("register allocation" ,allocate_registers ,interp-x86-1)
-;    ("patch instructions" ,patch-instructions ,interp-x86-0)
-;    ("prelude-and-conclusion" ,prelude-and-conclusion ,interp-x86-0)
+    ("patch instructions" ,patch-instructions ,interp-x86-1)
+    ("prelude-and-conclusion" ,prelude-and-conclusion ,interp-x86-1)
     ))
 
