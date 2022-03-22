@@ -386,62 +386,42 @@
      (define partial-x86-blocks (for/fold ([partial-x86-blocks '()]) ([blocks e]) (dict-set partial-x86-blocks (car blocks) (Block '() (si-tail (cdr blocks))))))
      (X86Program info partial-x86-blocks)]))
 
-
-(define (compute-locations instr)
-  (match instr
-    [(Instr x86-op (list arg1 arg2))
-     ; arg2 cannot be immediate since we are writing into arg2
-     (match arg1
-       [(Imm n) (set arg2)]
-       [else (set arg1 arg2)])]
-    [(Instr 'negq (list arg1)) (set arg1)] ; arg1 cannot be immediate
-    [else (set)])) ;; for callq
-
 (define (compute-write-locations instr)
   ; TODO: handle retq instruction
   (match instr
-    [(Instr 'cmpq es)
-     (set (Reg 'rax))]
-    [(Instr 'set es)
-     (set (Reg 'rax))]
+    [(Instr 'cmpq es) (set)] ;TODO: prolly return empty set here: DONE, before we were returning rax
+    [(Instr 'set es) (set (Reg 'rax))]
     [(Instr x86-op (list arg1 arg2)) (set arg2)] ; arg2 cannot be immediate since we are writing into arg2
-    [(Instr 'negq (list arg1)) (set arg1)] ; arg1 cannot be immediate
+    [(Instr x86-op (list arg1)) (set arg1)] ; arg1 cannot be immediate, x86-op should only be negq
     [(Callq func-name n) (list->set caller-saved-registers)]
-    [else (set)]))
+    [_ (set)]))
 
 (define (compute-read-locations instr)
-  ; TODO: handle retq instruction
+  ; TODO: handle retq instruction: no need to because it will never be used before this pass
   (match instr
     [(Instr 'movq (list arg1 arg2))
      (match arg1
        [(Imm n) (set)]
        [else (set arg1)])]
-    [(Instr 'set es)
-     (set)]
-    [(Instr 'movzbq es)
-     (set (Reg 'rax))]
+    [(Instr 'set es) (set)]
+    [(Instr 'movzbq es) (set (Reg 'rax))]
     [(Instr x86-op (list arg1 arg2))
      ; handles xorq cmpq addq subq 
      (match* (arg1 arg2)
-       [((Imm n1) (Imm n2))
-        (set)]
-       [((Imm n1) arg2)
-        (set arg2)]
-       [(arg1 (Imm n2))
-        (set arg1)]
-       [(_ _)
-        (set arg1 arg2)])]
-    [(Instr 'negq (list arg1)) (set arg1)] ; arg1 cannot be immediate
+       [((Imm n1) (Imm n2)) (set)]
+       [((Imm n1) arg2) (set arg2)]
+       [(arg1 (Imm n2)) (set arg1)]
+       [(_ _) (set arg1 arg2)])]
+    [(Instr x86-op (list arg1)) (set arg1)] ; arg1 cannot be immediate, x86-op should only be negq
     [(Callq func-name n)
      (cond
        [(<= n 6) (list->set (take argument-registers n))]
        [else (list->set (take argument-registers 6))])]
-    [else (set)]))
+    [_ (set)]))
 
 (define (find-live-sets instrs live-after)
   (match instrs
     [(cons instr rest)
-     (define locations (compute-locations instr))
      (define read-locations (compute-read-locations instr))
      (define write-locations (compute-write-locations instr))
      (define live-after-cur (cond
@@ -520,12 +500,7 @@
     (for ([v (in-neighbors graph u)])
       (display (format "~a -> ~a;\n" u v)))))
 
-(define (build-graph instrs live-sets locals)
-  (define graph (undirected-graph '()))
-  (for ([reg all-registers]) ;TODO: do we need to add vertices of all registers or only caller saved ones or none at all here?
-    (add-vertex! graph reg))
-  (for ([var locals]) ;need to do this otherwise error on var_test 6 or something
-    (add-vertex! graph (Var var)))
+(define (build-intereference-graph-block instrs live-sets cur-graph)
   (for ([live-set live-sets]
         [instr instrs])
     (match instr
@@ -533,28 +508,49 @@
        (for ([live-location (set->list live-set)])
          (cond
            [(not (or (equal? arg1 live-location) (equal? arg2 live-location)))
-            (add-edge! graph arg2 live-location)]))]
+            (add-edge! cur-graph arg2 live-location)]))]
+      [(Instr 'movzbq (list arg1 arg2))
+       (for ([live-location (set->list live-set)])
+         (cond
+           [(not (or (equal? arg1 live-location) (equal? arg2 live-location)))
+            (add-edge! cur-graph arg2 live-location)]))]
       [else
        (define write-locations (compute-write-locations instr))
        (for* ([live-location live-set]
               [write-location write-locations])
          (cond
            [(not (equal? live-location write-location))
-            (add-edge! graph live-location write-location)]))]))
-  graph)
-       
+            (add-edge! cur-graph live-location write-location)]))]))
+  cur-graph)
+
+(define (build-interference-graph blocks locals)
+  (define interference-graph (undirected-graph '()))
+
+  (for ([reg all-registers]) ;TODO: do we need to add vertices of all registers or only caller saved ones or none at all here?
+    (add-vertex! interference-graph reg))
+
+  (for ([var locals]) ;need to do this otherwise error on var_test 6 or something
+    (add-vertex! interference-graph (Var var)))
+  
+  (for ([block_key (dict-keys blocks)])
+    (define block (dict-ref blocks block_key))
+    (match block
+      [(Block sinfo instrs)
+       (define live-sets (dict-ref sinfo 'live-sets))
+       (set! interference-graph (build-intereference-graph-block instrs live-sets interference-graph))
+       ;(print-graph interference-graph)
+       ]))
+  
+  (print-graph interference-graph)
+  interference-graph)
  
 ;; build_interference: pseudo-x86 -> pseudo-x86
 (define (build_interference p)
   (match p
-    [(X86Program info e)
-     (match e
-      [`((start . ,(Block sinfo instrs)))
-       (define live-sets (dict-ref sinfo 'live-sets))
-       (define locals (dict-keys (dict-ref info 'locals-types)))
-       (define interference-graph (build-graph instrs live-sets locals))
-       (print-graph interference-graph)
-       (X86Program (dict-set info 'conflicts interference-graph) e)])]))
+    [(X86Program info blocks)
+     (define locals (dict-keys (dict-ref info 'locals-types)))
+     (define interference-graph (build-interference-graph blocks locals))
+     (X86Program (dict-set info 'conflicts interference-graph) blocks)]))
 
 (define graph-coloring-comparator                         
   (lambda (node1 node2)
@@ -953,7 +949,7 @@
     ("explicate control" ,explicate-control ,interp-Cif ,type-check-Cif)
     ("instruction selection" ,select-instructions ,interp-x86-1)
     ("liveness analysis" ,uncover_live ,interp-x86-1)
-;    ("build interference graph" ,build_interference ,interp-x86-1)
+    ("build interference graph" ,build_interference ,interp-x86-1)
 ;    ("register allocation" ,allocate_registers ,interp-x86-0)
 ;    ("patch instructions" ,patch-instructions ,interp-x86-0)
 ;    ("prelude-and-conclusion" ,prelude-and-conclusion ,interp-x86-0)
