@@ -560,7 +560,7 @@
       [else
        (> (color_priority_node-saturation node1) (color_priority_node-saturation node2))])))
 
-(define (build-move-graph instrs locals)
+(define (build-move-graph blocks locals)
   (define graph (undirected-graph '()))
 
   (for ([reg all-registers])
@@ -568,21 +568,27 @@
  
   (for ([var locals])
     (add-vertex! graph (Var var)))
-  
-  (for ([instr instrs])
-    (match instr
-      [(Instr 'movq (list arg1 arg2))
-       (match* (arg1 arg2)
-         [((Var x) (Var y))
-          (add-edge! graph arg1 arg2)]
-         [((Var x) (Reg r))
-          (cond
-            [(>= (dict-ref register-to-color arg2) 0) (add-edge! graph arg1 arg2)])]
-         [((Reg r) (Var x))
-          (cond
-            [(>= (dict-ref register-to-color arg1) 0) (add-edge! graph arg1 arg2)])]
-         [(_ _) (void)])]
-      [_ (void)]))
+
+  (for ([block_key (dict-keys blocks)])
+    (define block (dict-ref blocks block_key))
+    (match block
+      [(Block sinfo instrs)
+       (for ([instr instrs])
+         (match instr
+           ;no need to handle movzbq because it always moves al (rax) to something and no need of move biasing for rax
+           [(Instr 'movq (list arg1 arg2))
+            (match* (arg1 arg2)
+              [((Var x) (Var y))
+               (add-edge! graph arg1 arg2)]
+              [((Var x) (Reg r))
+               (cond
+                 [(>= (dict-ref register-to-color arg2) 0) (add-edge! graph arg1 arg2)])]
+              [((Reg r) (Var x))
+               (cond
+                 [(>= (dict-ref register-to-color arg1) 0) (add-edge! graph arg1 arg2)])]
+              [(_ _) (void)])]
+           [_ (void)]))
+       ]))
   graph)
 
 (define (find-mex s cur)
@@ -732,6 +738,8 @@
      (match u
        [(Reg r)
         (define v-list (for/list ([v (in-neighbors interference-graph u)]) v))
+        ;(displayln "v-list")
+        ;(displayln v-list)
         (define updated-saturation (get-initial-saturation-helper cur-saturation u (dict-ref register-to-color u) v-list))
         (get-initial-saturation updated-saturation rest interference-graph)]
        [_ (get-initial-saturation cur-saturation rest interference-graph)])]
@@ -761,6 +769,9 @@
 
 
 (define (color-graph interference-graph locals move-graph)
+
+  (display "locals: ")
+  (displayln locals)
 
   ; set default saturation, visited and move-bias of ONLY variables.
   (define-values (prev-saturation visited-prev move-bias-prev) (for/fold ([saturation '()]    
@@ -848,22 +859,30 @@
 ;; allocate_registers: pseudo-x86 -> pseudo-x86
 (define (allocate_registers p)
   (match p
-    [(X86Program info e)
-     (match e
-      [`((start . ,(Block sinfo instrs)))
-       (define locals (dict-keys (dict-ref info 'locals-types)))
-       (define interference-graph (dict-ref info 'conflicts))
-       (define move-graph (build-move-graph instrs locals))
-       (define variable-colors (color-graph interference-graph locals move-graph))
-       (display "variable-colors: ")
-       (displayln variable-colors)
-       (define used-callee (get-used-callee-registers locals (set) variable-colors))
-       (define new-info (dict-set info 'used_callee used-callee))
-       (define locals-homes (assign-home-to-locals locals variable-colors (set-count used-callee) '()))
-       (define stack-variable-colors (get-stack-colors locals variable-colors (set)))
-       (define stack-size (get-stack-space (set-count stack-variable-colors) (set-count used-callee)))
+    [(X86Program info blocks)
+     (define locals (dict-keys (dict-ref info 'locals-types)))
+     (define interference-graph (dict-ref info 'conflicts))
+     (define move-graph (build-move-graph blocks locals))
+     (display "move-graph: ")
+     (print-graph move-graph)
+     (displayln "move-graph end")
+     (define variable-colors (color-graph interference-graph locals move-graph))
+     (display "variable-colors: ")
+     (displayln variable-colors)
+     (define used-callee (get-used-callee-registers locals (set) variable-colors))
+     (define new-info (dict-set info 'used_callee used-callee))
+     (define locals-homes (assign-home-to-locals locals variable-colors (set-count used-callee) '()))
+     (define stack-variable-colors (get-stack-colors locals variable-colors (set)))
+     (define stack-size (get-stack-space (set-count stack-variable-colors) (set-count used-callee)))
+
+     (for ([block_key (dict-keys blocks)])
+       (define block (dict-ref blocks block_key))
+       (match block
+         [(Block sinfo instrs)
+          (set! blocks (dict-set blocks block_key (Block sinfo (assign-homes-instr instrs locals-homes))))
+          ]))
        
-       (X86Program (dict-set new-info 'stack-space stack-size) `((start . ,(Block sinfo (assign-homes-instr instrs locals-homes)))))])]))
+     (X86Program (dict-set new-info 'stack-space stack-size) blocks)]))
 
 ; assign homes of R1
 ;(define (assign-home-to-locals locals-types)
@@ -879,13 +898,13 @@
 
 
 ;; assign-homes : pseudo-x86 -> pseudo-x86
-(define (assign-homes p)
-  (match p
-    [(X86Program info e)
-     (match e
-      [`((start . ,(Block sinfo instrs)))
-        (define-values (stack-space locals-home) (assign-home-to-locals (dict-ref info 'locals-types)))
-        (X86Program (dict-set info 'stack-space stack-space) `((start . ,(Block sinfo (assign-homes-instr instrs locals-home)))))])]))
+;(define (assign-homes p)
+;  (match p
+;    [(X86Program info e)
+;     (match e
+;      [`((start . ,(Block sinfo instrs)))
+;        (define-values (stack-space locals-home) (assign-home-to-locals (dict-ref info 'locals-types)))
+;        (X86Program (dict-set info 'stack-space stack-space) `((start . ,(Block sinfo (assign-homes-instr instrs locals-home)))))])]))
 
 (define (pi-instr instrs)
   (match instrs
@@ -947,10 +966,10 @@
     ("uniquify" ,uniquify ,interp-Lif ,type-check-Lif)
     ("remove complex opera*" ,remove-complex-opera* ,interp-Lif ,type-check-Lif)
     ("explicate control" ,explicate-control ,interp-Cif ,type-check-Cif)
-    ("instruction selection" ,select-instructions ,interp-x86-1)
-    ("liveness analysis" ,uncover_live ,interp-x86-1)
-    ("build interference graph" ,build_interference ,interp-x86-1)
-;    ("register allocation" ,allocate_registers ,interp-x86-0)
+    ("instruction selection" ,select-instructions ,interp-pseudo-x86-1)
+    ("liveness analysis" ,uncover_live ,interp-pseudo-x86-1)
+    ("build interference graph" ,build_interference ,interp-pseudo-x86-1)
+    ("register allocation" ,allocate_registers ,interp-x86-1)
 ;    ("patch instructions" ,patch-instructions ,interp-x86-0)
 ;    ("prelude-and-conclusion" ,prelude-and-conclusion ,interp-x86-0)
     ))

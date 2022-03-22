@@ -42,14 +42,14 @@ running pass: uniquify @ utilities.rkt:2048
 
 pass output:  @ utilities.rkt:2051
 (strip-has-type new-p^):
-(Program '() (Let 'x20680 (Bool #t) (Int 42)))
+(Program '() (Let 'x20818 (Bool #t) (Int 42)))
 
 
 type checking... @ utilities.rkt:2053
 
 type-check output:  @ utilities.rkt:2056
 (strip-has-type new-p):
-(Program '() (Let 'x20680 (Bool #t) (Int 42)))
+(Program '() (Let 'x20818 (Bool #t) (Int 42)))
 
 
 output:  @ utilities.rkt:2063
@@ -69,14 +69,14 @@ running pass: remove complex opera* @ utilities.rkt:2048
 
 pass output:  @ utilities.rkt:2051
 (strip-has-type new-p^):
-(Program '() (Let 'x20680 (Bool #t) (Int 42)))
+(Program '() (Let 'x20818 (Bool #t) (Int 42)))
 
 
 type checking... @ utilities.rkt:2053
 
 type-check output:  @ utilities.rkt:2056
 (strip-has-type new-p):
-(Program '() (Let 'x20680 (Bool #t) (Int 42)))
+(Program '() (Let 'x20818 (Bool #t) (Int 42)))
 
 
 output:  @ utilities.rkt:2063
@@ -98,7 +98,7 @@ pass output:  @ utilities.rkt:2051
 (strip-has-type new-p^):
 (CProgram
  '()
- (list (cons 'start (Seq (Assign (Var 'x20680) (Bool #t)) (Return (Int 42))))))
+ (list (cons 'start (Seq (Assign (Var 'x20818) (Bool #t)) (Return (Int 42))))))
 
 
 type checking... @ utilities.rkt:2053
@@ -106,8 +106,8 @@ type checking... @ utilities.rkt:2053
 type-check output:  @ utilities.rkt:2056
 (strip-has-type new-p):
 (CProgram
- '((locals-types (x20680 . Boolean)))
- (list (cons 'start (Seq (Assign (Var 'x20680) (Bool #t)) (Return (Int 42))))))
+ '((locals-types (x20818 . Boolean)))
+ (list (cons 'start (Seq (Assign (Var 'x20818) (Bool #t)) (Return (Int 42))))))
 
 
 output:  @ utilities.rkt:2063
@@ -128,14 +128,14 @@ running pass: instruction selection @ utilities.rkt:2048
 pass output:  @ utilities.rkt:2051
 (strip-has-type new-p^):
 (X86Program
- '((locals-types (x20680 . Boolean)))
+ '((locals-types (x20818 . Boolean)))
  (list
   (cons
    'start
    (Block
     '()
     (list
-     (Instr 'movq (list (Imm 1) (Var 'x20680)))
+     (Instr 'movq (list (Imm 1) (Var 'x20818)))
      (Instr 'movq (list (Imm 42) (Reg 'rax)))
      (Jmp 'conclusion))))))
 
@@ -143,14 +143,14 @@ pass output:  @ utilities.rkt:2051
 type-check output:  @ utilities.rkt:2056
 (strip-has-type new-p):
 (X86Program
- '((locals-types (x20680 . Boolean)))
+ '((locals-types (x20818 . Boolean)))
  (list
   (cons
    'start
    (Block
     '()
     (list
-     (Instr 'movq (list (Imm 1) (Var 'x20680)))
+     (Instr 'movq (list (Imm 1) (Var 'x20818)))
      (Instr 'movq (list (Imm 42) (Reg 'rax)))
      (Jmp 'conclusion))))))
 
@@ -174,14 +174,14 @@ running pass: liveness analysis @ utilities.rkt:2048
 pass output:  @ utilities.rkt:2051
 (strip-has-type new-p^):
 (X86Program
- '((locals-types (x20680 . Boolean)))
+ '((locals-types (x20818 . Boolean)))
  (list
   (cons
    'start
    (Block
     (list (list 'live-sets (set) (set) (set)))
     (list
-     (Instr 'movq (list (Imm 1) (Var 'x20680)))
+     (Instr 'movq (list (Imm 1) (Var 'x20818)))
      (Instr 'movq (list (Imm 42) (Reg 'rax)))
      (Jmp 'conclusion))))))
 
@@ -189,14 +189,14 @@ pass output:  @ utilities.rkt:2051
 type-check output:  @ utilities.rkt:2056
 (strip-has-type new-p):
 (X86Program
- '((locals-types (x20680 . Boolean)))
+ '((locals-types (x20818 . Boolean)))
  (list
   (cons
    'start
    (Block
     (list (list 'live-sets (set) (set) (set)))
     (list
-     (Instr 'movq (list (Imm 1) (Var 'x20680)))
+     (Instr 'movq (list (Imm 1) (Var 'x20818)))
      (Instr 'movq (list (Imm 42) (Reg 'rax)))
      (Jmp 'conclusion))))))
 
@@ -219,14 +219,14 @@ running pass: build interference graph @ utilities.rkt:2048
 pass output:  @ utilities.rkt:2051
 (strip-has-type new-p^):
 (X86Program
- '((locals-types (x20680 . Boolean)) (conflicts . #<unweighted-graph>))
+ '((locals-types (x20818 . Boolean)) (conflicts . #<unweighted-graph>))
  (list
   (cons
    'start
    (Block
     (list (list 'live-sets (set) (set) (set)))
     (list
-     (Instr 'movq (list (Imm 1) (Var 'x20680)))
+     (Instr 'movq (list (Imm 1) (Var 'x20818)))
      (Instr 'movq (list (Imm 42) (Reg 'rax)))
      (Jmp 'conclusion))))))
 
@@ -234,14 +234,80 @@ pass output:  @ utilities.rkt:2051
 type-check output:  @ utilities.rkt:2056
 (strip-has-type new-p):
 (X86Program
- '((locals-types (x20680 . Boolean)) (conflicts . #<unweighted-graph>))
+ '((locals-types (x20818 . Boolean)) (conflicts . #<unweighted-graph>))
  (list
   (cons
    'start
    (Block
     (list (list 'live-sets (set) (set) (set)))
     (list
-     (Instr 'movq (list (Imm 1) (Var 'x20680)))
+     (Instr 'movq (list (Imm 1) (Var 'x20818)))
+     (Instr 'movq (list (Imm 42) (Reg 'rax)))
+     (Jmp 'conclusion))))))
+
+
+output:  @ utilities.rkt:2063
+result:
+42
+
+
+testing @ utilities.rkt:2037
+test-name:
+"cond_test_1"
+
+expected-result:
+42
+
+
+running pass: register allocation @ utilities.rkt:2048
+
+move-graph: move-graph end
+locals: (x20818)
+cur-node neighbors potential-colors interfering-colors cur-color
+#<Var: x20818>
+()
+#<set:>
+#<set:>
+0
+updated-saturation: ((#<Var: x20818> . #<set:>))
+old and updated-move-bias: 
+((#<Var: x20818> . 0))
+((#<Var: x20818> . 0))
+variable-colors: ((#<Reg: rcx> . 0) (#<Reg: rdx> . 1) (#<Reg: rsi> . 2) (#<Reg: rdi> . 3) (#<Reg: r8> . 4) (#<Reg: r9> . 5) (#<Reg: r10> . 6) (#<Reg: r11> . 7) (#<Reg: rbx> . 8) (#<Reg: r12> . 9) (#<Reg: r13> . 10) (#<Reg: r14> . 11) (#<Reg: rax> . -1) (#<Reg: rsp> . -2) (#<Reg: rbp> . -3) (#<Reg: r15> . -4) (#<Var: x20818> . 0))
+pass output:  @ utilities.rkt:2051
+(strip-has-type new-p^):
+(X86Program
+ (list
+  '(locals-types (x20818 . Boolean))
+  '(conflicts . #<unweighted-graph>)
+  (cons 'used_callee (set))
+  '(stack-space . 0))
+ (list
+  (cons
+   'start
+   (Block
+    (list (list 'live-sets (set) (set) (set)))
+    (list
+     (Instr 'movq (list (Imm 1) (Reg 'rcx)))
+     (Instr 'movq (list (Imm 42) (Reg 'rax)))
+     (Jmp 'conclusion))))))
+
+
+type-check output:  @ utilities.rkt:2056
+(strip-has-type new-p):
+(X86Program
+ (list
+  '(locals-types (x20818 . Boolean))
+  '(conflicts . #<unweighted-graph>)
+  (cons 'used_callee (set))
+  '(stack-space . 0))
+ (list
+  (cons
+   'start
+   (Block
+    (list (list 'live-sets (set) (set) (set)))
+    (list
+     (Instr 'movq (list (Imm 1) (Reg 'rcx)))
      (Instr 'movq (list (Imm 42) (Reg 'rax)))
      (Jmp 'conclusion))))))
 
@@ -303,14 +369,14 @@ running pass: uniquify @ utilities.rkt:2048
 
 pass output:  @ utilities.rkt:2051
 (strip-has-type new-p^):
-(Program '() (Let 'x20692 (Bool #f) (Int 42)))
+(Program '() (Let 'x20831 (Bool #f) (Int 42)))
 
 
 type checking... @ utilities.rkt:2053
 
 type-check output:  @ utilities.rkt:2056
 (strip-has-type new-p):
-(Program '() (Let 'x20692 (Bool #f) (Int 42)))
+(Program '() (Let 'x20831 (Bool #f) (Int 42)))
 
 
 output:  @ utilities.rkt:2063
@@ -330,14 +396,14 @@ running pass: remove complex opera* @ utilities.rkt:2048
 
 pass output:  @ utilities.rkt:2051
 (strip-has-type new-p^):
-(Program '() (Let 'x20692 (Bool #f) (Int 42)))
+(Program '() (Let 'x20831 (Bool #f) (Int 42)))
 
 
 type checking... @ utilities.rkt:2053
 
 type-check output:  @ utilities.rkt:2056
 (strip-has-type new-p):
-(Program '() (Let 'x20692 (Bool #f) (Int 42)))
+(Program '() (Let 'x20831 (Bool #f) (Int 42)))
 
 
 output:  @ utilities.rkt:2063
@@ -359,7 +425,7 @@ pass output:  @ utilities.rkt:2051
 (strip-has-type new-p^):
 (CProgram
  '()
- (list (cons 'start (Seq (Assign (Var 'x20692) (Bool #f)) (Return (Int 42))))))
+ (list (cons 'start (Seq (Assign (Var 'x20831) (Bool #f)) (Return (Int 42))))))
 
 
 type checking... @ utilities.rkt:2053
@@ -367,8 +433,8 @@ type checking... @ utilities.rkt:2053
 type-check output:  @ utilities.rkt:2056
 (strip-has-type new-p):
 (CProgram
- '((locals-types (x20692 . Boolean)))
- (list (cons 'start (Seq (Assign (Var 'x20692) (Bool #f)) (Return (Int 42))))))
+ '((locals-types (x20831 . Boolean)))
+ (list (cons 'start (Seq (Assign (Var 'x20831) (Bool #f)) (Return (Int 42))))))
 
 
 output:  @ utilities.rkt:2063
@@ -389,14 +455,14 @@ running pass: instruction selection @ utilities.rkt:2048
 pass output:  @ utilities.rkt:2051
 (strip-has-type new-p^):
 (X86Program
- '((locals-types (x20692 . Boolean)))
+ '((locals-types (x20831 . Boolean)))
  (list
   (cons
    'start
    (Block
     '()
     (list
-     (Instr 'movq (list (Imm 0) (Var 'x20692)))
+     (Instr 'movq (list (Imm 0) (Var 'x20831)))
      (Instr 'movq (list (Imm 42) (Reg 'rax)))
      (Jmp 'conclusion))))))
 
@@ -404,14 +470,14 @@ pass output:  @ utilities.rkt:2051
 type-check output:  @ utilities.rkt:2056
 (strip-has-type new-p):
 (X86Program
- '((locals-types (x20692 . Boolean)))
+ '((locals-types (x20831 . Boolean)))
  (list
   (cons
    'start
    (Block
     '()
     (list
-     (Instr 'movq (list (Imm 0) (Var 'x20692)))
+     (Instr 'movq (list (Imm 0) (Var 'x20831)))
      (Instr 'movq (list (Imm 42) (Reg 'rax)))
      (Jmp 'conclusion))))))
 
@@ -435,14 +501,14 @@ running pass: liveness analysis @ utilities.rkt:2048
 pass output:  @ utilities.rkt:2051
 (strip-has-type new-p^):
 (X86Program
- '((locals-types (x20692 . Boolean)))
+ '((locals-types (x20831 . Boolean)))
  (list
   (cons
    'start
    (Block
     (list (list 'live-sets (set) (set) (set)))
     (list
-     (Instr 'movq (list (Imm 0) (Var 'x20692)))
+     (Instr 'movq (list (Imm 0) (Var 'x20831)))
      (Instr 'movq (list (Imm 42) (Reg 'rax)))
      (Jmp 'conclusion))))))
 
@@ -450,14 +516,14 @@ pass output:  @ utilities.rkt:2051
 type-check output:  @ utilities.rkt:2056
 (strip-has-type new-p):
 (X86Program
- '((locals-types (x20692 . Boolean)))
+ '((locals-types (x20831 . Boolean)))
  (list
   (cons
    'start
    (Block
     (list (list 'live-sets (set) (set) (set)))
     (list
-     (Instr 'movq (list (Imm 0) (Var 'x20692)))
+     (Instr 'movq (list (Imm 0) (Var 'x20831)))
      (Instr 'movq (list (Imm 42) (Reg 'rax)))
      (Jmp 'conclusion))))))
 
@@ -480,14 +546,14 @@ running pass: build interference graph @ utilities.rkt:2048
 pass output:  @ utilities.rkt:2051
 (strip-has-type new-p^):
 (X86Program
- '((locals-types (x20692 . Boolean)) (conflicts . #<unweighted-graph>))
+ '((locals-types (x20831 . Boolean)) (conflicts . #<unweighted-graph>))
  (list
   (cons
    'start
    (Block
     (list (list 'live-sets (set) (set) (set)))
     (list
-     (Instr 'movq (list (Imm 0) (Var 'x20692)))
+     (Instr 'movq (list (Imm 0) (Var 'x20831)))
      (Instr 'movq (list (Imm 42) (Reg 'rax)))
      (Jmp 'conclusion))))))
 
@@ -495,14 +561,80 @@ pass output:  @ utilities.rkt:2051
 type-check output:  @ utilities.rkt:2056
 (strip-has-type new-p):
 (X86Program
- '((locals-types (x20692 . Boolean)) (conflicts . #<unweighted-graph>))
+ '((locals-types (x20831 . Boolean)) (conflicts . #<unweighted-graph>))
  (list
   (cons
    'start
    (Block
     (list (list 'live-sets (set) (set) (set)))
     (list
-     (Instr 'movq (list (Imm 0) (Var 'x20692)))
+     (Instr 'movq (list (Imm 0) (Var 'x20831)))
+     (Instr 'movq (list (Imm 42) (Reg 'rax)))
+     (Jmp 'conclusion))))))
+
+
+output:  @ utilities.rkt:2063
+result:
+42
+
+
+testing @ utilities.rkt:2037
+test-name:
+"cond_test_2"
+
+expected-result:
+42
+
+
+running pass: register allocation @ utilities.rkt:2048
+
+move-graph: move-graph end
+locals: (x20831)
+cur-node neighbors potential-colors interfering-colors cur-color
+#<Var: x20831>
+()
+#<set:>
+#<set:>
+0
+updated-saturation: ((#<Var: x20831> . #<set:>))
+old and updated-move-bias: 
+((#<Var: x20831> . 0))
+((#<Var: x20831> . 0))
+variable-colors: ((#<Reg: rcx> . 0) (#<Reg: rdx> . 1) (#<Reg: rsi> . 2) (#<Reg: rdi> . 3) (#<Reg: r8> . 4) (#<Reg: r9> . 5) (#<Reg: r10> . 6) (#<Reg: r11> . 7) (#<Reg: rbx> . 8) (#<Reg: r12> . 9) (#<Reg: r13> . 10) (#<Reg: r14> . 11) (#<Reg: rax> . -1) (#<Reg: rsp> . -2) (#<Reg: rbp> . -3) (#<Reg: r15> . -4) (#<Var: x20831> . 0))
+pass output:  @ utilities.rkt:2051
+(strip-has-type new-p^):
+(X86Program
+ (list
+  '(locals-types (x20831 . Boolean))
+  '(conflicts . #<unweighted-graph>)
+  (cons 'used_callee (set))
+  '(stack-space . 0))
+ (list
+  (cons
+   'start
+   (Block
+    (list (list 'live-sets (set) (set) (set)))
+    (list
+     (Instr 'movq (list (Imm 0) (Reg 'rcx)))
+     (Instr 'movq (list (Imm 42) (Reg 'rax)))
+     (Jmp 'conclusion))))))
+
+
+type-check output:  @ utilities.rkt:2056
+(strip-has-type new-p):
+(X86Program
+ (list
+  '(locals-types (x20831 . Boolean))
+  '(conflicts . #<unweighted-graph>)
+  (cons 'used_callee (set))
+  '(stack-space . 0))
+ (list
+  (cons
+   'start
+   (Block
+    (list (list 'live-sets (set) (set) (set)))
+    (list
+     (Instr 'movq (list (Imm 0) (Reg 'rcx)))
      (Instr 'movq (list (Imm 42) (Reg 'rax)))
      (Jmp 'conclusion))))))
 
@@ -738,6 +870,56 @@ type-check output:  @ utilities.rkt:2056
 (strip-has-type new-p):
 (X86Program
  '((locals-types) (conflicts . #<unweighted-graph>))
+ (list
+  (cons
+   'start
+   (Block
+    (list (list 'live-sets (set) (set)))
+    (list (Instr 'movq (list (Imm 42) (Reg 'rax))) (Jmp 'conclusion))))))
+
+
+output:  @ utilities.rkt:2063
+result:
+42
+
+
+testing @ utilities.rkt:2037
+test-name:
+"cond_test_3"
+
+expected-result:
+42
+
+
+running pass: register allocation @ utilities.rkt:2048
+
+move-graph: move-graph end
+locals: ()
+variable-colors: ((#<Reg: rcx> . 0) (#<Reg: rdx> . 1) (#<Reg: rsi> . 2) (#<Reg: rdi> . 3) (#<Reg: r8> . 4) (#<Reg: r9> . 5) (#<Reg: r10> . 6) (#<Reg: r11> . 7) (#<Reg: rbx> . 8) (#<Reg: r12> . 9) (#<Reg: r13> . 10) (#<Reg: r14> . 11) (#<Reg: rax> . -1) (#<Reg: rsp> . -2) (#<Reg: rbp> . -3) (#<Reg: r15> . -4))
+pass output:  @ utilities.rkt:2051
+(strip-has-type new-p^):
+(X86Program
+ (list
+  '(locals-types)
+  '(conflicts . #<unweighted-graph>)
+  (cons 'used_callee (set))
+  '(stack-space . 0))
+ (list
+  (cons
+   'start
+   (Block
+    (list (list 'live-sets (set) (set)))
+    (list (Instr 'movq (list (Imm 42) (Reg 'rax))) (Jmp 'conclusion))))))
+
+
+type-check output:  @ utilities.rkt:2056
+(strip-has-type new-p):
+(X86Program
+ (list
+  '(locals-types)
+  '(conflicts . #<unweighted-graph>)
+  (cons 'used_callee (set))
+  '(stack-space . 0))
  (list
   (cons
    'start
@@ -1038,6 +1220,56 @@ expected-result:
 20
 
 
+running pass: register allocation @ utilities.rkt:2048
+
+move-graph: move-graph end
+locals: ()
+variable-colors: ((#<Reg: rcx> . 0) (#<Reg: rdx> . 1) (#<Reg: rsi> . 2) (#<Reg: rdi> . 3) (#<Reg: r8> . 4) (#<Reg: r9> . 5) (#<Reg: r10> . 6) (#<Reg: r11> . 7) (#<Reg: rbx> . 8) (#<Reg: r12> . 9) (#<Reg: r13> . 10) (#<Reg: r14> . 11) (#<Reg: rax> . -1) (#<Reg: rsp> . -2) (#<Reg: rbp> . -3) (#<Reg: r15> . -4))
+pass output:  @ utilities.rkt:2051
+(strip-has-type new-p^):
+(X86Program
+ (list
+  '(locals-types)
+  '(conflicts . #<unweighted-graph>)
+  (cons 'used_callee (set))
+  '(stack-space . 0))
+ (list
+  (cons
+   'start
+   (Block
+    (list (list 'live-sets (set) (set)))
+    (list (Instr 'movq (list (Imm 20) (Reg 'rax))) (Jmp 'conclusion))))))
+
+
+type-check output:  @ utilities.rkt:2056
+(strip-has-type new-p):
+(X86Program
+ (list
+  '(locals-types)
+  '(conflicts . #<unweighted-graph>)
+  (cons 'used_callee (set))
+  '(stack-space . 0))
+ (list
+  (cons
+   'start
+   (Block
+    (list (list 'live-sets (set) (set)))
+    (list (Instr 'movq (list (Imm 20) (Reg 'rax))) (Jmp 'conclusion))))))
+
+
+output:  @ utilities.rkt:2063
+result:
+20
+
+
+testing @ utilities.rkt:2037
+test-name:
+"cond_test_9"
+
+expected-result:
+20
+
+
 type checker output: @ utilities.rkt:2020
 (strip-has-type tsexp):
 (Program
@@ -1109,15 +1341,15 @@ pass output:  @ utilities.rkt:2051
 (Program
  '()
  (Let
-  'x20727
+  'x20869
   (If
    (Let
-    'x20726
+    'x20868
     (Bool #t)
-    (If (Var 'x20726) (Var 'x20726) (Prim 'not (list (Var 'x20726)))))
+    (If (Var 'x20868) (Var 'x20868) (Prim 'not (list (Var 'x20868)))))
    (Bool #t)
    (Bool #f))
-  (If (Var 'x20727) (Int 10) (Prim '- (list (Int 10))))))
+  (If (Var 'x20869) (Int 10) (Prim '- (list (Int 10))))))
 
 
 type checking... @ utilities.rkt:2053
@@ -1127,15 +1359,15 @@ type-check output:  @ utilities.rkt:2056
 (Program
  '()
  (Let
-  'x20727
+  'x20869
   (If
    (Let
-    'x20726
+    'x20868
     (Bool #t)
-    (If (Var 'x20726) (Var 'x20726) (Prim 'not (list (Var 'x20726)))))
+    (If (Var 'x20868) (Var 'x20868) (Prim 'not (list (Var 'x20868)))))
    (Bool #t)
    (Bool #f))
-  (If (Var 'x20727) (Int 10) (Prim '- (list (Int 10))))))
+  (If (Var 'x20869) (Int 10) (Prim '- (list (Int 10))))))
 
 
 output:  @ utilities.rkt:2063
@@ -1158,15 +1390,15 @@ pass output:  @ utilities.rkt:2051
 (Program
  '()
  (Let
-  'x20727
+  'x20869
   (If
    (Let
-    'x20726
+    'x20868
     (Bool #t)
-    (If (Var 'x20726) (Var 'x20726) (Prim 'not (list (Var 'x20726)))))
+    (If (Var 'x20868) (Var 'x20868) (Prim 'not (list (Var 'x20868)))))
    (Bool #t)
    (Bool #f))
-  (If (Var 'x20727) (Int 10) (Prim '- (list (Int 10))))))
+  (If (Var 'x20869) (Int 10) (Prim '- (list (Int 10))))))
 
 
 type checking... @ utilities.rkt:2053
@@ -1176,15 +1408,15 @@ type-check output:  @ utilities.rkt:2056
 (Program
  '()
  (Let
-  'x20727
+  'x20869
   (If
    (Let
-    'x20726
+    'x20868
     (Bool #t)
-    (If (Var 'x20726) (Var 'x20726) (Prim 'not (list (Var 'x20726)))))
+    (If (Var 'x20868) (Var 'x20868) (Prim 'not (list (Var 'x20868)))))
    (Bool #t)
    (Bool #f))
-  (If (Var 'x20727) (Int 10) (Prim '- (list (Int 10))))))
+  (If (Var 'x20869) (Int 10) (Prim '- (list (Int 10))))))
 
 
 output:  @ utilities.rkt:2063
@@ -1210,33 +1442,33 @@ pass output:  @ utilities.rkt:2051
   (cons
    'start
    (Seq
-    (Assign (Var 'x20726) (Bool #t))
+    (Assign (Var 'x20868) (Bool #t))
     (IfStmt
-     (Prim 'eq? (list (Var 'x20726) (Bool #t)))
-     (Goto 'block20733)
-     (Goto 'block20734))))
+     (Prim 'eq? (list (Var 'x20868) (Bool #t)))
+     (Goto 'block20875)
+     (Goto 'block20876))))
   (cons
-   'block20734
+   'block20876
    (IfStmt
-    (Prim 'eq? (list (Var 'x20726) (Bool #f)))
-    (Goto 'block20731)
-    (Goto 'block20732)))
+    (Prim 'eq? (list (Var 'x20868) (Bool #f)))
+    (Goto 'block20873)
+    (Goto 'block20874)))
   (cons
-   'block20733
+   'block20875
    (IfStmt
-    (Prim 'eq? (list (Var 'x20726) (Bool #t)))
-    (Goto 'block20731)
-    (Goto 'block20732)))
-  (cons 'block20732 (Seq (Assign (Var 'x20727) (Bool #f)) (Goto 'block20730)))
-  (cons 'block20731 (Seq (Assign (Var 'x20727) (Bool #t)) (Goto 'block20730)))
+    (Prim 'eq? (list (Var 'x20868) (Bool #t)))
+    (Goto 'block20873)
+    (Goto 'block20874)))
+  (cons 'block20874 (Seq (Assign (Var 'x20869) (Bool #f)) (Goto 'block20872)))
+  (cons 'block20873 (Seq (Assign (Var 'x20869) (Bool #t)) (Goto 'block20872)))
   (cons
-   'block20730
+   'block20872
    (IfStmt
-    (Prim 'eq? (list (Var 'x20727) (Bool #t)))
-    (Goto 'block20728)
-    (Goto 'block20729)))
-  (cons 'block20729 (Return (Prim '- (list (Int 10)))))
-  (cons 'block20728 (Return (Int 10)))))
+    (Prim 'eq? (list (Var 'x20869) (Bool #t)))
+    (Goto 'block20870)
+    (Goto 'block20871)))
+  (cons 'block20871 (Return (Prim '- (list (Int 10)))))
+  (cons 'block20870 (Return (Int 10)))))
 
 
 type checking... @ utilities.rkt:2053
@@ -1244,38 +1476,38 @@ type checking... @ utilities.rkt:2053
 type-check output:  @ utilities.rkt:2056
 (strip-has-type new-p):
 (CProgram
- '((locals-types (x20727 . Boolean) (x20726 . Boolean)))
+ '((locals-types (x20869 . Boolean) (x20868 . Boolean)))
  (list
   (cons
    'start
    (Seq
-    (Assign (Var 'x20726) (Bool #t))
+    (Assign (Var 'x20868) (Bool #t))
     (IfStmt
-     (Prim 'eq? (list (Var 'x20726) (Bool #t)))
-     (Goto 'block20733)
-     (Goto 'block20734))))
+     (Prim 'eq? (list (Var 'x20868) (Bool #t)))
+     (Goto 'block20875)
+     (Goto 'block20876))))
   (cons
-   'block20734
+   'block20876
    (IfStmt
-    (Prim 'eq? (list (Var 'x20726) (Bool #f)))
-    (Goto 'block20731)
-    (Goto 'block20732)))
+    (Prim 'eq? (list (Var 'x20868) (Bool #f)))
+    (Goto 'block20873)
+    (Goto 'block20874)))
   (cons
-   'block20733
+   'block20875
    (IfStmt
-    (Prim 'eq? (list (Var 'x20726) (Bool #t)))
-    (Goto 'block20731)
-    (Goto 'block20732)))
-  (cons 'block20732 (Seq (Assign (Var 'x20727) (Bool #f)) (Goto 'block20730)))
-  (cons 'block20731 (Seq (Assign (Var 'x20727) (Bool #t)) (Goto 'block20730)))
+    (Prim 'eq? (list (Var 'x20868) (Bool #t)))
+    (Goto 'block20873)
+    (Goto 'block20874)))
+  (cons 'block20874 (Seq (Assign (Var 'x20869) (Bool #f)) (Goto 'block20872)))
+  (cons 'block20873 (Seq (Assign (Var 'x20869) (Bool #t)) (Goto 'block20872)))
   (cons
-   'block20730
+   'block20872
    (IfStmt
-    (Prim 'eq? (list (Var 'x20727) (Bool #t)))
-    (Goto 'block20728)
-    (Goto 'block20729)))
-  (cons 'block20729 (Return (Prim '- (list (Int 10)))))
-  (cons 'block20728 (Return (Int 10)))))
+    (Prim 'eq? (list (Var 'x20869) (Bool #t)))
+    (Goto 'block20870)
+    (Goto 'block20871)))
+  (cons 'block20871 (Return (Prim '- (list (Int 10)))))
+  (cons 'block20870 (Return (Int 10)))))
 
 
 output:  @ utilities.rkt:2063
@@ -1296,53 +1528,53 @@ running pass: instruction selection @ utilities.rkt:2048
 pass output:  @ utilities.rkt:2051
 (strip-has-type new-p^):
 (X86Program
- '((locals-types (x20727 . Boolean) (x20726 . Boolean)))
+ '((locals-types (x20869 . Boolean) (x20868 . Boolean)))
  (list
   (cons
    'start
    (Block
     '()
     (list
-     (Instr 'movq (list (Imm 1) (Var 'x20726)))
-     (Instr 'cmpq (list (Imm 1) (Var 'x20726)))
-     (JmpIf 'e 'block20733)
-     (Jmp 'block20734))))
+     (Instr 'movq (list (Imm 1) (Var 'x20868)))
+     (Instr 'cmpq (list (Imm 1) (Var 'x20868)))
+     (JmpIf 'e 'block20875)
+     (Jmp 'block20876))))
   (cons
-   'block20734
+   'block20876
    (Block
     '()
     (list
-     (Instr 'cmpq (list (Imm 0) (Var 'x20726)))
-     (JmpIf 'e 'block20731)
-     (Jmp 'block20732))))
+     (Instr 'cmpq (list (Imm 0) (Var 'x20868)))
+     (JmpIf 'e 'block20873)
+     (Jmp 'block20874))))
   (cons
-   'block20733
+   'block20875
    (Block
     '()
     (list
-     (Instr 'cmpq (list (Imm 1) (Var 'x20726)))
-     (JmpIf 'e 'block20731)
-     (Jmp 'block20732))))
+     (Instr 'cmpq (list (Imm 1) (Var 'x20868)))
+     (JmpIf 'e 'block20873)
+     (Jmp 'block20874))))
   (cons
-   'block20732
+   'block20874
    (Block
     '()
-    (list (Instr 'movq (list (Imm 0) (Var 'x20727))) (Jmp 'block20730))))
+    (list (Instr 'movq (list (Imm 0) (Var 'x20869))) (Jmp 'block20872))))
   (cons
-   'block20731
+   'block20873
    (Block
     '()
-    (list (Instr 'movq (list (Imm 1) (Var 'x20727))) (Jmp 'block20730))))
+    (list (Instr 'movq (list (Imm 1) (Var 'x20869))) (Jmp 'block20872))))
   (cons
-   'block20730
+   'block20872
    (Block
     '()
     (list
-     (Instr 'cmpq (list (Imm 1) (Var 'x20727)))
-     (JmpIf 'e 'block20728)
-     (Jmp 'block20729))))
+     (Instr 'cmpq (list (Imm 1) (Var 'x20869)))
+     (JmpIf 'e 'block20870)
+     (Jmp 'block20871))))
   (cons
-   'block20729
+   'block20871
    (Block
     '()
     (list
@@ -1350,7 +1582,7 @@ pass output:  @ utilities.rkt:2051
      (Instr 'negq (list (Reg 'rax)))
      (Jmp 'conclusion))))
   (cons
-   'block20728
+   'block20870
    (Block
     '()
     (list (Instr 'movq (list (Imm 10) (Reg 'rax))) (Jmp 'conclusion))))))
@@ -1359,53 +1591,53 @@ pass output:  @ utilities.rkt:2051
 type-check output:  @ utilities.rkt:2056
 (strip-has-type new-p):
 (X86Program
- '((locals-types (x20727 . Boolean) (x20726 . Boolean)))
+ '((locals-types (x20869 . Boolean) (x20868 . Boolean)))
  (list
   (cons
    'start
    (Block
     '()
     (list
-     (Instr 'movq (list (Imm 1) (Var 'x20726)))
-     (Instr 'cmpq (list (Imm 1) (Var 'x20726)))
-     (JmpIf 'e 'block20733)
-     (Jmp 'block20734))))
+     (Instr 'movq (list (Imm 1) (Var 'x20868)))
+     (Instr 'cmpq (list (Imm 1) (Var 'x20868)))
+     (JmpIf 'e 'block20875)
+     (Jmp 'block20876))))
   (cons
-   'block20734
+   'block20876
    (Block
     '()
     (list
-     (Instr 'cmpq (list (Imm 0) (Var 'x20726)))
-     (JmpIf 'e 'block20731)
-     (Jmp 'block20732))))
+     (Instr 'cmpq (list (Imm 0) (Var 'x20868)))
+     (JmpIf 'e 'block20873)
+     (Jmp 'block20874))))
   (cons
-   'block20733
+   'block20875
    (Block
     '()
     (list
-     (Instr 'cmpq (list (Imm 1) (Var 'x20726)))
-     (JmpIf 'e 'block20731)
-     (Jmp 'block20732))))
+     (Instr 'cmpq (list (Imm 1) (Var 'x20868)))
+     (JmpIf 'e 'block20873)
+     (Jmp 'block20874))))
   (cons
-   'block20732
+   'block20874
    (Block
     '()
-    (list (Instr 'movq (list (Imm 0) (Var 'x20727))) (Jmp 'block20730))))
+    (list (Instr 'movq (list (Imm 0) (Var 'x20869))) (Jmp 'block20872))))
   (cons
-   'block20731
+   'block20873
    (Block
     '()
-    (list (Instr 'movq (list (Imm 1) (Var 'x20727))) (Jmp 'block20730))))
+    (list (Instr 'movq (list (Imm 1) (Var 'x20869))) (Jmp 'block20872))))
   (cons
-   'block20730
+   'block20872
    (Block
     '()
     (list
-     (Instr 'cmpq (list (Imm 1) (Var 'x20727)))
-     (JmpIf 'e 'block20728)
-     (Jmp 'block20729))))
+     (Instr 'cmpq (list (Imm 1) (Var 'x20869)))
+     (JmpIf 'e 'block20870)
+     (Jmp 'block20871))))
   (cons
-   'block20729
+   'block20871
    (Block
     '()
     (list
@@ -1413,7 +1645,7 @@ type-check output:  @ utilities.rkt:2056
      (Instr 'negq (list (Reg 'rax)))
      (Jmp 'conclusion))))
   (cons
-   'block20728
+   'block20870
    (Block
     '()
     (list (Instr 'movq (list (Imm 10) (Reg 'rax))) (Jmp 'conclusion))))))
@@ -1437,23 +1669,23 @@ running pass: liveness analysis @ utilities.rkt:2048
 (#<set:>)
 (#<set:>)
 (#<set:>)
-(#<set: #<Var: x20727>>)
-(#<set: #<Var: x20727>>)
+(#<set: #<Var: x20869>>)
+(#<set: #<Var: x20869>>)
 (#<set:>)
 (#<set:>)
-(#<set: #<Var: x20726>>)
+(#<set: #<Var: x20868>>)
 pass output:  @ utilities.rkt:2051
 (strip-has-type new-p^):
 (X86Program
- '((locals-types (x20727 . Boolean) (x20726 . Boolean)))
+ '((locals-types (x20869 . Boolean) (x20868 . Boolean)))
  (list
   (cons
-   'block20728
+   'block20870
    (Block
     (list (list 'live-sets (set) (set)))
     (list (Instr 'movq (list (Imm 10) (Reg 'rax))) (Jmp 'conclusion))))
   (cons
-   'block20729
+   'block20871
    (Block
     (list (list 'live-sets (set (Reg 'rax)) (set) (set)))
     (list
@@ -1461,68 +1693,68 @@ pass output:  @ utilities.rkt:2051
      (Instr 'negq (list (Reg 'rax)))
      (Jmp 'conclusion))))
   (cons
-   'block20730
+   'block20872
    (Block
     (list (list 'live-sets (set) (set) (set)))
     (list
-     (Instr 'cmpq (list (Imm 1) (Var 'x20727)))
-     (JmpIf 'e 'block20728)
-     (Jmp 'block20729))))
+     (Instr 'cmpq (list (Imm 1) (Var 'x20869)))
+     (JmpIf 'e 'block20870)
+     (Jmp 'block20871))))
   (cons
-   'block20732
+   'block20874
    (Block
-    (list (list 'live-sets (set (Var 'x20727)) (set (Var 'x20727))))
-    (list (Instr 'movq (list (Imm 0) (Var 'x20727))) (Jmp 'block20730))))
+    (list (list 'live-sets (set (Var 'x20869)) (set (Var 'x20869))))
+    (list (Instr 'movq (list (Imm 0) (Var 'x20869))) (Jmp 'block20872))))
   (cons
-   'block20731
+   'block20873
    (Block
-    (list (list 'live-sets (set (Var 'x20727)) (set (Var 'x20727))))
-    (list (Instr 'movq (list (Imm 1) (Var 'x20727))) (Jmp 'block20730))))
+    (list (list 'live-sets (set (Var 'x20869)) (set (Var 'x20869))))
+    (list (Instr 'movq (list (Imm 1) (Var 'x20869))) (Jmp 'block20872))))
   (cons
-   'block20734
-   (Block
-    (list (list 'live-sets (set) (set) (set)))
-    (list
-     (Instr 'cmpq (list (Imm 0) (Var 'x20726)))
-     (JmpIf 'e 'block20731)
-     (Jmp 'block20732))))
-  (cons
-   'block20733
+   'block20876
    (Block
     (list (list 'live-sets (set) (set) (set)))
     (list
-     (Instr 'cmpq (list (Imm 1) (Var 'x20726)))
-     (JmpIf 'e 'block20731)
-     (Jmp 'block20732))))
+     (Instr 'cmpq (list (Imm 0) (Var 'x20868)))
+     (JmpIf 'e 'block20873)
+     (Jmp 'block20874))))
+  (cons
+   'block20875
+   (Block
+    (list (list 'live-sets (set) (set) (set)))
+    (list
+     (Instr 'cmpq (list (Imm 1) (Var 'x20868)))
+     (JmpIf 'e 'block20873)
+     (Jmp 'block20874))))
   (cons
    'start
    (Block
     (list
      (list
       'live-sets
-      (set (Var 'x20726))
-      (set (Var 'x20726))
-      (set (Var 'x20726))
-      (set (Var 'x20726))))
+      (set (Var 'x20868))
+      (set (Var 'x20868))
+      (set (Var 'x20868))
+      (set (Var 'x20868))))
     (list
-     (Instr 'movq (list (Imm 1) (Var 'x20726)))
-     (Instr 'cmpq (list (Imm 1) (Var 'x20726)))
-     (JmpIf 'e 'block20733)
-     (Jmp 'block20734))))))
+     (Instr 'movq (list (Imm 1) (Var 'x20868)))
+     (Instr 'cmpq (list (Imm 1) (Var 'x20868)))
+     (JmpIf 'e 'block20875)
+     (Jmp 'block20876))))))
 
 
 type-check output:  @ utilities.rkt:2056
 (strip-has-type new-p):
 (X86Program
- '((locals-types (x20727 . Boolean) (x20726 . Boolean)))
+ '((locals-types (x20869 . Boolean) (x20868 . Boolean)))
  (list
   (cons
-   'block20728
+   'block20870
    (Block
     (list (list 'live-sets (set) (set)))
     (list (Instr 'movq (list (Imm 10) (Reg 'rax))) (Jmp 'conclusion))))
   (cons
-   'block20729
+   'block20871
    (Block
     (list (list 'live-sets (set (Reg 'rax)) (set) (set)))
     (list
@@ -1530,54 +1762,54 @@ type-check output:  @ utilities.rkt:2056
      (Instr 'negq (list (Reg 'rax)))
      (Jmp 'conclusion))))
   (cons
-   'block20730
+   'block20872
    (Block
     (list (list 'live-sets (set) (set) (set)))
     (list
-     (Instr 'cmpq (list (Imm 1) (Var 'x20727)))
-     (JmpIf 'e 'block20728)
-     (Jmp 'block20729))))
+     (Instr 'cmpq (list (Imm 1) (Var 'x20869)))
+     (JmpIf 'e 'block20870)
+     (Jmp 'block20871))))
   (cons
-   'block20732
+   'block20874
    (Block
-    (list (list 'live-sets (set (Var 'x20727)) (set (Var 'x20727))))
-    (list (Instr 'movq (list (Imm 0) (Var 'x20727))) (Jmp 'block20730))))
+    (list (list 'live-sets (set (Var 'x20869)) (set (Var 'x20869))))
+    (list (Instr 'movq (list (Imm 0) (Var 'x20869))) (Jmp 'block20872))))
   (cons
-   'block20731
+   'block20873
    (Block
-    (list (list 'live-sets (set (Var 'x20727)) (set (Var 'x20727))))
-    (list (Instr 'movq (list (Imm 1) (Var 'x20727))) (Jmp 'block20730))))
+    (list (list 'live-sets (set (Var 'x20869)) (set (Var 'x20869))))
+    (list (Instr 'movq (list (Imm 1) (Var 'x20869))) (Jmp 'block20872))))
   (cons
-   'block20734
-   (Block
-    (list (list 'live-sets (set) (set) (set)))
-    (list
-     (Instr 'cmpq (list (Imm 0) (Var 'x20726)))
-     (JmpIf 'e 'block20731)
-     (Jmp 'block20732))))
-  (cons
-   'block20733
+   'block20876
    (Block
     (list (list 'live-sets (set) (set) (set)))
     (list
-     (Instr 'cmpq (list (Imm 1) (Var 'x20726)))
-     (JmpIf 'e 'block20731)
-     (Jmp 'block20732))))
+     (Instr 'cmpq (list (Imm 0) (Var 'x20868)))
+     (JmpIf 'e 'block20873)
+     (Jmp 'block20874))))
+  (cons
+   'block20875
+   (Block
+    (list (list 'live-sets (set) (set) (set)))
+    (list
+     (Instr 'cmpq (list (Imm 1) (Var 'x20868)))
+     (JmpIf 'e 'block20873)
+     (Jmp 'block20874))))
   (cons
    'start
    (Block
     (list
      (list
       'live-sets
-      (set (Var 'x20726))
-      (set (Var 'x20726))
-      (set (Var 'x20726))
-      (set (Var 'x20726))))
+      (set (Var 'x20868))
+      (set (Var 'x20868))
+      (set (Var 'x20868))
+      (set (Var 'x20868))))
     (list
-     (Instr 'movq (list (Imm 1) (Var 'x20726)))
-     (Instr 'cmpq (list (Imm 1) (Var 'x20726)))
-     (JmpIf 'e 'block20733)
-     (Jmp 'block20734))))))
+     (Instr 'movq (list (Imm 1) (Var 'x20868)))
+     (Instr 'cmpq (list (Imm 1) (Var 'x20868)))
+     (JmpIf 'e 'block20875)
+     (Jmp 'block20876))))))
 
 
 output:  @ utilities.rkt:2063
@@ -1598,16 +1830,16 @@ running pass: build interference graph @ utilities.rkt:2048
 pass output:  @ utilities.rkt:2051
 (strip-has-type new-p^):
 (X86Program
- '((locals-types (x20727 . Boolean) (x20726 . Boolean))
+ '((locals-types (x20869 . Boolean) (x20868 . Boolean))
    (conflicts . #<unweighted-graph>))
  (list
   (cons
-   'block20728
+   'block20870
    (Block
     (list (list 'live-sets (set) (set)))
     (list (Instr 'movq (list (Imm 10) (Reg 'rax))) (Jmp 'conclusion))))
   (cons
-   'block20729
+   'block20871
    (Block
     (list (list 'live-sets (set (Reg 'rax)) (set) (set)))
     (list
@@ -1615,69 +1847,69 @@ pass output:  @ utilities.rkt:2051
      (Instr 'negq (list (Reg 'rax)))
      (Jmp 'conclusion))))
   (cons
-   'block20730
+   'block20872
    (Block
     (list (list 'live-sets (set) (set) (set)))
     (list
-     (Instr 'cmpq (list (Imm 1) (Var 'x20727)))
-     (JmpIf 'e 'block20728)
-     (Jmp 'block20729))))
+     (Instr 'cmpq (list (Imm 1) (Var 'x20869)))
+     (JmpIf 'e 'block20870)
+     (Jmp 'block20871))))
   (cons
-   'block20732
+   'block20874
    (Block
-    (list (list 'live-sets (set (Var 'x20727)) (set (Var 'x20727))))
-    (list (Instr 'movq (list (Imm 0) (Var 'x20727))) (Jmp 'block20730))))
+    (list (list 'live-sets (set (Var 'x20869)) (set (Var 'x20869))))
+    (list (Instr 'movq (list (Imm 0) (Var 'x20869))) (Jmp 'block20872))))
   (cons
-   'block20731
+   'block20873
    (Block
-    (list (list 'live-sets (set (Var 'x20727)) (set (Var 'x20727))))
-    (list (Instr 'movq (list (Imm 1) (Var 'x20727))) (Jmp 'block20730))))
+    (list (list 'live-sets (set (Var 'x20869)) (set (Var 'x20869))))
+    (list (Instr 'movq (list (Imm 1) (Var 'x20869))) (Jmp 'block20872))))
   (cons
-   'block20734
-   (Block
-    (list (list 'live-sets (set) (set) (set)))
-    (list
-     (Instr 'cmpq (list (Imm 0) (Var 'x20726)))
-     (JmpIf 'e 'block20731)
-     (Jmp 'block20732))))
-  (cons
-   'block20733
+   'block20876
    (Block
     (list (list 'live-sets (set) (set) (set)))
     (list
-     (Instr 'cmpq (list (Imm 1) (Var 'x20726)))
-     (JmpIf 'e 'block20731)
-     (Jmp 'block20732))))
+     (Instr 'cmpq (list (Imm 0) (Var 'x20868)))
+     (JmpIf 'e 'block20873)
+     (Jmp 'block20874))))
+  (cons
+   'block20875
+   (Block
+    (list (list 'live-sets (set) (set) (set)))
+    (list
+     (Instr 'cmpq (list (Imm 1) (Var 'x20868)))
+     (JmpIf 'e 'block20873)
+     (Jmp 'block20874))))
   (cons
    'start
    (Block
     (list
      (list
       'live-sets
-      (set (Var 'x20726))
-      (set (Var 'x20726))
-      (set (Var 'x20726))
-      (set (Var 'x20726))))
+      (set (Var 'x20868))
+      (set (Var 'x20868))
+      (set (Var 'x20868))
+      (set (Var 'x20868))))
     (list
-     (Instr 'movq (list (Imm 1) (Var 'x20726)))
-     (Instr 'cmpq (list (Imm 1) (Var 'x20726)))
-     (JmpIf 'e 'block20733)
-     (Jmp 'block20734))))))
+     (Instr 'movq (list (Imm 1) (Var 'x20868)))
+     (Instr 'cmpq (list (Imm 1) (Var 'x20868)))
+     (JmpIf 'e 'block20875)
+     (Jmp 'block20876))))))
 
 
 type-check output:  @ utilities.rkt:2056
 (strip-has-type new-p):
 (X86Program
- '((locals-types (x20727 . Boolean) (x20726 . Boolean))
+ '((locals-types (x20869 . Boolean) (x20868 . Boolean))
    (conflicts . #<unweighted-graph>))
  (list
   (cons
-   'block20728
+   'block20870
    (Block
     (list (list 'live-sets (set) (set)))
     (list (Instr 'movq (list (Imm 10) (Reg 'rax))) (Jmp 'conclusion))))
   (cons
-   'block20729
+   'block20871
    (Block
     (list (list 'live-sets (set (Reg 'rax)) (set) (set)))
     (list
@@ -1685,54 +1917,238 @@ type-check output:  @ utilities.rkt:2056
      (Instr 'negq (list (Reg 'rax)))
      (Jmp 'conclusion))))
   (cons
-   'block20730
+   'block20872
    (Block
     (list (list 'live-sets (set) (set) (set)))
     (list
-     (Instr 'cmpq (list (Imm 1) (Var 'x20727)))
-     (JmpIf 'e 'block20728)
-     (Jmp 'block20729))))
+     (Instr 'cmpq (list (Imm 1) (Var 'x20869)))
+     (JmpIf 'e 'block20870)
+     (Jmp 'block20871))))
   (cons
-   'block20732
+   'block20874
    (Block
-    (list (list 'live-sets (set (Var 'x20727)) (set (Var 'x20727))))
-    (list (Instr 'movq (list (Imm 0) (Var 'x20727))) (Jmp 'block20730))))
+    (list (list 'live-sets (set (Var 'x20869)) (set (Var 'x20869))))
+    (list (Instr 'movq (list (Imm 0) (Var 'x20869))) (Jmp 'block20872))))
   (cons
-   'block20731
+   'block20873
    (Block
-    (list (list 'live-sets (set (Var 'x20727)) (set (Var 'x20727))))
-    (list (Instr 'movq (list (Imm 1) (Var 'x20727))) (Jmp 'block20730))))
+    (list (list 'live-sets (set (Var 'x20869)) (set (Var 'x20869))))
+    (list (Instr 'movq (list (Imm 1) (Var 'x20869))) (Jmp 'block20872))))
   (cons
-   'block20734
-   (Block
-    (list (list 'live-sets (set) (set) (set)))
-    (list
-     (Instr 'cmpq (list (Imm 0) (Var 'x20726)))
-     (JmpIf 'e 'block20731)
-     (Jmp 'block20732))))
-  (cons
-   'block20733
+   'block20876
    (Block
     (list (list 'live-sets (set) (set) (set)))
     (list
-     (Instr 'cmpq (list (Imm 1) (Var 'x20726)))
-     (JmpIf 'e 'block20731)
-     (Jmp 'block20732))))
+     (Instr 'cmpq (list (Imm 0) (Var 'x20868)))
+     (JmpIf 'e 'block20873)
+     (Jmp 'block20874))))
+  (cons
+   'block20875
+   (Block
+    (list (list 'live-sets (set) (set) (set)))
+    (list
+     (Instr 'cmpq (list (Imm 1) (Var 'x20868)))
+     (JmpIf 'e 'block20873)
+     (Jmp 'block20874))))
   (cons
    'start
    (Block
     (list
      (list
       'live-sets
-      (set (Var 'x20726))
-      (set (Var 'x20726))
-      (set (Var 'x20726))
-      (set (Var 'x20726))))
+      (set (Var 'x20868))
+      (set (Var 'x20868))
+      (set (Var 'x20868))
+      (set (Var 'x20868))))
     (list
-     (Instr 'movq (list (Imm 1) (Var 'x20726)))
-     (Instr 'cmpq (list (Imm 1) (Var 'x20726)))
-     (JmpIf 'e 'block20733)
-     (Jmp 'block20734))))))
+     (Instr 'movq (list (Imm 1) (Var 'x20868)))
+     (Instr 'cmpq (list (Imm 1) (Var 'x20868)))
+     (JmpIf 'e 'block20875)
+     (Jmp 'block20876))))))
+
+
+output:  @ utilities.rkt:2063
+result:
+10
+
+
+testing @ utilities.rkt:2037
+test-name:
+"cond_test_90"
+
+expected-result:
+10
+
+
+running pass: register allocation @ utilities.rkt:2048
+
+move-graph: move-graph end
+locals: (x20869 x20868)
+cur-node neighbors potential-colors interfering-colors cur-color
+#<Var: x20868>
+()
+#<set:>
+#<set:>
+0
+updated-saturation: ((#<Var: x20869> . #<set:>) (#<Var: x20868> . #<set:>))
+old and updated-move-bias: 
+((#<Var: x20869> . 0) (#<Var: x20868> . 0))
+((#<Var: x20869> . 0) (#<Var: x20868> . 0))
+cur-node neighbors potential-colors interfering-colors cur-color
+#<Var: x20869>
+()
+#<set:>
+#<set:>
+0
+updated-saturation: ((#<Var: x20869> . #<set:>) (#<Var: x20868> . #<set:>))
+old and updated-move-bias: 
+((#<Var: x20869> . 0) (#<Var: x20868> . 0))
+((#<Var: x20869> . 0) (#<Var: x20868> . 0))
+variable-colors: ((#<Reg: rcx> . 0) (#<Reg: rdx> . 1) (#<Reg: rsi> . 2) (#<Reg: rdi> . 3) (#<Reg: r8> . 4) (#<Reg: r9> . 5) (#<Reg: r10> . 6) (#<Reg: r11> . 7) (#<Reg: rbx> . 8) (#<Reg: r12> . 9) (#<Reg: r13> . 10) (#<Reg: r14> . 11) (#<Reg: rax> . -1) (#<Reg: rsp> . -2) (#<Reg: rbp> . -3) (#<Reg: r15> . -4) (#<Var: x20868> . 0) (#<Var: x20869> . 0))
+pass output:  @ utilities.rkt:2051
+(strip-has-type new-p^):
+(X86Program
+ (list
+  '(locals-types (x20869 . Boolean) (x20868 . Boolean))
+  '(conflicts . #<unweighted-graph>)
+  (cons 'used_callee (set))
+  '(stack-space . 0))
+ (list
+  (cons
+   'block20870
+   (Block
+    (list (list 'live-sets (set) (set)))
+    (list (Instr 'movq (list (Imm 10) (Reg 'rax))) (Jmp 'conclusion))))
+  (cons
+   'block20871
+   (Block
+    (list (list 'live-sets (set (Reg 'rax)) (set) (set)))
+    (list
+     (Instr 'movq (list (Imm 10) (Reg 'rax)))
+     (Instr 'negq (list (Reg 'rax)))
+     (Jmp 'conclusion))))
+  (cons
+   'block20872
+   (Block
+    (list (list 'live-sets (set) (set) (set)))
+    (list
+     (Instr 'cmpq (list (Imm 1) (Reg 'rcx)))
+     (JmpIf 'e 'block20870)
+     (Jmp 'block20871))))
+  (cons
+   'block20874
+   (Block
+    (list (list 'live-sets (set (Var 'x20869)) (set (Var 'x20869))))
+    (list (Instr 'movq (list (Imm 0) (Reg 'rcx))) (Jmp 'block20872))))
+  (cons
+   'block20873
+   (Block
+    (list (list 'live-sets (set (Var 'x20869)) (set (Var 'x20869))))
+    (list (Instr 'movq (list (Imm 1) (Reg 'rcx))) (Jmp 'block20872))))
+  (cons
+   'block20876
+   (Block
+    (list (list 'live-sets (set) (set) (set)))
+    (list
+     (Instr 'cmpq (list (Imm 0) (Reg 'rcx)))
+     (JmpIf 'e 'block20873)
+     (Jmp 'block20874))))
+  (cons
+   'block20875
+   (Block
+    (list (list 'live-sets (set) (set) (set)))
+    (list
+     (Instr 'cmpq (list (Imm 1) (Reg 'rcx)))
+     (JmpIf 'e 'block20873)
+     (Jmp 'block20874))))
+  (cons
+   'start
+   (Block
+    (list
+     (list
+      'live-sets
+      (set (Var 'x20868))
+      (set (Var 'x20868))
+      (set (Var 'x20868))
+      (set (Var 'x20868))))
+    (list
+     (Instr 'movq (list (Imm 1) (Reg 'rcx)))
+     (Instr 'cmpq (list (Imm 1) (Reg 'rcx)))
+     (JmpIf 'e 'block20875)
+     (Jmp 'block20876))))))
+
+
+type-check output:  @ utilities.rkt:2056
+(strip-has-type new-p):
+(X86Program
+ (list
+  '(locals-types (x20869 . Boolean) (x20868 . Boolean))
+  '(conflicts . #<unweighted-graph>)
+  (cons 'used_callee (set))
+  '(stack-space . 0))
+ (list
+  (cons
+   'block20870
+   (Block
+    (list (list 'live-sets (set) (set)))
+    (list (Instr 'movq (list (Imm 10) (Reg 'rax))) (Jmp 'conclusion))))
+  (cons
+   'block20871
+   (Block
+    (list (list 'live-sets (set (Reg 'rax)) (set) (set)))
+    (list
+     (Instr 'movq (list (Imm 10) (Reg 'rax)))
+     (Instr 'negq (list (Reg 'rax)))
+     (Jmp 'conclusion))))
+  (cons
+   'block20872
+   (Block
+    (list (list 'live-sets (set) (set) (set)))
+    (list
+     (Instr 'cmpq (list (Imm 1) (Reg 'rcx)))
+     (JmpIf 'e 'block20870)
+     (Jmp 'block20871))))
+  (cons
+   'block20874
+   (Block
+    (list (list 'live-sets (set (Var 'x20869)) (set (Var 'x20869))))
+    (list (Instr 'movq (list (Imm 0) (Reg 'rcx))) (Jmp 'block20872))))
+  (cons
+   'block20873
+   (Block
+    (list (list 'live-sets (set (Var 'x20869)) (set (Var 'x20869))))
+    (list (Instr 'movq (list (Imm 1) (Reg 'rcx))) (Jmp 'block20872))))
+  (cons
+   'block20876
+   (Block
+    (list (list 'live-sets (set) (set) (set)))
+    (list
+     (Instr 'cmpq (list (Imm 0) (Reg 'rcx)))
+     (JmpIf 'e 'block20873)
+     (Jmp 'block20874))))
+  (cons
+   'block20875
+   (Block
+    (list (list 'live-sets (set) (set) (set)))
+    (list
+     (Instr 'cmpq (list (Imm 1) (Reg 'rcx)))
+     (JmpIf 'e 'block20873)
+     (Jmp 'block20874))))
+  (cons
+   'start
+   (Block
+    (list
+     (list
+      'live-sets
+      (set (Var 'x20868))
+      (set (Var 'x20868))
+      (set (Var 'x20868))
+      (set (Var 'x20868))))
+    (list
+     (Instr 'movq (list (Imm 1) (Reg 'rcx)))
+     (Instr 'cmpq (list (Imm 1) (Reg 'rcx)))
+     (JmpIf 'e 'block20875)
+     (Jmp 'block20876))))))
 
 
 output:  @ utilities.rkt:2063
@@ -1850,9 +2266,9 @@ pass output:  @ utilities.rkt:2051
   (If (Bool #t) (If (Bool #f) (Bool #t) (Bool #t)) (Bool #f))
   (Prim '+ (list (Int 1) (Int 2)))
   (Let
-   'tmp20746
+   'tmp20889
    (Prim '- (list (Int 5)))
-   (Prim '+ (list (Int 10) (Var 'tmp20746))))))
+   (Prim '+ (list (Int 10) (Var 'tmp20889))))))
 
 
 type checking... @ utilities.rkt:2053
@@ -1865,9 +2281,9 @@ type-check output:  @ utilities.rkt:2056
   (If (Bool #t) (If (Bool #f) (Bool #t) (Bool #t)) (Bool #f))
   (Prim '+ (list (Int 1) (Int 2)))
   (Let
-   'tmp20746
+   'tmp20889
    (Prim '- (list (Int 5)))
-   (Prim '+ (list (Int 10) (Var 'tmp20746))))))
+   (Prim '+ (list (Int 10) (Var 'tmp20889))))))
 
 
 output:  @ utilities.rkt:2063
@@ -1890,13 +2306,13 @@ pass output:  @ utilities.rkt:2051
 (CProgram
  '()
  (list
-  (cons 'start (Goto 'block20747))
+  (cons 'start (Goto 'block20890))
   (cons
-   'block20748
+   'block20891
    (Seq
-    (Assign (Var 'tmp20746) (Prim '- (list (Int 5))))
-    (Return (Prim '+ (list (Int 10) (Var 'tmp20746))))))
-  (cons 'block20747 (Return (Prim '+ (list (Int 1) (Int 2)))))))
+    (Assign (Var 'tmp20889) (Prim '- (list (Int 5))))
+    (Return (Prim '+ (list (Int 10) (Var 'tmp20889))))))
+  (cons 'block20890 (Return (Prim '+ (list (Int 1) (Int 2)))))))
 
 
 type checking... @ utilities.rkt:2053
@@ -1904,15 +2320,15 @@ type checking... @ utilities.rkt:2053
 type-check output:  @ utilities.rkt:2056
 (strip-has-type new-p):
 (CProgram
- '((locals-types))
+ '((locals-types (tmp20889 . Integer)))
  (list
-  (cons 'start (Goto 'block20747))
+  (cons 'start (Goto 'block20890))
   (cons
-   'block20748
+   'block20891
    (Seq
-    (Assign (Var 'tmp20746) (Prim '- (list (Int 5))))
-    (Return (Prim '+ (list (Int 10) (Var 'tmp20746))))))
-  (cons 'block20747 (Return (Prim '+ (list (Int 1) (Int 2)))))))
+    (Assign (Var 'tmp20889) (Prim '- (list (Int 5))))
+    (Return (Prim '+ (list (Int 10) (Var 'tmp20889))))))
+  (cons 'block20890 (Return (Prim '+ (list (Int 1) (Int 2)))))))
 
 
 output:  @ utilities.rkt:2063
@@ -1933,21 +2349,21 @@ running pass: instruction selection @ utilities.rkt:2048
 pass output:  @ utilities.rkt:2051
 (strip-has-type new-p^):
 (X86Program
- '((locals-types))
+ '((locals-types (tmp20889 . Integer)))
  (list
-  (cons 'start (Block '() (list (Jmp 'block20747))))
+  (cons 'start (Block '() (list (Jmp 'block20890))))
   (cons
-   'block20748
+   'block20891
    (Block
     '()
     (list
-     (Instr 'movq (list (Imm 5) (Var 'tmp20746)))
-     (Instr 'negq (list (Var 'tmp20746)))
+     (Instr 'movq (list (Imm 5) (Var 'tmp20889)))
+     (Instr 'negq (list (Var 'tmp20889)))
      (Instr 'movq (list (Imm 10) (Reg 'rax)))
-     (Instr 'addq (list (Var 'tmp20746) (Reg 'rax)))
+     (Instr 'addq (list (Var 'tmp20889) (Reg 'rax)))
      (Jmp 'conclusion))))
   (cons
-   'block20747
+   'block20890
    (Block
     '()
     (list
@@ -1959,21 +2375,21 @@ pass output:  @ utilities.rkt:2051
 type-check output:  @ utilities.rkt:2056
 (strip-has-type new-p):
 (X86Program
- '((locals-types))
+ '((locals-types (tmp20889 . Integer)))
  (list
-  (cons 'start (Block '() (list (Jmp 'block20747))))
+  (cons 'start (Block '() (list (Jmp 'block20890))))
   (cons
-   'block20748
+   'block20891
    (Block
     '()
     (list
-     (Instr 'movq (list (Imm 5) (Var 'tmp20746)))
-     (Instr 'negq (list (Var 'tmp20746)))
+     (Instr 'movq (list (Imm 5) (Var 'tmp20889)))
+     (Instr 'negq (list (Var 'tmp20889)))
      (Instr 'movq (list (Imm 10) (Reg 'rax)))
-     (Instr 'addq (list (Var 'tmp20746) (Reg 'rax)))
+     (Instr 'addq (list (Var 'tmp20889) (Reg 'rax)))
      (Jmp 'conclusion))))
   (cons
-   'block20747
+   'block20890
    (Block
     '()
     (list
@@ -2003,10 +2419,10 @@ running pass: liveness analysis @ utilities.rkt:2048
 pass output:  @ utilities.rkt:2051
 (strip-has-type new-p^):
 (X86Program
- '((locals-types))
+ '((locals-types (tmp20889 . Integer)))
  (list
   (cons
-   'block20747
+   'block20890
    (Block
     (list (list 'live-sets (set (Reg 'rax)) (set) (set)))
     (list
@@ -2014,34 +2430,34 @@ pass output:  @ utilities.rkt:2051
      (Instr 'addq (list (Imm 2) (Reg 'rax)))
      (Jmp 'conclusion))))
   (cons
-   'block20748
+   'block20891
    (Block
     (list
      (list
       'live-sets
-      (set (Var 'tmp20746))
-      (set (Var 'tmp20746))
-      (set (Reg 'rax) (Var 'tmp20746))
+      (set (Var 'tmp20889))
+      (set (Var 'tmp20889))
+      (set (Reg 'rax) (Var 'tmp20889))
       (set)
       (set)))
     (list
-     (Instr 'movq (list (Imm 5) (Var 'tmp20746)))
-     (Instr 'negq (list (Var 'tmp20746)))
+     (Instr 'movq (list (Imm 5) (Var 'tmp20889)))
+     (Instr 'negq (list (Var 'tmp20889)))
      (Instr 'movq (list (Imm 10) (Reg 'rax)))
-     (Instr 'addq (list (Var 'tmp20746) (Reg 'rax)))
+     (Instr 'addq (list (Var 'tmp20889) (Reg 'rax)))
      (Jmp 'conclusion))))
   (cons
    'start
-   (Block (list (list 'live-sets (set))) (list (Jmp 'block20747))))))
+   (Block (list (list 'live-sets (set))) (list (Jmp 'block20890))))))
 
 
 type-check output:  @ utilities.rkt:2056
 (strip-has-type new-p):
 (X86Program
- '((locals-types))
+ '((locals-types (tmp20889 . Integer)))
  (list
   (cons
-   'block20747
+   'block20890
    (Block
     (list (list 'live-sets (set (Reg 'rax)) (set) (set)))
     (list
@@ -2049,25 +2465,25 @@ type-check output:  @ utilities.rkt:2056
      (Instr 'addq (list (Imm 2) (Reg 'rax)))
      (Jmp 'conclusion))))
   (cons
-   'block20748
+   'block20891
    (Block
     (list
      (list
       'live-sets
-      (set (Var 'tmp20746))
-      (set (Var 'tmp20746))
-      (set (Reg 'rax) (Var 'tmp20746))
+      (set (Var 'tmp20889))
+      (set (Var 'tmp20889))
+      (set (Reg 'rax) (Var 'tmp20889))
       (set)
       (set)))
     (list
-     (Instr 'movq (list (Imm 5) (Var 'tmp20746)))
-     (Instr 'negq (list (Var 'tmp20746)))
+     (Instr 'movq (list (Imm 5) (Var 'tmp20889)))
+     (Instr 'negq (list (Var 'tmp20889)))
      (Instr 'movq (list (Imm 10) (Reg 'rax)))
-     (Instr 'addq (list (Var 'tmp20746) (Reg 'rax)))
+     (Instr 'addq (list (Var 'tmp20889) (Reg 'rax)))
      (Jmp 'conclusion))))
   (cons
    'start
-   (Block (list (list 'live-sets (set))) (list (Jmp 'block20747))))))
+   (Block (list (list 'live-sets (set))) (list (Jmp 'block20890))))))
 
 
 output:  @ utilities.rkt:2063
@@ -2085,15 +2501,15 @@ expected-result:
 
 running pass: build interference graph @ utilities.rkt:2048
 
-#<Reg: rax> -> #<Var: tmp20746>;
-#<Var: tmp20746> -> #<Reg: rax>;
+#<Var: tmp20889> -> #<Reg: rax>;
+#<Reg: rax> -> #<Var: tmp20889>;
 pass output:  @ utilities.rkt:2051
 (strip-has-type new-p^):
 (X86Program
- '((locals-types) (conflicts . #<unweighted-graph>))
+ '((locals-types (tmp20889 . Integer)) (conflicts . #<unweighted-graph>))
  (list
   (cons
-   'block20747
+   'block20890
    (Block
     (list (list 'live-sets (set (Reg 'rax)) (set) (set)))
     (list
@@ -2101,34 +2517,34 @@ pass output:  @ utilities.rkt:2051
      (Instr 'addq (list (Imm 2) (Reg 'rax)))
      (Jmp 'conclusion))))
   (cons
-   'block20748
+   'block20891
    (Block
     (list
      (list
       'live-sets
-      (set (Var 'tmp20746))
-      (set (Var 'tmp20746))
-      (set (Reg 'rax) (Var 'tmp20746))
+      (set (Var 'tmp20889))
+      (set (Var 'tmp20889))
+      (set (Reg 'rax) (Var 'tmp20889))
       (set)
       (set)))
     (list
-     (Instr 'movq (list (Imm 5) (Var 'tmp20746)))
-     (Instr 'negq (list (Var 'tmp20746)))
+     (Instr 'movq (list (Imm 5) (Var 'tmp20889)))
+     (Instr 'negq (list (Var 'tmp20889)))
      (Instr 'movq (list (Imm 10) (Reg 'rax)))
-     (Instr 'addq (list (Var 'tmp20746) (Reg 'rax)))
+     (Instr 'addq (list (Var 'tmp20889) (Reg 'rax)))
      (Jmp 'conclusion))))
   (cons
    'start
-   (Block (list (list 'live-sets (set))) (list (Jmp 'block20747))))))
+   (Block (list (list 'live-sets (set))) (list (Jmp 'block20890))))))
 
 
 type-check output:  @ utilities.rkt:2056
 (strip-has-type new-p):
 (X86Program
- '((locals-types) (conflicts . #<unweighted-graph>))
+ '((locals-types (tmp20889 . Integer)) (conflicts . #<unweighted-graph>))
  (list
   (cons
-   'block20747
+   'block20890
    (Block
     (list (list 'live-sets (set (Reg 'rax)) (set) (set)))
     (list
@@ -2136,25 +2552,131 @@ type-check output:  @ utilities.rkt:2056
      (Instr 'addq (list (Imm 2) (Reg 'rax)))
      (Jmp 'conclusion))))
   (cons
-   'block20748
+   'block20891
    (Block
     (list
      (list
       'live-sets
-      (set (Var 'tmp20746))
-      (set (Var 'tmp20746))
-      (set (Reg 'rax) (Var 'tmp20746))
+      (set (Var 'tmp20889))
+      (set (Var 'tmp20889))
+      (set (Reg 'rax) (Var 'tmp20889))
       (set)
       (set)))
     (list
-     (Instr 'movq (list (Imm 5) (Var 'tmp20746)))
-     (Instr 'negq (list (Var 'tmp20746)))
+     (Instr 'movq (list (Imm 5) (Var 'tmp20889)))
+     (Instr 'negq (list (Var 'tmp20889)))
      (Instr 'movq (list (Imm 10) (Reg 'rax)))
-     (Instr 'addq (list (Var 'tmp20746) (Reg 'rax)))
+     (Instr 'addq (list (Var 'tmp20889) (Reg 'rax)))
      (Jmp 'conclusion))))
   (cons
    'start
-   (Block (list (list 'live-sets (set))) (list (Jmp 'block20747))))))
+   (Block (list (list 'live-sets (set))) (list (Jmp 'block20890))))))
+
+
+output:  @ utilities.rkt:2063
+result:
+3
+
+
+testing @ utilities.rkt:2037
+test-name:
+"cond_test_91"
+
+expected-result:
+3
+
+
+running pass: register allocation @ utilities.rkt:2048
+
+move-graph: move-graph end
+locals: (tmp20889)
+cur-node neighbors potential-colors interfering-colors cur-color
+#<Var: tmp20889>
+(#<Reg: rax>)
+#<set:>
+#<set: -1>
+0
+updated-saturation: ((#<Var: tmp20889> . #<set: -1>))
+old and updated-move-bias: 
+((#<Var: tmp20889> . 0))
+((#<Var: tmp20889> . 0))
+variable-colors: ((#<Reg: rcx> . 0) (#<Reg: rdx> . 1) (#<Reg: rsi> . 2) (#<Reg: rdi> . 3) (#<Reg: r8> . 4) (#<Reg: r9> . 5) (#<Reg: r10> . 6) (#<Reg: r11> . 7) (#<Reg: rbx> . 8) (#<Reg: r12> . 9) (#<Reg: r13> . 10) (#<Reg: r14> . 11) (#<Reg: rax> . -1) (#<Reg: rsp> . -2) (#<Reg: rbp> . -3) (#<Reg: r15> . -4) (#<Var: tmp20889> . 0))
+pass output:  @ utilities.rkt:2051
+(strip-has-type new-p^):
+(X86Program
+ (list
+  '(locals-types (tmp20889 . Integer))
+  '(conflicts . #<unweighted-graph>)
+  (cons 'used_callee (set))
+  '(stack-space . 0))
+ (list
+  (cons
+   'block20890
+   (Block
+    (list (list 'live-sets (set (Reg 'rax)) (set) (set)))
+    (list
+     (Instr 'movq (list (Imm 1) (Reg 'rax)))
+     (Instr 'addq (list (Imm 2) (Reg 'rax)))
+     (Jmp 'conclusion))))
+  (cons
+   'block20891
+   (Block
+    (list
+     (list
+      'live-sets
+      (set (Var 'tmp20889))
+      (set (Var 'tmp20889))
+      (set (Reg 'rax) (Var 'tmp20889))
+      (set)
+      (set)))
+    (list
+     (Instr 'movq (list (Imm 5) (Reg 'rcx)))
+     (Instr 'negq (list (Reg 'rcx)))
+     (Instr 'movq (list (Imm 10) (Reg 'rax)))
+     (Instr 'addq (list (Reg 'rcx) (Reg 'rax)))
+     (Jmp 'conclusion))))
+  (cons
+   'start
+   (Block (list (list 'live-sets (set))) (list (Jmp 'block20890))))))
+
+
+type-check output:  @ utilities.rkt:2056
+(strip-has-type new-p):
+(X86Program
+ (list
+  '(locals-types (tmp20889 . Integer))
+  '(conflicts . #<unweighted-graph>)
+  (cons 'used_callee (set))
+  '(stack-space . 0))
+ (list
+  (cons
+   'block20890
+   (Block
+    (list (list 'live-sets (set (Reg 'rax)) (set) (set)))
+    (list
+     (Instr 'movq (list (Imm 1) (Reg 'rax)))
+     (Instr 'addq (list (Imm 2) (Reg 'rax)))
+     (Jmp 'conclusion))))
+  (cons
+   'block20891
+   (Block
+    (list
+     (list
+      'live-sets
+      (set (Var 'tmp20889))
+      (set (Var 'tmp20889))
+      (set (Reg 'rax) (Var 'tmp20889))
+      (set)
+      (set)))
+    (list
+     (Instr 'movq (list (Imm 5) (Reg 'rcx)))
+     (Instr 'negq (list (Reg 'rcx)))
+     (Instr 'movq (list (Imm 10) (Reg 'rax)))
+     (Instr 'addq (list (Reg 'rcx) (Reg 'rax)))
+     (Jmp 'conclusion))))
+  (cons
+   'start
+   (Block (list (list 'live-sets (set))) (list (Jmp 'block20890))))))
 
 
 output:  @ utilities.rkt:2063
@@ -2429,6 +2951,62 @@ expected-result:
 3
 
 
+running pass: register allocation @ utilities.rkt:2048
+
+move-graph: move-graph end
+locals: ()
+variable-colors: ((#<Reg: rcx> . 0) (#<Reg: rdx> . 1) (#<Reg: rsi> . 2) (#<Reg: rdi> . 3) (#<Reg: r8> . 4) (#<Reg: r9> . 5) (#<Reg: r10> . 6) (#<Reg: r11> . 7) (#<Reg: rbx> . 8) (#<Reg: r12> . 9) (#<Reg: r13> . 10) (#<Reg: r14> . 11) (#<Reg: rax> . -1) (#<Reg: rsp> . -2) (#<Reg: rbp> . -3) (#<Reg: r15> . -4))
+pass output:  @ utilities.rkt:2051
+(strip-has-type new-p^):
+(X86Program
+ (list
+  '(locals-types)
+  '(conflicts . #<unweighted-graph>)
+  (cons 'used_callee (set))
+  '(stack-space . 0))
+ (list
+  (cons
+   'start
+   (Block
+    (list (list 'live-sets (set (Reg 'rax)) (set) (set)))
+    (list
+     (Instr 'movq (list (Imm 2) (Reg 'rax)))
+     (Instr 'addq (list (Imm 1) (Reg 'rax)))
+     (Jmp 'conclusion))))))
+
+
+type-check output:  @ utilities.rkt:2056
+(strip-has-type new-p):
+(X86Program
+ (list
+  '(locals-types)
+  '(conflicts . #<unweighted-graph>)
+  (cons 'used_callee (set))
+  '(stack-space . 0))
+ (list
+  (cons
+   'start
+   (Block
+    (list (list 'live-sets (set (Reg 'rax)) (set) (set)))
+    (list
+     (Instr 'movq (list (Imm 2) (Reg 'rax)))
+     (Instr 'addq (list (Imm 1) (Reg 'rax)))
+     (Jmp 'conclusion))))))
+
+
+output:  @ utilities.rkt:2063
+result:
+3
+
+
+testing @ utilities.rkt:2037
+test-name:
+"cond_test_92"
+
+expected-result:
+3
+
+
 type checker output: @ utilities.rkt:2020
 (strip-has-type tsexp):
 (Program '() (Prim '+ (list (Int 2) (If (Bool #t) (Int 10) (Int 5)))))
@@ -2503,9 +3081,9 @@ pass output:  @ utilities.rkt:2051
 (Program
  '()
  (Let
-  'tmp20771
+  'tmp20916
   (If (Bool #t) (Int 10) (Int 5))
-  (Prim '+ (list (Int 2) (Var 'tmp20771)))))
+  (Prim '+ (list (Int 2) (Var 'tmp20916)))))
 
 
 type checking... @ utilities.rkt:2053
@@ -2515,9 +3093,9 @@ type-check output:  @ utilities.rkt:2056
 (Program
  '()
  (Let
-  'tmp20771
+  'tmp20916
   (If (Bool #t) (Int 10) (Int 5))
-  (Prim '+ (list (Int 2) (Var 'tmp20771)))))
+  (Prim '+ (list (Int 2) (Var 'tmp20916)))))
 
 
 output:  @ utilities.rkt:2063
@@ -2540,8 +3118,8 @@ pass output:  @ utilities.rkt:2051
 (CProgram
  '()
  (list
-  (cons 'start (Seq (Assign (Var 'tmp20771) (Int 10)) (Goto 'block20772)))
-  (cons 'block20772 (Return (Prim '+ (list (Int 2) (Var 'tmp20771)))))))
+  (cons 'start (Seq (Assign (Var 'tmp20916) (Int 10)) (Goto 'block20917)))
+  (cons 'block20917 (Return (Prim '+ (list (Int 2) (Var 'tmp20916)))))))
 
 
 type checking... @ utilities.rkt:2053
@@ -2549,10 +3127,10 @@ type checking... @ utilities.rkt:2053
 type-check output:  @ utilities.rkt:2056
 (strip-has-type new-p):
 (CProgram
- '((locals-types (tmp20771 . Integer)))
+ '((locals-types (tmp20916 . Integer)))
  (list
-  (cons 'start (Seq (Assign (Var 'tmp20771) (Int 10)) (Goto 'block20772)))
-  (cons 'block20772 (Return (Prim '+ (list (Int 2) (Var 'tmp20771)))))))
+  (cons 'start (Seq (Assign (Var 'tmp20916) (Int 10)) (Goto 'block20917)))
+  (cons 'block20917 (Return (Prim '+ (list (Int 2) (Var 'tmp20916)))))))
 
 
 output:  @ utilities.rkt:2063
@@ -2573,40 +3151,40 @@ running pass: instruction selection @ utilities.rkt:2048
 pass output:  @ utilities.rkt:2051
 (strip-has-type new-p^):
 (X86Program
- '((locals-types (tmp20771 . Integer)))
+ '((locals-types (tmp20916 . Integer)))
  (list
   (cons
    'start
    (Block
     '()
-    (list (Instr 'movq (list (Imm 10) (Var 'tmp20771))) (Jmp 'block20772))))
+    (list (Instr 'movq (list (Imm 10) (Var 'tmp20916))) (Jmp 'block20917))))
   (cons
-   'block20772
+   'block20917
    (Block
     '()
     (list
      (Instr 'movq (list (Imm 2) (Reg 'rax)))
-     (Instr 'addq (list (Var 'tmp20771) (Reg 'rax)))
+     (Instr 'addq (list (Var 'tmp20916) (Reg 'rax)))
      (Jmp 'conclusion))))))
 
 
 type-check output:  @ utilities.rkt:2056
 (strip-has-type new-p):
 (X86Program
- '((locals-types (tmp20771 . Integer)))
+ '((locals-types (tmp20916 . Integer)))
  (list
   (cons
    'start
    (Block
     '()
-    (list (Instr 'movq (list (Imm 10) (Var 'tmp20771))) (Jmp 'block20772))))
+    (list (Instr 'movq (list (Imm 10) (Var 'tmp20916))) (Jmp 'block20917))))
   (cons
-   'block20772
+   'block20917
    (Block
     '()
     (list
      (Instr 'movq (list (Imm 2) (Reg 'rax)))
-     (Instr 'addq (list (Var 'tmp20771) (Reg 'rax)))
+     (Instr 'addq (list (Var 'tmp20916) (Reg 'rax)))
      (Jmp 'conclusion))))))
 
 
@@ -2626,45 +3204,45 @@ expected-result:
 running pass: liveness analysis @ utilities.rkt:2048
 
 (#<set:>)
-(#<set: #<Var: tmp20771>>)
+(#<set: #<Var: tmp20916>>)
 pass output:  @ utilities.rkt:2051
 (strip-has-type new-p^):
 (X86Program
- '((locals-types (tmp20771 . Integer)))
+ '((locals-types (tmp20916 . Integer)))
  (list
   (cons
-   'block20772
+   'block20917
    (Block
-    (list (list 'live-sets (set (Reg 'rax) (Var 'tmp20771)) (set) (set)))
+    (list (list 'live-sets (set (Reg 'rax) (Var 'tmp20916)) (set) (set)))
     (list
      (Instr 'movq (list (Imm 2) (Reg 'rax)))
-     (Instr 'addq (list (Var 'tmp20771) (Reg 'rax)))
+     (Instr 'addq (list (Var 'tmp20916) (Reg 'rax)))
      (Jmp 'conclusion))))
   (cons
    'start
    (Block
-    (list (list 'live-sets (set (Var 'tmp20771)) (set (Var 'tmp20771))))
-    (list (Instr 'movq (list (Imm 10) (Var 'tmp20771))) (Jmp 'block20772))))))
+    (list (list 'live-sets (set (Var 'tmp20916)) (set (Var 'tmp20916))))
+    (list (Instr 'movq (list (Imm 10) (Var 'tmp20916))) (Jmp 'block20917))))))
 
 
 type-check output:  @ utilities.rkt:2056
 (strip-has-type new-p):
 (X86Program
- '((locals-types (tmp20771 . Integer)))
+ '((locals-types (tmp20916 . Integer)))
  (list
   (cons
-   'block20772
+   'block20917
    (Block
-    (list (list 'live-sets (set (Reg 'rax) (Var 'tmp20771)) (set) (set)))
+    (list (list 'live-sets (set (Reg 'rax) (Var 'tmp20916)) (set) (set)))
     (list
      (Instr 'movq (list (Imm 2) (Reg 'rax)))
-     (Instr 'addq (list (Var 'tmp20771) (Reg 'rax)))
+     (Instr 'addq (list (Var 'tmp20916) (Reg 'rax)))
      (Jmp 'conclusion))))
   (cons
    'start
    (Block
-    (list (list 'live-sets (set (Var 'tmp20771)) (set (Var 'tmp20771))))
-    (list (Instr 'movq (list (Imm 10) (Var 'tmp20771))) (Jmp 'block20772))))))
+    (list (list 'live-sets (set (Var 'tmp20916)) (set (Var 'tmp20916))))
+    (list (Instr 'movq (list (Imm 10) (Var 'tmp20916))) (Jmp 'block20917))))))
 
 
 output:  @ utilities.rkt:2063
@@ -2682,46 +3260,122 @@ expected-result:
 
 running pass: build interference graph @ utilities.rkt:2048
 
-#<Var: tmp20771> -> #<Reg: rax>;
-#<Reg: rax> -> #<Var: tmp20771>;
+#<Var: tmp20916> -> #<Reg: rax>;
+#<Reg: rax> -> #<Var: tmp20916>;
 pass output:  @ utilities.rkt:2051
 (strip-has-type new-p^):
 (X86Program
- '((locals-types (tmp20771 . Integer)) (conflicts . #<unweighted-graph>))
+ '((locals-types (tmp20916 . Integer)) (conflicts . #<unweighted-graph>))
  (list
   (cons
-   'block20772
+   'block20917
    (Block
-    (list (list 'live-sets (set (Reg 'rax) (Var 'tmp20771)) (set) (set)))
+    (list (list 'live-sets (set (Reg 'rax) (Var 'tmp20916)) (set) (set)))
     (list
      (Instr 'movq (list (Imm 2) (Reg 'rax)))
-     (Instr 'addq (list (Var 'tmp20771) (Reg 'rax)))
+     (Instr 'addq (list (Var 'tmp20916) (Reg 'rax)))
      (Jmp 'conclusion))))
   (cons
    'start
    (Block
-    (list (list 'live-sets (set (Var 'tmp20771)) (set (Var 'tmp20771))))
-    (list (Instr 'movq (list (Imm 10) (Var 'tmp20771))) (Jmp 'block20772))))))
+    (list (list 'live-sets (set (Var 'tmp20916)) (set (Var 'tmp20916))))
+    (list (Instr 'movq (list (Imm 10) (Var 'tmp20916))) (Jmp 'block20917))))))
 
 
 type-check output:  @ utilities.rkt:2056
 (strip-has-type new-p):
 (X86Program
- '((locals-types (tmp20771 . Integer)) (conflicts . #<unweighted-graph>))
+ '((locals-types (tmp20916 . Integer)) (conflicts . #<unweighted-graph>))
  (list
   (cons
-   'block20772
+   'block20917
    (Block
-    (list (list 'live-sets (set (Reg 'rax) (Var 'tmp20771)) (set) (set)))
+    (list (list 'live-sets (set (Reg 'rax) (Var 'tmp20916)) (set) (set)))
     (list
      (Instr 'movq (list (Imm 2) (Reg 'rax)))
-     (Instr 'addq (list (Var 'tmp20771) (Reg 'rax)))
+     (Instr 'addq (list (Var 'tmp20916) (Reg 'rax)))
      (Jmp 'conclusion))))
   (cons
    'start
    (Block
-    (list (list 'live-sets (set (Var 'tmp20771)) (set (Var 'tmp20771))))
-    (list (Instr 'movq (list (Imm 10) (Var 'tmp20771))) (Jmp 'block20772))))))
+    (list (list 'live-sets (set (Var 'tmp20916)) (set (Var 'tmp20916))))
+    (list (Instr 'movq (list (Imm 10) (Var 'tmp20916))) (Jmp 'block20917))))))
+
+
+output:  @ utilities.rkt:2063
+result:
+12
+
+
+testing @ utilities.rkt:2037
+test-name:
+"cond_test_93"
+
+expected-result:
+12
+
+
+running pass: register allocation @ utilities.rkt:2048
+
+move-graph: move-graph end
+locals: (tmp20916)
+cur-node neighbors potential-colors interfering-colors cur-color
+#<Var: tmp20916>
+(#<Reg: rax>)
+#<set:>
+#<set: -1>
+0
+updated-saturation: ((#<Var: tmp20916> . #<set: -1>))
+old and updated-move-bias: 
+((#<Var: tmp20916> . 0))
+((#<Var: tmp20916> . 0))
+variable-colors: ((#<Reg: rcx> . 0) (#<Reg: rdx> . 1) (#<Reg: rsi> . 2) (#<Reg: rdi> . 3) (#<Reg: r8> . 4) (#<Reg: r9> . 5) (#<Reg: r10> . 6) (#<Reg: r11> . 7) (#<Reg: rbx> . 8) (#<Reg: r12> . 9) (#<Reg: r13> . 10) (#<Reg: r14> . 11) (#<Reg: rax> . -1) (#<Reg: rsp> . -2) (#<Reg: rbp> . -3) (#<Reg: r15> . -4) (#<Var: tmp20916> . 0))
+pass output:  @ utilities.rkt:2051
+(strip-has-type new-p^):
+(X86Program
+ (list
+  '(locals-types (tmp20916 . Integer))
+  '(conflicts . #<unweighted-graph>)
+  (cons 'used_callee (set))
+  '(stack-space . 0))
+ (list
+  (cons
+   'block20917
+   (Block
+    (list (list 'live-sets (set (Reg 'rax) (Var 'tmp20916)) (set) (set)))
+    (list
+     (Instr 'movq (list (Imm 2) (Reg 'rax)))
+     (Instr 'addq (list (Reg 'rcx) (Reg 'rax)))
+     (Jmp 'conclusion))))
+  (cons
+   'start
+   (Block
+    (list (list 'live-sets (set (Var 'tmp20916)) (set (Var 'tmp20916))))
+    (list (Instr 'movq (list (Imm 10) (Reg 'rcx))) (Jmp 'block20917))))))
+
+
+type-check output:  @ utilities.rkt:2056
+(strip-has-type new-p):
+(X86Program
+ (list
+  '(locals-types (tmp20916 . Integer))
+  '(conflicts . #<unweighted-graph>)
+  (cons 'used_callee (set))
+  '(stack-space . 0))
+ (list
+  (cons
+   'block20917
+   (Block
+    (list (list 'live-sets (set (Reg 'rax) (Var 'tmp20916)) (set) (set)))
+    (list
+     (Instr 'movq (list (Imm 2) (Reg 'rax)))
+     (Instr 'addq (list (Reg 'rcx) (Reg 'rax)))
+     (Jmp 'conclusion))))
+  (cons
+   'start
+   (Block
+    (list (list 'live-sets (set (Var 'tmp20916)) (set (Var 'tmp20916))))
+    (list (Instr 'movq (list (Imm 10) (Reg 'rcx))) (Jmp 'block20917))))))
 
 
 output:  @ utilities.rkt:2063
@@ -2817,15 +3471,15 @@ pass output:  @ utilities.rkt:2051
 (Program
  '()
  (Let
-  'x20784
+  'x20930
   (If
    (If (Bool #t) (If (Bool #f) (Bool #t) (Bool #t)) (Bool #f))
    (Prim '+ (list (Int 9) (Prim '- (list (Int 6)))))
    (Prim '+ (list (Int 4) (Int 2))))
   (Let
-   'x20785
-   (Prim '+ (list (Var 'x20784) (Var 'x20784)))
-   (Prim '+ (list (Var 'x20785) (Int 10))))))
+   'x20931
+   (Prim '+ (list (Var 'x20930) (Var 'x20930)))
+   (Prim '+ (list (Var 'x20931) (Int 10))))))
 
 
 type checking... @ utilities.rkt:2053
@@ -2835,15 +3489,15 @@ type-check output:  @ utilities.rkt:2056
 (Program
  '()
  (Let
-  'x20784
+  'x20930
   (If
    (If (Bool #t) (If (Bool #f) (Bool #t) (Bool #t)) (Bool #f))
    (Prim '+ (list (Int 9) (Prim '- (list (Int 6)))))
    (Prim '+ (list (Int 4) (Int 2))))
   (Let
-   'x20785
-   (Prim '+ (list (Var 'x20784) (Var 'x20784)))
-   (Prim '+ (list (Var 'x20785) (Int 10))))))
+   'x20931
+   (Prim '+ (list (Var 'x20930) (Var 'x20930)))
+   (Prim '+ (list (Var 'x20931) (Int 10))))))
 
 
 output:  @ utilities.rkt:2063
@@ -2866,18 +3520,18 @@ pass output:  @ utilities.rkt:2051
 (Program
  '()
  (Let
-  'x20784
+  'x20930
   (If
    (If (Bool #t) (If (Bool #f) (Bool #t) (Bool #t)) (Bool #f))
    (Let
-    'tmp20786
+    'tmp20932
     (Prim '- (list (Int 6)))
-    (Prim '+ (list (Int 9) (Var 'tmp20786))))
+    (Prim '+ (list (Int 9) (Var 'tmp20932))))
    (Prim '+ (list (Int 4) (Int 2))))
   (Let
-   'x20785
-   (Prim '+ (list (Var 'x20784) (Var 'x20784)))
-   (Prim '+ (list (Var 'x20785) (Int 10))))))
+   'x20931
+   (Prim '+ (list (Var 'x20930) (Var 'x20930)))
+   (Prim '+ (list (Var 'x20931) (Int 10))))))
 
 
 type checking... @ utilities.rkt:2053
@@ -2887,18 +3541,18 @@ type-check output:  @ utilities.rkt:2056
 (Program
  '()
  (Let
-  'x20784
+  'x20930
   (If
    (If (Bool #t) (If (Bool #f) (Bool #t) (Bool #t)) (Bool #f))
    (Let
-    'tmp20786
+    'tmp20932
     (Prim '- (list (Int 6)))
-    (Prim '+ (list (Int 9) (Var 'tmp20786))))
+    (Prim '+ (list (Int 9) (Var 'tmp20932))))
    (Prim '+ (list (Int 4) (Int 2))))
   (Let
-   'x20785
-   (Prim '+ (list (Var 'x20784) (Var 'x20784)))
-   (Prim '+ (list (Var 'x20785) (Int 10))))))
+   'x20931
+   (Prim '+ (list (Var 'x20930) (Var 'x20930)))
+   (Prim '+ (list (Var 'x20931) (Int 10))))))
 
 
 output:  @ utilities.rkt:2063
@@ -2921,24 +3575,24 @@ pass output:  @ utilities.rkt:2051
 (CProgram
  '()
  (list
-  (cons 'start (Goto 'block20788))
+  (cons 'start (Goto 'block20934))
   (cons
-   'block20789
+   'block20935
    (Seq
-    (Assign (Var 'x20784) (Prim '+ (list (Int 4) (Int 2))))
-    (Goto 'block20787)))
+    (Assign (Var 'x20930) (Prim '+ (list (Int 4) (Int 2))))
+    (Goto 'block20933)))
   (cons
-   'block20788
+   'block20934
    (Seq
-    (Assign (Var 'tmp20786) (Prim '- (list (Int 6))))
+    (Assign (Var 'tmp20932) (Prim '- (list (Int 6))))
     (Seq
-     (Assign (Var 'x20784) (Prim '+ (list (Int 9) (Var 'tmp20786))))
-     (Goto 'block20787))))
+     (Assign (Var 'x20930) (Prim '+ (list (Int 9) (Var 'tmp20932))))
+     (Goto 'block20933))))
   (cons
-   'block20787
+   'block20933
    (Seq
-    (Assign (Var 'x20785) (Prim '+ (list (Var 'x20784) (Var 'x20784))))
-    (Return (Prim '+ (list (Var 'x20785) (Int 10))))))))
+    (Assign (Var 'x20931) (Prim '+ (list (Var 'x20930) (Var 'x20930))))
+    (Return (Prim '+ (list (Var 'x20931) (Int 10))))))))
 
 
 type checking... @ utilities.rkt:2053
@@ -2946,26 +3600,26 @@ type checking... @ utilities.rkt:2053
 type-check output:  @ utilities.rkt:2056
 (strip-has-type new-p):
 (CProgram
- '((locals-types (x20784 . Integer) (x20785 . Integer) (tmp20786 . Integer)))
+ '((locals-types (tmp20932 . Integer) (x20931 . Integer) (x20930 . Integer)))
  (list
-  (cons 'start (Goto 'block20788))
+  (cons 'start (Goto 'block20934))
   (cons
-   'block20789
+   'block20935
    (Seq
-    (Assign (Var 'x20784) (Prim '+ (list (Int 4) (Int 2))))
-    (Goto 'block20787)))
+    (Assign (Var 'x20930) (Prim '+ (list (Int 4) (Int 2))))
+    (Goto 'block20933)))
   (cons
-   'block20788
+   'block20934
    (Seq
-    (Assign (Var 'tmp20786) (Prim '- (list (Int 6))))
+    (Assign (Var 'tmp20932) (Prim '- (list (Int 6))))
     (Seq
-     (Assign (Var 'x20784) (Prim '+ (list (Int 9) (Var 'tmp20786))))
-     (Goto 'block20787))))
+     (Assign (Var 'x20930) (Prim '+ (list (Int 9) (Var 'tmp20932))))
+     (Goto 'block20933))))
   (cons
-   'block20787
+   'block20933
    (Seq
-    (Assign (Var 'x20785) (Prim '+ (list (Var 'x20784) (Var 'x20784))))
-    (Return (Prim '+ (list (Var 'x20785) (Int 10))))))))
+    (Assign (Var 'x20931) (Prim '+ (list (Var 'x20930) (Var 'x20930))))
+    (Return (Prim '+ (list (Var 'x20931) (Int 10))))))))
 
 
 output:  @ utilities.rkt:2063
@@ -2986,35 +3640,35 @@ running pass: instruction selection @ utilities.rkt:2048
 pass output:  @ utilities.rkt:2051
 (strip-has-type new-p^):
 (X86Program
- '((locals-types (x20784 . Integer) (x20785 . Integer) (tmp20786 . Integer)))
+ '((locals-types (tmp20932 . Integer) (x20931 . Integer) (x20930 . Integer)))
  (list
-  (cons 'start (Block '() (list (Jmp 'block20788))))
+  (cons 'start (Block '() (list (Jmp 'block20934))))
   (cons
-   'block20789
+   'block20935
    (Block
     '()
     (list
-     (Instr 'movq (list (Imm 4) (Var 'x20784)))
-     (Instr 'addq (list (Imm 2) (Var 'x20784)))
-     (Jmp 'block20787))))
+     (Instr 'movq (list (Imm 4) (Var 'x20930)))
+     (Instr 'addq (list (Imm 2) (Var 'x20930)))
+     (Jmp 'block20933))))
   (cons
-   'block20788
+   'block20934
    (Block
     '()
     (list
-     (Instr 'movq (list (Imm 6) (Var 'tmp20786)))
-     (Instr 'negq (list (Var 'tmp20786)))
-     (Instr 'movq (list (Imm 9) (Var 'x20784)))
-     (Instr 'addq (list (Var 'tmp20786) (Var 'x20784)))
-     (Jmp 'block20787))))
+     (Instr 'movq (list (Imm 6) (Var 'tmp20932)))
+     (Instr 'negq (list (Var 'tmp20932)))
+     (Instr 'movq (list (Imm 9) (Var 'x20930)))
+     (Instr 'addq (list (Var 'tmp20932) (Var 'x20930)))
+     (Jmp 'block20933))))
   (cons
-   'block20787
+   'block20933
    (Block
     '()
     (list
-     (Instr 'movq (list (Var 'x20784) (Var 'x20785)))
-     (Instr 'addq (list (Var 'x20784) (Var 'x20785)))
-     (Instr 'movq (list (Var 'x20785) (Reg 'rax)))
+     (Instr 'movq (list (Var 'x20930) (Var 'x20931)))
+     (Instr 'addq (list (Var 'x20930) (Var 'x20931)))
+     (Instr 'movq (list (Var 'x20931) (Reg 'rax)))
      (Instr 'addq (list (Imm 10) (Reg 'rax)))
      (Jmp 'conclusion))))))
 
@@ -3022,35 +3676,35 @@ pass output:  @ utilities.rkt:2051
 type-check output:  @ utilities.rkt:2056
 (strip-has-type new-p):
 (X86Program
- '((locals-types (x20784 . Integer) (x20785 . Integer) (tmp20786 . Integer)))
+ '((locals-types (tmp20932 . Integer) (x20931 . Integer) (x20930 . Integer)))
  (list
-  (cons 'start (Block '() (list (Jmp 'block20788))))
+  (cons 'start (Block '() (list (Jmp 'block20934))))
   (cons
-   'block20789
+   'block20935
    (Block
     '()
     (list
-     (Instr 'movq (list (Imm 4) (Var 'x20784)))
-     (Instr 'addq (list (Imm 2) (Var 'x20784)))
-     (Jmp 'block20787))))
+     (Instr 'movq (list (Imm 4) (Var 'x20930)))
+     (Instr 'addq (list (Imm 2) (Var 'x20930)))
+     (Jmp 'block20933))))
   (cons
-   'block20788
+   'block20934
    (Block
     '()
     (list
-     (Instr 'movq (list (Imm 6) (Var 'tmp20786)))
-     (Instr 'negq (list (Var 'tmp20786)))
-     (Instr 'movq (list (Imm 9) (Var 'x20784)))
-     (Instr 'addq (list (Var 'tmp20786) (Var 'x20784)))
-     (Jmp 'block20787))))
+     (Instr 'movq (list (Imm 6) (Var 'tmp20932)))
+     (Instr 'negq (list (Var 'tmp20932)))
+     (Instr 'movq (list (Imm 9) (Var 'x20930)))
+     (Instr 'addq (list (Var 'tmp20932) (Var 'x20930)))
+     (Jmp 'block20933))))
   (cons
-   'block20787
+   'block20933
    (Block
     '()
     (list
-     (Instr 'movq (list (Var 'x20784) (Var 'x20785)))
-     (Instr 'addq (list (Var 'x20784) (Var 'x20785)))
-     (Instr 'movq (list (Var 'x20785) (Reg 'rax)))
+     (Instr 'movq (list (Var 'x20930) (Var 'x20931)))
+     (Instr 'addq (list (Var 'x20930) (Var 'x20931)))
+     (Instr 'movq (list (Var 'x20931) (Reg 'rax)))
      (Instr 'addq (list (Imm 10) (Reg 'rax)))
      (Jmp 'conclusion))))))
 
@@ -3071,121 +3725,117 @@ expected-result:
 running pass: liveness analysis @ utilities.rkt:2048
 
 (#<set:>)
-(#<set: #<Var: x20784>>)
-(#<set: #<Var: x20784>>)
+(#<set: #<Var: x20930>>)
 (#<set:>)
+(#<set: #<Var: x20930>>)
 pass output:  @ utilities.rkt:2051
 (strip-has-type new-p^):
 (X86Program
- '((locals-types (x20784 . Integer) (x20785 . Integer) (tmp20786 . Integer)))
+ '((locals-types (tmp20932 . Integer) (x20931 . Integer) (x20930 . Integer)))
  (list
   (cons
-   'block20787
+   'block20933
    (Block
     (list
      (list
       'live-sets
-      (set (Var 'x20784) (Var 'x20785))
-      (set (Var 'x20785))
+      (set (Var 'x20930) (Var 'x20931))
+      (set (Var 'x20931))
       (set (Reg 'rax))
       (set)
       (set)))
     (list
-     (Instr 'movq (list (Var 'x20784) (Var 'x20785)))
-     (Instr 'addq (list (Var 'x20784) (Var 'x20785)))
-     (Instr 'movq (list (Var 'x20785) (Reg 'rax)))
+     (Instr 'movq (list (Var 'x20930) (Var 'x20931)))
+     (Instr 'addq (list (Var 'x20930) (Var 'x20931)))
+     (Instr 'movq (list (Var 'x20931) (Reg 'rax)))
      (Instr 'addq (list (Imm 10) (Reg 'rax)))
      (Jmp 'conclusion))))
   (cons
-   'block20789
+   'block20934
    (Block
     (list
      (list
       'live-sets
-      (set (Var 'x20784))
-      (set (Var 'x20784))
-      (set (Var 'x20784))))
+      (set (Var 'tmp20932))
+      (set (Var 'tmp20932))
+      (set (Var 'x20930) (Var 'tmp20932))
+      (set (Var 'x20930))
+      (set (Var 'x20930))))
     (list
-     (Instr 'movq (list (Imm 4) (Var 'x20784)))
-     (Instr 'addq (list (Imm 2) (Var 'x20784)))
-     (Jmp 'block20787))))
+     (Instr 'movq (list (Imm 6) (Var 'tmp20932)))
+     (Instr 'negq (list (Var 'tmp20932)))
+     (Instr 'movq (list (Imm 9) (Var 'x20930)))
+     (Instr 'addq (list (Var 'tmp20932) (Var 'x20930)))
+     (Jmp 'block20933))))
+  (cons 'start (Block (list (list 'live-sets (set))) (list (Jmp 'block20934))))
   (cons
-   'block20788
+   'block20935
    (Block
     (list
      (list
       'live-sets
-      (set (Var 'tmp20786))
-      (set (Var 'tmp20786))
-      (set (Var 'x20784) (Var 'tmp20786))
-      (set (Var 'x20784))
-      (set (Var 'x20784))))
+      (set (Var 'x20930))
+      (set (Var 'x20930))
+      (set (Var 'x20930))))
     (list
-     (Instr 'movq (list (Imm 6) (Var 'tmp20786)))
-     (Instr 'negq (list (Var 'tmp20786)))
-     (Instr 'movq (list (Imm 9) (Var 'x20784)))
-     (Instr 'addq (list (Var 'tmp20786) (Var 'x20784)))
-     (Jmp 'block20787))))
-  (cons
-   'start
-   (Block (list (list 'live-sets (set))) (list (Jmp 'block20788))))))
+     (Instr 'movq (list (Imm 4) (Var 'x20930)))
+     (Instr 'addq (list (Imm 2) (Var 'x20930)))
+     (Jmp 'block20933))))))
 
 
 type-check output:  @ utilities.rkt:2056
 (strip-has-type new-p):
 (X86Program
- '((locals-types (x20784 . Integer) (x20785 . Integer) (tmp20786 . Integer)))
+ '((locals-types (tmp20932 . Integer) (x20931 . Integer) (x20930 . Integer)))
  (list
   (cons
-   'block20787
+   'block20933
    (Block
     (list
      (list
       'live-sets
-      (set (Var 'x20784) (Var 'x20785))
-      (set (Var 'x20785))
+      (set (Var 'x20930) (Var 'x20931))
+      (set (Var 'x20931))
       (set (Reg 'rax))
       (set)
       (set)))
     (list
-     (Instr 'movq (list (Var 'x20784) (Var 'x20785)))
-     (Instr 'addq (list (Var 'x20784) (Var 'x20785)))
-     (Instr 'movq (list (Var 'x20785) (Reg 'rax)))
+     (Instr 'movq (list (Var 'x20930) (Var 'x20931)))
+     (Instr 'addq (list (Var 'x20930) (Var 'x20931)))
+     (Instr 'movq (list (Var 'x20931) (Reg 'rax)))
      (Instr 'addq (list (Imm 10) (Reg 'rax)))
      (Jmp 'conclusion))))
   (cons
-   'block20789
+   'block20934
    (Block
     (list
      (list
       'live-sets
-      (set (Var 'x20784))
-      (set (Var 'x20784))
-      (set (Var 'x20784))))
+      (set (Var 'tmp20932))
+      (set (Var 'tmp20932))
+      (set (Var 'x20930) (Var 'tmp20932))
+      (set (Var 'x20930))
+      (set (Var 'x20930))))
     (list
-     (Instr 'movq (list (Imm 4) (Var 'x20784)))
-     (Instr 'addq (list (Imm 2) (Var 'x20784)))
-     (Jmp 'block20787))))
+     (Instr 'movq (list (Imm 6) (Var 'tmp20932)))
+     (Instr 'negq (list (Var 'tmp20932)))
+     (Instr 'movq (list (Imm 9) (Var 'x20930)))
+     (Instr 'addq (list (Var 'tmp20932) (Var 'x20930)))
+     (Jmp 'block20933))))
+  (cons 'start (Block (list (list 'live-sets (set))) (list (Jmp 'block20934))))
   (cons
-   'block20788
+   'block20935
    (Block
     (list
      (list
       'live-sets
-      (set (Var 'tmp20786))
-      (set (Var 'tmp20786))
-      (set (Var 'x20784) (Var 'tmp20786))
-      (set (Var 'x20784))
-      (set (Var 'x20784))))
+      (set (Var 'x20930))
+      (set (Var 'x20930))
+      (set (Var 'x20930))))
     (list
-     (Instr 'movq (list (Imm 6) (Var 'tmp20786)))
-     (Instr 'negq (list (Var 'tmp20786)))
-     (Instr 'movq (list (Imm 9) (Var 'x20784)))
-     (Instr 'addq (list (Var 'tmp20786) (Var 'x20784)))
-     (Jmp 'block20787))))
-  (cons
-   'start
-   (Block (list (list 'live-sets (set))) (list (Jmp 'block20788))))))
+     (Instr 'movq (list (Imm 4) (Var 'x20930)))
+     (Instr 'addq (list (Imm 2) (Var 'x20930)))
+     (Jmp 'block20933))))))
 
 
 output:  @ utilities.rkt:2063
@@ -3203,122 +3853,286 @@ expected-result:
 
 running pass: build interference graph @ utilities.rkt:2048
 
-#<Var: x20784> -> #<Var: tmp20786>;
-#<Var: tmp20786> -> #<Var: x20784>;
+#<Var: x20930> -> #<Var: tmp20932>;
+#<Var: tmp20932> -> #<Var: x20930>;
 pass output:  @ utilities.rkt:2051
 (strip-has-type new-p^):
 (X86Program
- '((locals-types (x20784 . Integer) (x20785 . Integer) (tmp20786 . Integer))
+ '((locals-types (tmp20932 . Integer) (x20931 . Integer) (x20930 . Integer))
    (conflicts . #<unweighted-graph>))
  (list
   (cons
-   'block20787
+   'block20933
    (Block
     (list
      (list
       'live-sets
-      (set (Var 'x20784) (Var 'x20785))
-      (set (Var 'x20785))
+      (set (Var 'x20930) (Var 'x20931))
+      (set (Var 'x20931))
       (set (Reg 'rax))
       (set)
       (set)))
     (list
-     (Instr 'movq (list (Var 'x20784) (Var 'x20785)))
-     (Instr 'addq (list (Var 'x20784) (Var 'x20785)))
-     (Instr 'movq (list (Var 'x20785) (Reg 'rax)))
+     (Instr 'movq (list (Var 'x20930) (Var 'x20931)))
+     (Instr 'addq (list (Var 'x20930) (Var 'x20931)))
+     (Instr 'movq (list (Var 'x20931) (Reg 'rax)))
      (Instr 'addq (list (Imm 10) (Reg 'rax)))
      (Jmp 'conclusion))))
   (cons
-   'block20789
+   'block20934
    (Block
     (list
      (list
       'live-sets
-      (set (Var 'x20784))
-      (set (Var 'x20784))
-      (set (Var 'x20784))))
+      (set (Var 'tmp20932))
+      (set (Var 'tmp20932))
+      (set (Var 'x20930) (Var 'tmp20932))
+      (set (Var 'x20930))
+      (set (Var 'x20930))))
     (list
-     (Instr 'movq (list (Imm 4) (Var 'x20784)))
-     (Instr 'addq (list (Imm 2) (Var 'x20784)))
-     (Jmp 'block20787))))
+     (Instr 'movq (list (Imm 6) (Var 'tmp20932)))
+     (Instr 'negq (list (Var 'tmp20932)))
+     (Instr 'movq (list (Imm 9) (Var 'x20930)))
+     (Instr 'addq (list (Var 'tmp20932) (Var 'x20930)))
+     (Jmp 'block20933))))
+  (cons 'start (Block (list (list 'live-sets (set))) (list (Jmp 'block20934))))
   (cons
-   'block20788
+   'block20935
    (Block
     (list
      (list
       'live-sets
-      (set (Var 'tmp20786))
-      (set (Var 'tmp20786))
-      (set (Var 'x20784) (Var 'tmp20786))
-      (set (Var 'x20784))
-      (set (Var 'x20784))))
+      (set (Var 'x20930))
+      (set (Var 'x20930))
+      (set (Var 'x20930))))
     (list
-     (Instr 'movq (list (Imm 6) (Var 'tmp20786)))
-     (Instr 'negq (list (Var 'tmp20786)))
-     (Instr 'movq (list (Imm 9) (Var 'x20784)))
-     (Instr 'addq (list (Var 'tmp20786) (Var 'x20784)))
-     (Jmp 'block20787))))
-  (cons
-   'start
-   (Block (list (list 'live-sets (set))) (list (Jmp 'block20788))))))
+     (Instr 'movq (list (Imm 4) (Var 'x20930)))
+     (Instr 'addq (list (Imm 2) (Var 'x20930)))
+     (Jmp 'block20933))))))
 
 
 type-check output:  @ utilities.rkt:2056
 (strip-has-type new-p):
 (X86Program
- '((locals-types (x20784 . Integer) (x20785 . Integer) (tmp20786 . Integer))
+ '((locals-types (tmp20932 . Integer) (x20931 . Integer) (x20930 . Integer))
    (conflicts . #<unweighted-graph>))
  (list
   (cons
-   'block20787
+   'block20933
    (Block
     (list
      (list
       'live-sets
-      (set (Var 'x20784) (Var 'x20785))
-      (set (Var 'x20785))
+      (set (Var 'x20930) (Var 'x20931))
+      (set (Var 'x20931))
       (set (Reg 'rax))
       (set)
       (set)))
     (list
-     (Instr 'movq (list (Var 'x20784) (Var 'x20785)))
-     (Instr 'addq (list (Var 'x20784) (Var 'x20785)))
-     (Instr 'movq (list (Var 'x20785) (Reg 'rax)))
+     (Instr 'movq (list (Var 'x20930) (Var 'x20931)))
+     (Instr 'addq (list (Var 'x20930) (Var 'x20931)))
+     (Instr 'movq (list (Var 'x20931) (Reg 'rax)))
      (Instr 'addq (list (Imm 10) (Reg 'rax)))
      (Jmp 'conclusion))))
   (cons
-   'block20789
+   'block20934
    (Block
     (list
      (list
       'live-sets
-      (set (Var 'x20784))
-      (set (Var 'x20784))
-      (set (Var 'x20784))))
+      (set (Var 'tmp20932))
+      (set (Var 'tmp20932))
+      (set (Var 'x20930) (Var 'tmp20932))
+      (set (Var 'x20930))
+      (set (Var 'x20930))))
     (list
-     (Instr 'movq (list (Imm 4) (Var 'x20784)))
-     (Instr 'addq (list (Imm 2) (Var 'x20784)))
-     (Jmp 'block20787))))
+     (Instr 'movq (list (Imm 6) (Var 'tmp20932)))
+     (Instr 'negq (list (Var 'tmp20932)))
+     (Instr 'movq (list (Imm 9) (Var 'x20930)))
+     (Instr 'addq (list (Var 'tmp20932) (Var 'x20930)))
+     (Jmp 'block20933))))
+  (cons 'start (Block (list (list 'live-sets (set))) (list (Jmp 'block20934))))
   (cons
-   'block20788
+   'block20935
    (Block
     (list
      (list
       'live-sets
-      (set (Var 'tmp20786))
-      (set (Var 'tmp20786))
-      (set (Var 'x20784) (Var 'tmp20786))
-      (set (Var 'x20784))
-      (set (Var 'x20784))))
+      (set (Var 'x20930))
+      (set (Var 'x20930))
+      (set (Var 'x20930))))
     (list
-     (Instr 'movq (list (Imm 6) (Var 'tmp20786)))
-     (Instr 'negq (list (Var 'tmp20786)))
-     (Instr 'movq (list (Imm 9) (Var 'x20784)))
-     (Instr 'addq (list (Var 'tmp20786) (Var 'x20784)))
-     (Jmp 'block20787))))
+     (Instr 'movq (list (Imm 4) (Var 'x20930)))
+     (Instr 'addq (list (Imm 2) (Var 'x20930)))
+     (Jmp 'block20933))))))
+
+
+output:  @ utilities.rkt:2063
+result:
+16
+
+
+testing @ utilities.rkt:2037
+test-name:
+"cond_test_94"
+
+expected-result:
+16
+
+
+running pass: register allocation @ utilities.rkt:2048
+
+move-graph: #<Var: x20931> -> #<Var: x20930>;
+#<Var: x20930> -> #<Var: x20931>;
+move-graph end
+locals: (tmp20932 x20931 x20930)
+cur-node neighbors potential-colors interfering-colors cur-color
+#<Var: x20930>
+(#<Var: tmp20932>)
+#<set:>
+#<set:>
+0
+updated-saturation: ((#<Var: tmp20932> . #<set: 0>) (#<Var: x20931> . #<set:>) (#<Var: x20930> . #<set:>))
+old and updated-move-bias: 
+((#<Var: tmp20932> . 0) (#<Var: x20931> . 0) (#<Var: x20930> . 0))
+((#<Var: tmp20932> . 0) (#<Var: x20931> . 1) (#<Var: x20930> . 0))
+cur-node neighbors potential-colors interfering-colors cur-color
+#<Var: tmp20932>
+(#<Var: x20930>)
+#<set:>
+#<set: 0>
+1
+updated-saturation: ((#<Var: tmp20932> . #<set: 0>) (#<Var: x20931> . #<set:>) (#<Var: x20930> . #<set: 1>))
+old and updated-move-bias: 
+((#<Var: tmp20932> . 0) (#<Var: x20931> . 1) (#<Var: x20930> . 0))
+((#<Var: tmp20932> . 0) (#<Var: x20931> . 1) (#<Var: x20930> . 0))
+cur-node neighbors potential-colors interfering-colors cur-color
+#<Var: x20931>
+()
+#<set: 0>
+#<set:>
+0
+updated-saturation: ((#<Var: tmp20932> . #<set: 0>) (#<Var: x20931> . #<set:>) (#<Var: x20930> . #<set: 1>))
+old and updated-move-bias: 
+((#<Var: tmp20932> . 0) (#<Var: x20931> . 1) (#<Var: x20930> . 0))
+((#<Var: tmp20932> . 0) (#<Var: x20931> . 1) (#<Var: x20930> . 1))
+variable-colors: ((#<Reg: rcx> . 0) (#<Reg: rdx> . 1) (#<Reg: rsi> . 2) (#<Reg: rdi> . 3) (#<Reg: r8> . 4) (#<Reg: r9> . 5) (#<Reg: r10> . 6) (#<Reg: r11> . 7) (#<Reg: rbx> . 8) (#<Reg: r12> . 9) (#<Reg: r13> . 10) (#<Reg: r14> . 11) (#<Reg: rax> . -1) (#<Reg: rsp> . -2) (#<Reg: rbp> . -3) (#<Reg: r15> . -4) (#<Var: x20930> . 0) (#<Var: tmp20932> . 1) (#<Var: x20931> . 0))
+pass output:  @ utilities.rkt:2051
+(strip-has-type new-p^):
+(X86Program
+ (list
+  '(locals-types (tmp20932 . Integer) (x20931 . Integer) (x20930 . Integer))
+  '(conflicts . #<unweighted-graph>)
+  (cons 'used_callee (set))
+  '(stack-space . 0))
+ (list
   (cons
-   'start
-   (Block (list (list 'live-sets (set))) (list (Jmp 'block20788))))))
+   'block20933
+   (Block
+    (list
+     (list
+      'live-sets
+      (set (Var 'x20930) (Var 'x20931))
+      (set (Var 'x20931))
+      (set (Reg 'rax))
+      (set)
+      (set)))
+    (list
+     (Instr 'movq (list (Reg 'rcx) (Reg 'rcx)))
+     (Instr 'addq (list (Reg 'rcx) (Reg 'rcx)))
+     (Instr 'movq (list (Reg 'rcx) (Reg 'rax)))
+     (Instr 'addq (list (Imm 10) (Reg 'rax)))
+     (Jmp 'conclusion))))
+  (cons
+   'block20934
+   (Block
+    (list
+     (list
+      'live-sets
+      (set (Var 'tmp20932))
+      (set (Var 'tmp20932))
+      (set (Var 'x20930) (Var 'tmp20932))
+      (set (Var 'x20930))
+      (set (Var 'x20930))))
+    (list
+     (Instr 'movq (list (Imm 6) (Reg 'rdx)))
+     (Instr 'negq (list (Reg 'rdx)))
+     (Instr 'movq (list (Imm 9) (Reg 'rcx)))
+     (Instr 'addq (list (Reg 'rdx) (Reg 'rcx)))
+     (Jmp 'block20933))))
+  (cons 'start (Block (list (list 'live-sets (set))) (list (Jmp 'block20934))))
+  (cons
+   'block20935
+   (Block
+    (list
+     (list
+      'live-sets
+      (set (Var 'x20930))
+      (set (Var 'x20930))
+      (set (Var 'x20930))))
+    (list
+     (Instr 'movq (list (Imm 4) (Reg 'rcx)))
+     (Instr 'addq (list (Imm 2) (Reg 'rcx)))
+     (Jmp 'block20933))))))
+
+
+type-check output:  @ utilities.rkt:2056
+(strip-has-type new-p):
+(X86Program
+ (list
+  '(locals-types (tmp20932 . Integer) (x20931 . Integer) (x20930 . Integer))
+  '(conflicts . #<unweighted-graph>)
+  (cons 'used_callee (set))
+  '(stack-space . 0))
+ (list
+  (cons
+   'block20933
+   (Block
+    (list
+     (list
+      'live-sets
+      (set (Var 'x20930) (Var 'x20931))
+      (set (Var 'x20931))
+      (set (Reg 'rax))
+      (set)
+      (set)))
+    (list
+     (Instr 'movq (list (Reg 'rcx) (Reg 'rcx)))
+     (Instr 'addq (list (Reg 'rcx) (Reg 'rcx)))
+     (Instr 'movq (list (Reg 'rcx) (Reg 'rax)))
+     (Instr 'addq (list (Imm 10) (Reg 'rax)))
+     (Jmp 'conclusion))))
+  (cons
+   'block20934
+   (Block
+    (list
+     (list
+      'live-sets
+      (set (Var 'tmp20932))
+      (set (Var 'tmp20932))
+      (set (Var 'x20930) (Var 'tmp20932))
+      (set (Var 'x20930))
+      (set (Var 'x20930))))
+    (list
+     (Instr 'movq (list (Imm 6) (Reg 'rdx)))
+     (Instr 'negq (list (Reg 'rdx)))
+     (Instr 'movq (list (Imm 9) (Reg 'rcx)))
+     (Instr 'addq (list (Reg 'rdx) (Reg 'rcx)))
+     (Jmp 'block20933))))
+  (cons 'start (Block (list (list 'live-sets (set))) (list (Jmp 'block20934))))
+  (cons
+   'block20935
+   (Block
+    (list
+     (list
+      'live-sets
+      (set (Var 'x20930))
+      (set (Var 'x20930))
+      (set (Var 'x20930))))
+    (list
+     (Instr 'movq (list (Imm 4) (Reg 'rcx)))
+     (Instr 'addq (list (Imm 2) (Reg 'rcx)))
+     (Jmp 'block20933))))))
 
 
 output:  @ utilities.rkt:2063
@@ -3396,12 +4210,12 @@ pass output:  @ utilities.rkt:2051
 (Program
  '()
  (Let
-  'x20801
+  'x20948
   (Int 10)
   (Let
-   'x20802
+   'x20949
    (Int 5)
-   (Let 'x20803 (Prim '- (list (Int 9))) (Prim '- (list (Var 'x20803)))))))
+   (Let 'x20950 (Prim '- (list (Int 9))) (Prim '- (list (Var 'x20950)))))))
 
 
 type checking... @ utilities.rkt:2053
@@ -3411,12 +4225,12 @@ type-check output:  @ utilities.rkt:2056
 (Program
  '()
  (Let
-  'x20801
+  'x20948
   (Int 10)
   (Let
-   'x20802
+   'x20949
    (Int 5)
-   (Let 'x20803 (Prim '- (list (Int 9))) (Prim '- (list (Var 'x20803)))))))
+   (Let 'x20950 (Prim '- (list (Int 9))) (Prim '- (list (Var 'x20950)))))))
 
 
 output:  @ utilities.rkt:2063
@@ -3439,12 +4253,12 @@ pass output:  @ utilities.rkt:2051
 (Program
  '()
  (Let
-  'x20801
+  'x20948
   (Int 10)
   (Let
-   'x20802
+   'x20949
    (Int 5)
-   (Let 'x20803 (Prim '- (list (Int 9))) (Prim '- (list (Var 'x20803)))))))
+   (Let 'x20950 (Prim '- (list (Int 9))) (Prim '- (list (Var 'x20950)))))))
 
 
 type checking... @ utilities.rkt:2053
@@ -3454,12 +4268,12 @@ type-check output:  @ utilities.rkt:2056
 (Program
  '()
  (Let
-  'x20801
+  'x20948
   (Int 10)
   (Let
-   'x20802
+   'x20949
    (Int 5)
-   (Let 'x20803 (Prim '- (list (Int 9))) (Prim '- (list (Var 'x20803)))))))
+   (Let 'x20950 (Prim '- (list (Int 9))) (Prim '- (list (Var 'x20950)))))))
 
 
 output:  @ utilities.rkt:2063
@@ -3485,12 +4299,12 @@ pass output:  @ utilities.rkt:2051
   (cons
    'start
    (Seq
-    (Assign (Var 'x20801) (Int 10))
+    (Assign (Var 'x20948) (Int 10))
     (Seq
-     (Assign (Var 'x20802) (Int 5))
+     (Assign (Var 'x20949) (Int 5))
      (Seq
-      (Assign (Var 'x20803) (Prim '- (list (Int 9))))
-      (Return (Prim '- (list (Var 'x20803))))))))))
+      (Assign (Var 'x20950) (Prim '- (list (Int 9))))
+      (Return (Prim '- (list (Var 'x20950))))))))))
 
 
 type checking... @ utilities.rkt:2053
@@ -3498,17 +4312,17 @@ type checking... @ utilities.rkt:2053
 type-check output:  @ utilities.rkt:2056
 (strip-has-type new-p):
 (CProgram
- '((locals-types (x20803 . Integer) (x20801 . Integer) (x20802 . Integer)))
+ '((locals-types (x20950 . Integer) (x20949 . Integer) (x20948 . Integer)))
  (list
   (cons
    'start
    (Seq
-    (Assign (Var 'x20801) (Int 10))
+    (Assign (Var 'x20948) (Int 10))
     (Seq
-     (Assign (Var 'x20802) (Int 5))
+     (Assign (Var 'x20949) (Int 5))
      (Seq
-      (Assign (Var 'x20803) (Prim '- (list (Int 9))))
-      (Return (Prim '- (list (Var 'x20803))))))))))
+      (Assign (Var 'x20950) (Prim '- (list (Int 9))))
+      (Return (Prim '- (list (Var 'x20950))))))))))
 
 
 output:  @ utilities.rkt:2063
@@ -3529,18 +4343,18 @@ running pass: instruction selection @ utilities.rkt:2048
 pass output:  @ utilities.rkt:2051
 (strip-has-type new-p^):
 (X86Program
- '((locals-types (x20803 . Integer) (x20801 . Integer) (x20802 . Integer)))
+ '((locals-types (x20950 . Integer) (x20949 . Integer) (x20948 . Integer)))
  (list
   (cons
    'start
    (Block
     '()
     (list
-     (Instr 'movq (list (Imm 10) (Var 'x20801)))
-     (Instr 'movq (list (Imm 5) (Var 'x20802)))
-     (Instr 'movq (list (Imm 9) (Var 'x20803)))
-     (Instr 'negq (list (Var 'x20803)))
-     (Instr 'movq (list (Var 'x20803) (Reg 'rax)))
+     (Instr 'movq (list (Imm 10) (Var 'x20948)))
+     (Instr 'movq (list (Imm 5) (Var 'x20949)))
+     (Instr 'movq (list (Imm 9) (Var 'x20950)))
+     (Instr 'negq (list (Var 'x20950)))
+     (Instr 'movq (list (Var 'x20950) (Reg 'rax)))
      (Instr 'negq (list (Reg 'rax)))
      (Jmp 'conclusion))))))
 
@@ -3548,18 +4362,18 @@ pass output:  @ utilities.rkt:2051
 type-check output:  @ utilities.rkt:2056
 (strip-has-type new-p):
 (X86Program
- '((locals-types (x20803 . Integer) (x20801 . Integer) (x20802 . Integer)))
+ '((locals-types (x20950 . Integer) (x20949 . Integer) (x20948 . Integer)))
  (list
   (cons
    'start
    (Block
     '()
     (list
-     (Instr 'movq (list (Imm 10) (Var 'x20801)))
-     (Instr 'movq (list (Imm 5) (Var 'x20802)))
-     (Instr 'movq (list (Imm 9) (Var 'x20803)))
-     (Instr 'negq (list (Var 'x20803)))
-     (Instr 'movq (list (Var 'x20803) (Reg 'rax)))
+     (Instr 'movq (list (Imm 10) (Var 'x20948)))
+     (Instr 'movq (list (Imm 5) (Var 'x20949)))
+     (Instr 'movq (list (Imm 9) (Var 'x20950)))
+     (Instr 'negq (list (Var 'x20950)))
+     (Instr 'movq (list (Var 'x20950) (Reg 'rax)))
      (Instr 'negq (list (Reg 'rax)))
      (Jmp 'conclusion))))))
 
@@ -3583,7 +4397,7 @@ running pass: liveness analysis @ utilities.rkt:2048
 pass output:  @ utilities.rkt:2051
 (strip-has-type new-p^):
 (X86Program
- '((locals-types (x20803 . Integer) (x20801 . Integer) (x20802 . Integer)))
+ '((locals-types (x20950 . Integer) (x20949 . Integer) (x20948 . Integer)))
  (list
   (cons
    'start
@@ -3593,17 +4407,17 @@ pass output:  @ utilities.rkt:2051
       'live-sets
       (set)
       (set)
-      (set (Var 'x20803))
-      (set (Var 'x20803))
+      (set (Var 'x20950))
+      (set (Var 'x20950))
       (set (Reg 'rax))
       (set)
       (set)))
     (list
-     (Instr 'movq (list (Imm 10) (Var 'x20801)))
-     (Instr 'movq (list (Imm 5) (Var 'x20802)))
-     (Instr 'movq (list (Imm 9) (Var 'x20803)))
-     (Instr 'negq (list (Var 'x20803)))
-     (Instr 'movq (list (Var 'x20803) (Reg 'rax)))
+     (Instr 'movq (list (Imm 10) (Var 'x20948)))
+     (Instr 'movq (list (Imm 5) (Var 'x20949)))
+     (Instr 'movq (list (Imm 9) (Var 'x20950)))
+     (Instr 'negq (list (Var 'x20950)))
+     (Instr 'movq (list (Var 'x20950) (Reg 'rax)))
      (Instr 'negq (list (Reg 'rax)))
      (Jmp 'conclusion))))))
 
@@ -3611,7 +4425,7 @@ pass output:  @ utilities.rkt:2051
 type-check output:  @ utilities.rkt:2056
 (strip-has-type new-p):
 (X86Program
- '((locals-types (x20803 . Integer) (x20801 . Integer) (x20802 . Integer)))
+ '((locals-types (x20950 . Integer) (x20949 . Integer) (x20948 . Integer)))
  (list
   (cons
    'start
@@ -3621,17 +4435,17 @@ type-check output:  @ utilities.rkt:2056
       'live-sets
       (set)
       (set)
-      (set (Var 'x20803))
-      (set (Var 'x20803))
+      (set (Var 'x20950))
+      (set (Var 'x20950))
       (set (Reg 'rax))
       (set)
       (set)))
     (list
-     (Instr 'movq (list (Imm 10) (Var 'x20801)))
-     (Instr 'movq (list (Imm 5) (Var 'x20802)))
-     (Instr 'movq (list (Imm 9) (Var 'x20803)))
-     (Instr 'negq (list (Var 'x20803)))
-     (Instr 'movq (list (Var 'x20803) (Reg 'rax)))
+     (Instr 'movq (list (Imm 10) (Var 'x20948)))
+     (Instr 'movq (list (Imm 5) (Var 'x20949)))
+     (Instr 'movq (list (Imm 9) (Var 'x20950)))
+     (Instr 'negq (list (Var 'x20950)))
+     (Instr 'movq (list (Var 'x20950) (Reg 'rax)))
      (Instr 'negq (list (Reg 'rax)))
      (Jmp 'conclusion))))))
 
@@ -3654,7 +4468,7 @@ running pass: build interference graph @ utilities.rkt:2048
 pass output:  @ utilities.rkt:2051
 (strip-has-type new-p^):
 (X86Program
- '((locals-types (x20803 . Integer) (x20801 . Integer) (x20802 . Integer))
+ '((locals-types (x20950 . Integer) (x20949 . Integer) (x20948 . Integer))
    (conflicts . #<unweighted-graph>))
  (list
   (cons
@@ -3665,17 +4479,17 @@ pass output:  @ utilities.rkt:2051
       'live-sets
       (set)
       (set)
-      (set (Var 'x20803))
-      (set (Var 'x20803))
+      (set (Var 'x20950))
+      (set (Var 'x20950))
       (set (Reg 'rax))
       (set)
       (set)))
     (list
-     (Instr 'movq (list (Imm 10) (Var 'x20801)))
-     (Instr 'movq (list (Imm 5) (Var 'x20802)))
-     (Instr 'movq (list (Imm 9) (Var 'x20803)))
-     (Instr 'negq (list (Var 'x20803)))
-     (Instr 'movq (list (Var 'x20803) (Reg 'rax)))
+     (Instr 'movq (list (Imm 10) (Var 'x20948)))
+     (Instr 'movq (list (Imm 5) (Var 'x20949)))
+     (Instr 'movq (list (Imm 9) (Var 'x20950)))
+     (Instr 'negq (list (Var 'x20950)))
+     (Instr 'movq (list (Var 'x20950) (Reg 'rax)))
      (Instr 'negq (list (Reg 'rax)))
      (Jmp 'conclusion))))))
 
@@ -3683,7 +4497,7 @@ pass output:  @ utilities.rkt:2051
 type-check output:  @ utilities.rkt:2056
 (strip-has-type new-p):
 (X86Program
- '((locals-types (x20803 . Integer) (x20801 . Integer) (x20802 . Integer))
+ '((locals-types (x20950 . Integer) (x20949 . Integer) (x20948 . Integer))
    (conflicts . #<unweighted-graph>))
  (list
   (cons
@@ -3694,17 +4508,129 @@ type-check output:  @ utilities.rkt:2056
       'live-sets
       (set)
       (set)
-      (set (Var 'x20803))
-      (set (Var 'x20803))
+      (set (Var 'x20950))
+      (set (Var 'x20950))
       (set (Reg 'rax))
       (set)
       (set)))
     (list
-     (Instr 'movq (list (Imm 10) (Var 'x20801)))
-     (Instr 'movq (list (Imm 5) (Var 'x20802)))
-     (Instr 'movq (list (Imm 9) (Var 'x20803)))
-     (Instr 'negq (list (Var 'x20803)))
-     (Instr 'movq (list (Var 'x20803) (Reg 'rax)))
+     (Instr 'movq (list (Imm 10) (Var 'x20948)))
+     (Instr 'movq (list (Imm 5) (Var 'x20949)))
+     (Instr 'movq (list (Imm 9) (Var 'x20950)))
+     (Instr 'negq (list (Var 'x20950)))
+     (Instr 'movq (list (Var 'x20950) (Reg 'rax)))
+     (Instr 'negq (list (Reg 'rax)))
+     (Jmp 'conclusion))))))
+
+
+output:  @ utilities.rkt:2063
+result:
+9
+
+
+testing @ utilities.rkt:2037
+test-name:
+"cond_test_95"
+
+expected-result:
+9
+
+
+running pass: register allocation @ utilities.rkt:2048
+
+move-graph: move-graph end
+locals: (x20950 x20949 x20948)
+cur-node neighbors potential-colors interfering-colors cur-color
+#<Var: x20948>
+()
+#<set:>
+#<set:>
+0
+updated-saturation: ((#<Var: x20950> . #<set:>) (#<Var: x20949> . #<set:>) (#<Var: x20948> . #<set:>))
+old and updated-move-bias: 
+((#<Var: x20950> . 0) (#<Var: x20949> . 0) (#<Var: x20948> . 0))
+((#<Var: x20950> . 0) (#<Var: x20949> . 0) (#<Var: x20948> . 0))
+cur-node neighbors potential-colors interfering-colors cur-color
+#<Var: x20950>
+()
+#<set:>
+#<set:>
+0
+updated-saturation: ((#<Var: x20950> . #<set:>) (#<Var: x20949> . #<set:>) (#<Var: x20948> . #<set:>))
+old and updated-move-bias: 
+((#<Var: x20950> . 0) (#<Var: x20949> . 0) (#<Var: x20948> . 0))
+((#<Var: x20950> . 0) (#<Var: x20949> . 0) (#<Var: x20948> . 0))
+cur-node neighbors potential-colors interfering-colors cur-color
+#<Var: x20949>
+()
+#<set:>
+#<set:>
+0
+updated-saturation: ((#<Var: x20950> . #<set:>) (#<Var: x20949> . #<set:>) (#<Var: x20948> . #<set:>))
+old and updated-move-bias: 
+((#<Var: x20950> . 0) (#<Var: x20949> . 0) (#<Var: x20948> . 0))
+((#<Var: x20950> . 0) (#<Var: x20949> . 0) (#<Var: x20948> . 0))
+variable-colors: ((#<Reg: rcx> . 0) (#<Reg: rdx> . 1) (#<Reg: rsi> . 2) (#<Reg: rdi> . 3) (#<Reg: r8> . 4) (#<Reg: r9> . 5) (#<Reg: r10> . 6) (#<Reg: r11> . 7) (#<Reg: rbx> . 8) (#<Reg: r12> . 9) (#<Reg: r13> . 10) (#<Reg: r14> . 11) (#<Reg: rax> . -1) (#<Reg: rsp> . -2) (#<Reg: rbp> . -3) (#<Reg: r15> . -4) (#<Var: x20948> . 0) (#<Var: x20950> . 0) (#<Var: x20949> . 0))
+pass output:  @ utilities.rkt:2051
+(strip-has-type new-p^):
+(X86Program
+ (list
+  '(locals-types (x20950 . Integer) (x20949 . Integer) (x20948 . Integer))
+  '(conflicts . #<unweighted-graph>)
+  (cons 'used_callee (set))
+  '(stack-space . 0))
+ (list
+  (cons
+   'start
+   (Block
+    (list
+     (list
+      'live-sets
+      (set)
+      (set)
+      (set (Var 'x20950))
+      (set (Var 'x20950))
+      (set (Reg 'rax))
+      (set)
+      (set)))
+    (list
+     (Instr 'movq (list (Imm 10) (Reg 'rcx)))
+     (Instr 'movq (list (Imm 5) (Reg 'rcx)))
+     (Instr 'movq (list (Imm 9) (Reg 'rcx)))
+     (Instr 'negq (list (Reg 'rcx)))
+     (Instr 'movq (list (Reg 'rcx) (Reg 'rax)))
+     (Instr 'negq (list (Reg 'rax)))
+     (Jmp 'conclusion))))))
+
+
+type-check output:  @ utilities.rkt:2056
+(strip-has-type new-p):
+(X86Program
+ (list
+  '(locals-types (x20950 . Integer) (x20949 . Integer) (x20948 . Integer))
+  '(conflicts . #<unweighted-graph>)
+  (cons 'used_callee (set))
+  '(stack-space . 0))
+ (list
+  (cons
+   'start
+   (Block
+    (list
+     (list
+      'live-sets
+      (set)
+      (set)
+      (set (Var 'x20950))
+      (set (Var 'x20950))
+      (set (Reg 'rax))
+      (set)
+      (set)))
+    (list
+     (Instr 'movq (list (Imm 10) (Reg 'rcx)))
+     (Instr 'movq (list (Imm 5) (Reg 'rcx)))
+     (Instr 'movq (list (Imm 9) (Reg 'rcx)))
+     (Instr 'negq (list (Reg 'rcx)))
+     (Instr 'movq (list (Reg 'rcx) (Reg 'rax)))
      (Instr 'negq (list (Reg 'rax)))
      (Jmp 'conclusion))))))
 
@@ -3796,9 +4722,9 @@ pass output:  @ utilities.rkt:2051
 (Program
  '()
  (Let
-  'tmp20815
+  'tmp20963
   (If (Bool #t) (Int 6) (Int 9))
-  (Prim '+ (list (Var 'tmp20815) (Int 4)))))
+  (Prim '+ (list (Var 'tmp20963) (Int 4)))))
 
 
 type checking... @ utilities.rkt:2053
@@ -3808,9 +4734,9 @@ type-check output:  @ utilities.rkt:2056
 (Program
  '()
  (Let
-  'tmp20815
+  'tmp20963
   (If (Bool #t) (Int 6) (Int 9))
-  (Prim '+ (list (Var 'tmp20815) (Int 4)))))
+  (Prim '+ (list (Var 'tmp20963) (Int 4)))))
 
 
 output:  @ utilities.rkt:2063
@@ -3833,8 +4759,8 @@ pass output:  @ utilities.rkt:2051
 (CProgram
  '()
  (list
-  (cons 'start (Seq (Assign (Var 'tmp20815) (Int 6)) (Goto 'block20816)))
-  (cons 'block20816 (Return (Prim '+ (list (Var 'tmp20815) (Int 4)))))))
+  (cons 'start (Seq (Assign (Var 'tmp20963) (Int 6)) (Goto 'block20964)))
+  (cons 'block20964 (Return (Prim '+ (list (Var 'tmp20963) (Int 4)))))))
 
 
 type checking... @ utilities.rkt:2053
@@ -3842,10 +4768,10 @@ type checking... @ utilities.rkt:2053
 type-check output:  @ utilities.rkt:2056
 (strip-has-type new-p):
 (CProgram
- '((locals-types (tmp20815 . Integer)))
+ '((locals-types (tmp20963 . Integer)))
  (list
-  (cons 'start (Seq (Assign (Var 'tmp20815) (Int 6)) (Goto 'block20816)))
-  (cons 'block20816 (Return (Prim '+ (list (Var 'tmp20815) (Int 4)))))))
+  (cons 'start (Seq (Assign (Var 'tmp20963) (Int 6)) (Goto 'block20964)))
+  (cons 'block20964 (Return (Prim '+ (list (Var 'tmp20963) (Int 4)))))))
 
 
 output:  @ utilities.rkt:2063
@@ -3866,19 +4792,19 @@ running pass: instruction selection @ utilities.rkt:2048
 pass output:  @ utilities.rkt:2051
 (strip-has-type new-p^):
 (X86Program
- '((locals-types (tmp20815 . Integer)))
+ '((locals-types (tmp20963 . Integer)))
  (list
   (cons
    'start
    (Block
     '()
-    (list (Instr 'movq (list (Imm 6) (Var 'tmp20815))) (Jmp 'block20816))))
+    (list (Instr 'movq (list (Imm 6) (Var 'tmp20963))) (Jmp 'block20964))))
   (cons
-   'block20816
+   'block20964
    (Block
     '()
     (list
-     (Instr 'movq (list (Var 'tmp20815) (Reg 'rax)))
+     (Instr 'movq (list (Var 'tmp20963) (Reg 'rax)))
      (Instr 'addq (list (Imm 4) (Reg 'rax)))
      (Jmp 'conclusion))))))
 
@@ -3886,19 +4812,19 @@ pass output:  @ utilities.rkt:2051
 type-check output:  @ utilities.rkt:2056
 (strip-has-type new-p):
 (X86Program
- '((locals-types (tmp20815 . Integer)))
+ '((locals-types (tmp20963 . Integer)))
  (list
   (cons
    'start
    (Block
     '()
-    (list (Instr 'movq (list (Imm 6) (Var 'tmp20815))) (Jmp 'block20816))))
+    (list (Instr 'movq (list (Imm 6) (Var 'tmp20963))) (Jmp 'block20964))))
   (cons
-   'block20816
+   'block20964
    (Block
     '()
     (list
-     (Instr 'movq (list (Var 'tmp20815) (Reg 'rax)))
+     (Instr 'movq (list (Var 'tmp20963) (Reg 'rax)))
      (Instr 'addq (list (Imm 4) (Reg 'rax)))
      (Jmp 'conclusion))))))
 
@@ -3919,45 +4845,45 @@ expected-result:
 running pass: liveness analysis @ utilities.rkt:2048
 
 (#<set:>)
-(#<set: #<Var: tmp20815>>)
+(#<set: #<Var: tmp20963>>)
 pass output:  @ utilities.rkt:2051
 (strip-has-type new-p^):
 (X86Program
- '((locals-types (tmp20815 . Integer)))
+ '((locals-types (tmp20963 . Integer)))
  (list
   (cons
-   'block20816
+   'block20964
    (Block
     (list (list 'live-sets (set (Reg 'rax)) (set) (set)))
     (list
-     (Instr 'movq (list (Var 'tmp20815) (Reg 'rax)))
+     (Instr 'movq (list (Var 'tmp20963) (Reg 'rax)))
      (Instr 'addq (list (Imm 4) (Reg 'rax)))
      (Jmp 'conclusion))))
   (cons
    'start
    (Block
-    (list (list 'live-sets (set (Var 'tmp20815)) (set (Var 'tmp20815))))
-    (list (Instr 'movq (list (Imm 6) (Var 'tmp20815))) (Jmp 'block20816))))))
+    (list (list 'live-sets (set (Var 'tmp20963)) (set (Var 'tmp20963))))
+    (list (Instr 'movq (list (Imm 6) (Var 'tmp20963))) (Jmp 'block20964))))))
 
 
 type-check output:  @ utilities.rkt:2056
 (strip-has-type new-p):
 (X86Program
- '((locals-types (tmp20815 . Integer)))
+ '((locals-types (tmp20963 . Integer)))
  (list
   (cons
-   'block20816
+   'block20964
    (Block
     (list (list 'live-sets (set (Reg 'rax)) (set) (set)))
     (list
-     (Instr 'movq (list (Var 'tmp20815) (Reg 'rax)))
+     (Instr 'movq (list (Var 'tmp20963) (Reg 'rax)))
      (Instr 'addq (list (Imm 4) (Reg 'rax)))
      (Jmp 'conclusion))))
   (cons
    'start
    (Block
-    (list (list 'live-sets (set (Var 'tmp20815)) (set (Var 'tmp20815))))
-    (list (Instr 'movq (list (Imm 6) (Var 'tmp20815))) (Jmp 'block20816))))))
+    (list (list 'live-sets (set (Var 'tmp20963)) (set (Var 'tmp20963))))
+    (list (Instr 'movq (list (Imm 6) (Var 'tmp20963))) (Jmp 'block20964))))))
 
 
 output:  @ utilities.rkt:2063
@@ -3978,41 +4904,117 @@ running pass: build interference graph @ utilities.rkt:2048
 pass output:  @ utilities.rkt:2051
 (strip-has-type new-p^):
 (X86Program
- '((locals-types (tmp20815 . Integer)) (conflicts . #<unweighted-graph>))
+ '((locals-types (tmp20963 . Integer)) (conflicts . #<unweighted-graph>))
  (list
   (cons
-   'block20816
+   'block20964
    (Block
     (list (list 'live-sets (set (Reg 'rax)) (set) (set)))
     (list
-     (Instr 'movq (list (Var 'tmp20815) (Reg 'rax)))
+     (Instr 'movq (list (Var 'tmp20963) (Reg 'rax)))
      (Instr 'addq (list (Imm 4) (Reg 'rax)))
      (Jmp 'conclusion))))
   (cons
    'start
    (Block
-    (list (list 'live-sets (set (Var 'tmp20815)) (set (Var 'tmp20815))))
-    (list (Instr 'movq (list (Imm 6) (Var 'tmp20815))) (Jmp 'block20816))))))
+    (list (list 'live-sets (set (Var 'tmp20963)) (set (Var 'tmp20963))))
+    (list (Instr 'movq (list (Imm 6) (Var 'tmp20963))) (Jmp 'block20964))))))
 
 
 type-check output:  @ utilities.rkt:2056
 (strip-has-type new-p):
 (X86Program
- '((locals-types (tmp20815 . Integer)) (conflicts . #<unweighted-graph>))
+ '((locals-types (tmp20963 . Integer)) (conflicts . #<unweighted-graph>))
  (list
   (cons
-   'block20816
+   'block20964
    (Block
     (list (list 'live-sets (set (Reg 'rax)) (set) (set)))
     (list
-     (Instr 'movq (list (Var 'tmp20815) (Reg 'rax)))
+     (Instr 'movq (list (Var 'tmp20963) (Reg 'rax)))
      (Instr 'addq (list (Imm 4) (Reg 'rax)))
      (Jmp 'conclusion))))
   (cons
    'start
    (Block
-    (list (list 'live-sets (set (Var 'tmp20815)) (set (Var 'tmp20815))))
-    (list (Instr 'movq (list (Imm 6) (Var 'tmp20815))) (Jmp 'block20816))))))
+    (list (list 'live-sets (set (Var 'tmp20963)) (set (Var 'tmp20963))))
+    (list (Instr 'movq (list (Imm 6) (Var 'tmp20963))) (Jmp 'block20964))))))
+
+
+output:  @ utilities.rkt:2063
+result:
+10
+
+
+testing @ utilities.rkt:2037
+test-name:
+"cond_test_96"
+
+expected-result:
+10
+
+
+running pass: register allocation @ utilities.rkt:2048
+
+move-graph: move-graph end
+locals: (tmp20963)
+cur-node neighbors potential-colors interfering-colors cur-color
+#<Var: tmp20963>
+()
+#<set:>
+#<set:>
+0
+updated-saturation: ((#<Var: tmp20963> . #<set:>))
+old and updated-move-bias: 
+((#<Var: tmp20963> . 0))
+((#<Var: tmp20963> . 0))
+variable-colors: ((#<Reg: rcx> . 0) (#<Reg: rdx> . 1) (#<Reg: rsi> . 2) (#<Reg: rdi> . 3) (#<Reg: r8> . 4) (#<Reg: r9> . 5) (#<Reg: r10> . 6) (#<Reg: r11> . 7) (#<Reg: rbx> . 8) (#<Reg: r12> . 9) (#<Reg: r13> . 10) (#<Reg: r14> . 11) (#<Reg: rax> . -1) (#<Reg: rsp> . -2) (#<Reg: rbp> . -3) (#<Reg: r15> . -4) (#<Var: tmp20963> . 0))
+pass output:  @ utilities.rkt:2051
+(strip-has-type new-p^):
+(X86Program
+ (list
+  '(locals-types (tmp20963 . Integer))
+  '(conflicts . #<unweighted-graph>)
+  (cons 'used_callee (set))
+  '(stack-space . 0))
+ (list
+  (cons
+   'block20964
+   (Block
+    (list (list 'live-sets (set (Reg 'rax)) (set) (set)))
+    (list
+     (Instr 'movq (list (Reg 'rcx) (Reg 'rax)))
+     (Instr 'addq (list (Imm 4) (Reg 'rax)))
+     (Jmp 'conclusion))))
+  (cons
+   'start
+   (Block
+    (list (list 'live-sets (set (Var 'tmp20963)) (set (Var 'tmp20963))))
+    (list (Instr 'movq (list (Imm 6) (Reg 'rcx))) (Jmp 'block20964))))))
+
+
+type-check output:  @ utilities.rkt:2056
+(strip-has-type new-p):
+(X86Program
+ (list
+  '(locals-types (tmp20963 . Integer))
+  '(conflicts . #<unweighted-graph>)
+  (cons 'used_callee (set))
+  '(stack-space . 0))
+ (list
+  (cons
+   'block20964
+   (Block
+    (list (list 'live-sets (set (Reg 'rax)) (set) (set)))
+    (list
+     (Instr 'movq (list (Reg 'rcx) (Reg 'rax)))
+     (Instr 'addq (list (Imm 4) (Reg 'rax)))
+     (Jmp 'conclusion))))
+  (cons
+   'start
+   (Block
+    (list (list 'live-sets (set (Var 'tmp20963)) (set (Var 'tmp20963))))
+    (list (Instr 'movq (list (Imm 6) (Reg 'rcx))) (Jmp 'block20964))))))
 
 
 output:  @ utilities.rkt:2063
@@ -4147,12 +5149,12 @@ pass output:  @ utilities.rkt:2051
 (Program
  '()
  (Let
-  'tmp20828
+  'tmp20977
   (If
    (If (Bool #f) (Bool #t) (If (Bool #t) (Bool #t) (Bool #f)))
    (Int 6)
    (Int 9))
-  (Prim '+ (list (Var 'tmp20828) (Int 4)))))
+  (Prim '+ (list (Var 'tmp20977) (Int 4)))))
 
 
 type checking... @ utilities.rkt:2053
@@ -4162,12 +5164,12 @@ type-check output:  @ utilities.rkt:2056
 (Program
  '()
  (Let
-  'tmp20828
+  'tmp20977
   (If
    (If (Bool #f) (Bool #t) (If (Bool #t) (Bool #t) (Bool #f)))
    (Int 6)
    (Int 9))
-  (Prim '+ (list (Var 'tmp20828) (Int 4)))))
+  (Prim '+ (list (Var 'tmp20977) (Int 4)))))
 
 
 output:  @ utilities.rkt:2063
@@ -4190,10 +5192,10 @@ pass output:  @ utilities.rkt:2051
 (CProgram
  '()
  (list
-  (cons 'start (Goto 'block20830))
-  (cons 'block20831 (Seq (Assign (Var 'tmp20828) (Int 9)) (Goto 'block20829)))
-  (cons 'block20830 (Seq (Assign (Var 'tmp20828) (Int 6)) (Goto 'block20829)))
-  (cons 'block20829 (Return (Prim '+ (list (Var 'tmp20828) (Int 4)))))))
+  (cons 'start (Goto 'block20979))
+  (cons 'block20980 (Seq (Assign (Var 'tmp20977) (Int 9)) (Goto 'block20978)))
+  (cons 'block20979 (Seq (Assign (Var 'tmp20977) (Int 6)) (Goto 'block20978)))
+  (cons 'block20978 (Return (Prim '+ (list (Var 'tmp20977) (Int 4)))))))
 
 
 type checking... @ utilities.rkt:2053
@@ -4201,12 +5203,12 @@ type checking... @ utilities.rkt:2053
 type-check output:  @ utilities.rkt:2056
 (strip-has-type new-p):
 (CProgram
- '((locals-types (tmp20828 . Integer)))
+ '((locals-types (tmp20977 . Integer)))
  (list
-  (cons 'start (Goto 'block20830))
-  (cons 'block20831 (Seq (Assign (Var 'tmp20828) (Int 9)) (Goto 'block20829)))
-  (cons 'block20830 (Seq (Assign (Var 'tmp20828) (Int 6)) (Goto 'block20829)))
-  (cons 'block20829 (Return (Prim '+ (list (Var 'tmp20828) (Int 4)))))))
+  (cons 'start (Goto 'block20979))
+  (cons 'block20980 (Seq (Assign (Var 'tmp20977) (Int 9)) (Goto 'block20978)))
+  (cons 'block20979 (Seq (Assign (Var 'tmp20977) (Int 6)) (Goto 'block20978)))
+  (cons 'block20978 (Return (Prim '+ (list (Var 'tmp20977) (Int 4)))))))
 
 
 output:  @ utilities.rkt:2063
@@ -4227,25 +5229,25 @@ running pass: instruction selection @ utilities.rkt:2048
 pass output:  @ utilities.rkt:2051
 (strip-has-type new-p^):
 (X86Program
- '((locals-types (tmp20828 . Integer)))
+ '((locals-types (tmp20977 . Integer)))
  (list
-  (cons 'start (Block '() (list (Jmp 'block20830))))
+  (cons 'start (Block '() (list (Jmp 'block20979))))
   (cons
-   'block20831
+   'block20980
    (Block
     '()
-    (list (Instr 'movq (list (Imm 9) (Var 'tmp20828))) (Jmp 'block20829))))
+    (list (Instr 'movq (list (Imm 9) (Var 'tmp20977))) (Jmp 'block20978))))
   (cons
-   'block20830
+   'block20979
    (Block
     '()
-    (list (Instr 'movq (list (Imm 6) (Var 'tmp20828))) (Jmp 'block20829))))
+    (list (Instr 'movq (list (Imm 6) (Var 'tmp20977))) (Jmp 'block20978))))
   (cons
-   'block20829
+   'block20978
    (Block
     '()
     (list
-     (Instr 'movq (list (Var 'tmp20828) (Reg 'rax)))
+     (Instr 'movq (list (Var 'tmp20977) (Reg 'rax)))
      (Instr 'addq (list (Imm 4) (Reg 'rax)))
      (Jmp 'conclusion))))))
 
@@ -4253,25 +5255,25 @@ pass output:  @ utilities.rkt:2051
 type-check output:  @ utilities.rkt:2056
 (strip-has-type new-p):
 (X86Program
- '((locals-types (tmp20828 . Integer)))
+ '((locals-types (tmp20977 . Integer)))
  (list
-  (cons 'start (Block '() (list (Jmp 'block20830))))
+  (cons 'start (Block '() (list (Jmp 'block20979))))
   (cons
-   'block20831
+   'block20980
    (Block
     '()
-    (list (Instr 'movq (list (Imm 9) (Var 'tmp20828))) (Jmp 'block20829))))
+    (list (Instr 'movq (list (Imm 9) (Var 'tmp20977))) (Jmp 'block20978))))
   (cons
-   'block20830
+   'block20979
    (Block
     '()
-    (list (Instr 'movq (list (Imm 6) (Var 'tmp20828))) (Jmp 'block20829))))
+    (list (Instr 'movq (list (Imm 6) (Var 'tmp20977))) (Jmp 'block20978))))
   (cons
-   'block20829
+   'block20978
    (Block
     '()
     (list
-     (Instr 'movq (list (Var 'tmp20828) (Reg 'rax)))
+     (Instr 'movq (list (Var 'tmp20977) (Reg 'rax)))
      (Instr 'addq (list (Imm 4) (Reg 'rax)))
      (Jmp 'conclusion))))))
 
@@ -4292,63 +5294,63 @@ expected-result:
 running pass: liveness analysis @ utilities.rkt:2048
 
 (#<set:>)
-(#<set: #<Var: tmp20828>>)
-(#<set: #<Var: tmp20828>>)
+(#<set: #<Var: tmp20977>>)
+(#<set: #<Var: tmp20977>>)
 (#<set:>)
 pass output:  @ utilities.rkt:2051
 (strip-has-type new-p^):
 (X86Program
- '((locals-types (tmp20828 . Integer)))
+ '((locals-types (tmp20977 . Integer)))
  (list
   (cons
-   'block20829
+   'block20978
    (Block
     (list (list 'live-sets (set (Reg 'rax)) (set) (set)))
     (list
-     (Instr 'movq (list (Var 'tmp20828) (Reg 'rax)))
+     (Instr 'movq (list (Var 'tmp20977) (Reg 'rax)))
      (Instr 'addq (list (Imm 4) (Reg 'rax)))
      (Jmp 'conclusion))))
   (cons
-   'block20831
+   'block20979
    (Block
-    (list (list 'live-sets (set (Var 'tmp20828)) (set (Var 'tmp20828))))
-    (list (Instr 'movq (list (Imm 9) (Var 'tmp20828))) (Jmp 'block20829))))
+    (list (list 'live-sets (set (Var 'tmp20977)) (set (Var 'tmp20977))))
+    (list (Instr 'movq (list (Imm 6) (Var 'tmp20977))) (Jmp 'block20978))))
   (cons
-   'block20830
+   'block20980
    (Block
-    (list (list 'live-sets (set (Var 'tmp20828)) (set (Var 'tmp20828))))
-    (list (Instr 'movq (list (Imm 6) (Var 'tmp20828))) (Jmp 'block20829))))
+    (list (list 'live-sets (set (Var 'tmp20977)) (set (Var 'tmp20977))))
+    (list (Instr 'movq (list (Imm 9) (Var 'tmp20977))) (Jmp 'block20978))))
   (cons
    'start
-   (Block (list (list 'live-sets (set))) (list (Jmp 'block20830))))))
+   (Block (list (list 'live-sets (set))) (list (Jmp 'block20979))))))
 
 
 type-check output:  @ utilities.rkt:2056
 (strip-has-type new-p):
 (X86Program
- '((locals-types (tmp20828 . Integer)))
+ '((locals-types (tmp20977 . Integer)))
  (list
   (cons
-   'block20829
+   'block20978
    (Block
     (list (list 'live-sets (set (Reg 'rax)) (set) (set)))
     (list
-     (Instr 'movq (list (Var 'tmp20828) (Reg 'rax)))
+     (Instr 'movq (list (Var 'tmp20977) (Reg 'rax)))
      (Instr 'addq (list (Imm 4) (Reg 'rax)))
      (Jmp 'conclusion))))
   (cons
-   'block20831
+   'block20979
    (Block
-    (list (list 'live-sets (set (Var 'tmp20828)) (set (Var 'tmp20828))))
-    (list (Instr 'movq (list (Imm 9) (Var 'tmp20828))) (Jmp 'block20829))))
+    (list (list 'live-sets (set (Var 'tmp20977)) (set (Var 'tmp20977))))
+    (list (Instr 'movq (list (Imm 6) (Var 'tmp20977))) (Jmp 'block20978))))
   (cons
-   'block20830
+   'block20980
    (Block
-    (list (list 'live-sets (set (Var 'tmp20828)) (set (Var 'tmp20828))))
-    (list (Instr 'movq (list (Imm 6) (Var 'tmp20828))) (Jmp 'block20829))))
+    (list (list 'live-sets (set (Var 'tmp20977)) (set (Var 'tmp20977))))
+    (list (Instr 'movq (list (Imm 9) (Var 'tmp20977))) (Jmp 'block20978))))
   (cons
    'start
-   (Block (list (list 'live-sets (set))) (list (Jmp 'block20830))))))
+   (Block (list (list 'live-sets (set))) (list (Jmp 'block20979))))))
 
 
 output:  @ utilities.rkt:2063
@@ -4369,57 +5371,149 @@ running pass: build interference graph @ utilities.rkt:2048
 pass output:  @ utilities.rkt:2051
 (strip-has-type new-p^):
 (X86Program
- '((locals-types (tmp20828 . Integer)) (conflicts . #<unweighted-graph>))
+ '((locals-types (tmp20977 . Integer)) (conflicts . #<unweighted-graph>))
  (list
   (cons
-   'block20829
+   'block20978
    (Block
     (list (list 'live-sets (set (Reg 'rax)) (set) (set)))
     (list
-     (Instr 'movq (list (Var 'tmp20828) (Reg 'rax)))
+     (Instr 'movq (list (Var 'tmp20977) (Reg 'rax)))
      (Instr 'addq (list (Imm 4) (Reg 'rax)))
      (Jmp 'conclusion))))
   (cons
-   'block20831
+   'block20979
    (Block
-    (list (list 'live-sets (set (Var 'tmp20828)) (set (Var 'tmp20828))))
-    (list (Instr 'movq (list (Imm 9) (Var 'tmp20828))) (Jmp 'block20829))))
+    (list (list 'live-sets (set (Var 'tmp20977)) (set (Var 'tmp20977))))
+    (list (Instr 'movq (list (Imm 6) (Var 'tmp20977))) (Jmp 'block20978))))
   (cons
-   'block20830
+   'block20980
    (Block
-    (list (list 'live-sets (set (Var 'tmp20828)) (set (Var 'tmp20828))))
-    (list (Instr 'movq (list (Imm 6) (Var 'tmp20828))) (Jmp 'block20829))))
+    (list (list 'live-sets (set (Var 'tmp20977)) (set (Var 'tmp20977))))
+    (list (Instr 'movq (list (Imm 9) (Var 'tmp20977))) (Jmp 'block20978))))
   (cons
    'start
-   (Block (list (list 'live-sets (set))) (list (Jmp 'block20830))))))
+   (Block (list (list 'live-sets (set))) (list (Jmp 'block20979))))))
 
 
 type-check output:  @ utilities.rkt:2056
 (strip-has-type new-p):
 (X86Program
- '((locals-types (tmp20828 . Integer)) (conflicts . #<unweighted-graph>))
+ '((locals-types (tmp20977 . Integer)) (conflicts . #<unweighted-graph>))
  (list
   (cons
-   'block20829
+   'block20978
    (Block
     (list (list 'live-sets (set (Reg 'rax)) (set) (set)))
     (list
-     (Instr 'movq (list (Var 'tmp20828) (Reg 'rax)))
+     (Instr 'movq (list (Var 'tmp20977) (Reg 'rax)))
      (Instr 'addq (list (Imm 4) (Reg 'rax)))
      (Jmp 'conclusion))))
   (cons
-   'block20831
+   'block20979
    (Block
-    (list (list 'live-sets (set (Var 'tmp20828)) (set (Var 'tmp20828))))
-    (list (Instr 'movq (list (Imm 9) (Var 'tmp20828))) (Jmp 'block20829))))
+    (list (list 'live-sets (set (Var 'tmp20977)) (set (Var 'tmp20977))))
+    (list (Instr 'movq (list (Imm 6) (Var 'tmp20977))) (Jmp 'block20978))))
   (cons
-   'block20830
+   'block20980
    (Block
-    (list (list 'live-sets (set (Var 'tmp20828)) (set (Var 'tmp20828))))
-    (list (Instr 'movq (list (Imm 6) (Var 'tmp20828))) (Jmp 'block20829))))
+    (list (list 'live-sets (set (Var 'tmp20977)) (set (Var 'tmp20977))))
+    (list (Instr 'movq (list (Imm 9) (Var 'tmp20977))) (Jmp 'block20978))))
   (cons
    'start
-   (Block (list (list 'live-sets (set))) (list (Jmp 'block20830))))))
+   (Block (list (list 'live-sets (set))) (list (Jmp 'block20979))))))
+
+
+output:  @ utilities.rkt:2063
+result:
+10
+
+
+testing @ utilities.rkt:2037
+test-name:
+"cond_test_97"
+
+expected-result:
+10
+
+
+running pass: register allocation @ utilities.rkt:2048
+
+move-graph: move-graph end
+locals: (tmp20977)
+cur-node neighbors potential-colors interfering-colors cur-color
+#<Var: tmp20977>
+()
+#<set:>
+#<set:>
+0
+updated-saturation: ((#<Var: tmp20977> . #<set:>))
+old and updated-move-bias: 
+((#<Var: tmp20977> . 0))
+((#<Var: tmp20977> . 0))
+variable-colors: ((#<Reg: rcx> . 0) (#<Reg: rdx> . 1) (#<Reg: rsi> . 2) (#<Reg: rdi> . 3) (#<Reg: r8> . 4) (#<Reg: r9> . 5) (#<Reg: r10> . 6) (#<Reg: r11> . 7) (#<Reg: rbx> . 8) (#<Reg: r12> . 9) (#<Reg: r13> . 10) (#<Reg: r14> . 11) (#<Reg: rax> . -1) (#<Reg: rsp> . -2) (#<Reg: rbp> . -3) (#<Reg: r15> . -4) (#<Var: tmp20977> . 0))
+pass output:  @ utilities.rkt:2051
+(strip-has-type new-p^):
+(X86Program
+ (list
+  '(locals-types (tmp20977 . Integer))
+  '(conflicts . #<unweighted-graph>)
+  (cons 'used_callee (set))
+  '(stack-space . 0))
+ (list
+  (cons
+   'block20978
+   (Block
+    (list (list 'live-sets (set (Reg 'rax)) (set) (set)))
+    (list
+     (Instr 'movq (list (Reg 'rcx) (Reg 'rax)))
+     (Instr 'addq (list (Imm 4) (Reg 'rax)))
+     (Jmp 'conclusion))))
+  (cons
+   'block20979
+   (Block
+    (list (list 'live-sets (set (Var 'tmp20977)) (set (Var 'tmp20977))))
+    (list (Instr 'movq (list (Imm 6) (Reg 'rcx))) (Jmp 'block20978))))
+  (cons
+   'block20980
+   (Block
+    (list (list 'live-sets (set (Var 'tmp20977)) (set (Var 'tmp20977))))
+    (list (Instr 'movq (list (Imm 9) (Reg 'rcx))) (Jmp 'block20978))))
+  (cons
+   'start
+   (Block (list (list 'live-sets (set))) (list (Jmp 'block20979))))))
+
+
+type-check output:  @ utilities.rkt:2056
+(strip-has-type new-p):
+(X86Program
+ (list
+  '(locals-types (tmp20977 . Integer))
+  '(conflicts . #<unweighted-graph>)
+  (cons 'used_callee (set))
+  '(stack-space . 0))
+ (list
+  (cons
+   'block20978
+   (Block
+    (list (list 'live-sets (set (Reg 'rax)) (set) (set)))
+    (list
+     (Instr 'movq (list (Reg 'rcx) (Reg 'rax)))
+     (Instr 'addq (list (Imm 4) (Reg 'rax)))
+     (Jmp 'conclusion))))
+  (cons
+   'block20979
+   (Block
+    (list (list 'live-sets (set (Var 'tmp20977)) (set (Var 'tmp20977))))
+    (list (Instr 'movq (list (Imm 6) (Reg 'rcx))) (Jmp 'block20978))))
+  (cons
+   'block20980
+   (Block
+    (list (list 'live-sets (set (Var 'tmp20977)) (set (Var 'tmp20977))))
+    (list (Instr 'movq (list (Imm 9) (Reg 'rcx))) (Jmp 'block20978))))
+  (cons
+   'start
+   (Block (list (list 'live-sets (set))) (list (Jmp 'block20979))))))
 
 
 output:  @ utilities.rkt:2063
@@ -4524,18 +5618,18 @@ pass output:  @ utilities.rkt:2051
 (Program
  '()
  (Let
-  'x20843
+  'x20993
   (Int 1)
   (Let
-   'y20844
+   'y20994
    (Int 2)
    (If
     (If
-     (Prim '< (list (Var 'x20843) (Int 1)))
-     (Prim 'eq? (list (Var 'x20843) (Int 0)))
-     (Prim 'eq? (list (Var 'x20843) (Int 2))))
-    (Prim '+ (list (Var 'y20844) (Int 2)))
-    (Prim '+ (list (Var 'y20844) (Int 10)))))))
+     (Prim '< (list (Var 'x20993) (Int 1)))
+     (Prim 'eq? (list (Var 'x20993) (Int 0)))
+     (Prim 'eq? (list (Var 'x20993) (Int 2))))
+    (Prim '+ (list (Var 'y20994) (Int 2)))
+    (Prim '+ (list (Var 'y20994) (Int 10)))))))
 
 
 type checking... @ utilities.rkt:2053
@@ -4545,18 +5639,18 @@ type-check output:  @ utilities.rkt:2056
 (Program
  '()
  (Let
-  'x20843
+  'x20993
   (Int 1)
   (Let
-   'y20844
+   'y20994
    (Int 2)
    (If
     (If
-     (Prim '< (list (Var 'x20843) (Int 1)))
-     (Prim 'eq? (list (Var 'x20843) (Int 0)))
-     (Prim 'eq? (list (Var 'x20843) (Int 2))))
-    (Prim '+ (list (Var 'y20844) (Int 2)))
-    (Prim '+ (list (Var 'y20844) (Int 10)))))))
+     (Prim '< (list (Var 'x20993) (Int 1)))
+     (Prim 'eq? (list (Var 'x20993) (Int 0)))
+     (Prim 'eq? (list (Var 'x20993) (Int 2))))
+    (Prim '+ (list (Var 'y20994) (Int 2)))
+    (Prim '+ (list (Var 'y20994) (Int 10)))))))
 
 
 output:  @ utilities.rkt:2063
@@ -4579,18 +5673,18 @@ pass output:  @ utilities.rkt:2051
 (Program
  '()
  (Let
-  'x20843
+  'x20993
   (Int 1)
   (Let
-   'y20844
+   'y20994
    (Int 2)
    (If
     (If
-     (Prim '< (list (Var 'x20843) (Int 1)))
-     (Prim 'eq? (list (Var 'x20843) (Int 0)))
-     (Prim 'eq? (list (Var 'x20843) (Int 2))))
-    (Prim '+ (list (Var 'y20844) (Int 2)))
-    (Prim '+ (list (Var 'y20844) (Int 10)))))))
+     (Prim '< (list (Var 'x20993) (Int 1)))
+     (Prim 'eq? (list (Var 'x20993) (Int 0)))
+     (Prim 'eq? (list (Var 'x20993) (Int 2))))
+    (Prim '+ (list (Var 'y20994) (Int 2)))
+    (Prim '+ (list (Var 'y20994) (Int 10)))))))
 
 
 type checking... @ utilities.rkt:2053
@@ -4600,18 +5694,18 @@ type-check output:  @ utilities.rkt:2056
 (Program
  '()
  (Let
-  'x20843
+  'x20993
   (Int 1)
   (Let
-   'y20844
+   'y20994
    (Int 2)
    (If
     (If
-     (Prim '< (list (Var 'x20843) (Int 1)))
-     (Prim 'eq? (list (Var 'x20843) (Int 0)))
-     (Prim 'eq? (list (Var 'x20843) (Int 2))))
-    (Prim '+ (list (Var 'y20844) (Int 2)))
-    (Prim '+ (list (Var 'y20844) (Int 10)))))))
+     (Prim '< (list (Var 'x20993) (Int 1)))
+     (Prim 'eq? (list (Var 'x20993) (Int 0)))
+     (Prim 'eq? (list (Var 'x20993) (Int 2))))
+    (Prim '+ (list (Var 'y20994) (Int 2)))
+    (Prim '+ (list (Var 'y20994) (Int 10)))))))
 
 
 output:  @ utilities.rkt:2063
@@ -4637,27 +5731,27 @@ pass output:  @ utilities.rkt:2051
   (cons
    'start
    (Seq
-    (Assign (Var 'x20843) (Int 1))
+    (Assign (Var 'x20993) (Int 1))
     (Seq
-     (Assign (Var 'y20844) (Int 2))
+     (Assign (Var 'y20994) (Int 2))
      (IfStmt
-      (Prim '< (list (Var 'x20843) (Int 1)))
-      (Goto 'block20847)
-      (Goto 'block20848)))))
+      (Prim '< (list (Var 'x20993) (Int 1)))
+      (Goto 'block20997)
+      (Goto 'block20998)))))
   (cons
-   'block20848
+   'block20998
    (IfStmt
-    (Prim 'eq? (list (Var 'x20843) (Int 2)))
-    (Goto 'block20845)
-    (Goto 'block20846)))
+    (Prim 'eq? (list (Var 'x20993) (Int 2)))
+    (Goto 'block20995)
+    (Goto 'block20996)))
   (cons
-   'block20847
+   'block20997
    (IfStmt
-    (Prim 'eq? (list (Var 'x20843) (Int 0)))
-    (Goto 'block20845)
-    (Goto 'block20846)))
-  (cons 'block20846 (Return (Prim '+ (list (Var 'y20844) (Int 10)))))
-  (cons 'block20845 (Return (Prim '+ (list (Var 'y20844) (Int 2)))))))
+    (Prim 'eq? (list (Var 'x20993) (Int 0)))
+    (Goto 'block20995)
+    (Goto 'block20996)))
+  (cons 'block20996 (Return (Prim '+ (list (Var 'y20994) (Int 10)))))
+  (cons 'block20995 (Return (Prim '+ (list (Var 'y20994) (Int 2)))))))
 
 
 type checking... @ utilities.rkt:2053
@@ -4665,32 +5759,32 @@ type checking... @ utilities.rkt:2053
 type-check output:  @ utilities.rkt:2056
 (strip-has-type new-p):
 (CProgram
- '((locals-types (x20843 . Integer) (y20844 . Integer)))
+ '((locals-types (y20994 . Integer) (x20993 . Integer)))
  (list
   (cons
    'start
    (Seq
-    (Assign (Var 'x20843) (Int 1))
+    (Assign (Var 'x20993) (Int 1))
     (Seq
-     (Assign (Var 'y20844) (Int 2))
+     (Assign (Var 'y20994) (Int 2))
      (IfStmt
-      (Prim '< (list (Var 'x20843) (Int 1)))
-      (Goto 'block20847)
-      (Goto 'block20848)))))
+      (Prim '< (list (Var 'x20993) (Int 1)))
+      (Goto 'block20997)
+      (Goto 'block20998)))))
   (cons
-   'block20848
+   'block20998
    (IfStmt
-    (Prim 'eq? (list (Var 'x20843) (Int 2)))
-    (Goto 'block20845)
-    (Goto 'block20846)))
+    (Prim 'eq? (list (Var 'x20993) (Int 2)))
+    (Goto 'block20995)
+    (Goto 'block20996)))
   (cons
-   'block20847
+   'block20997
    (IfStmt
-    (Prim 'eq? (list (Var 'x20843) (Int 0)))
-    (Goto 'block20845)
-    (Goto 'block20846)))
-  (cons 'block20846 (Return (Prim '+ (list (Var 'y20844) (Int 10)))))
-  (cons 'block20845 (Return (Prim '+ (list (Var 'y20844) (Int 2)))))))
+    (Prim 'eq? (list (Var 'x20993) (Int 0)))
+    (Goto 'block20995)
+    (Goto 'block20996)))
+  (cons 'block20996 (Return (Prim '+ (list (Var 'y20994) (Int 10)))))
+  (cons 'block20995 (Return (Prim '+ (list (Var 'y20994) (Int 2)))))))
 
 
 output:  @ utilities.rkt:2063
@@ -4711,48 +5805,48 @@ running pass: instruction selection @ utilities.rkt:2048
 pass output:  @ utilities.rkt:2051
 (strip-has-type new-p^):
 (X86Program
- '((locals-types (x20843 . Integer) (y20844 . Integer)))
+ '((locals-types (y20994 . Integer) (x20993 . Integer)))
  (list
   (cons
    'start
    (Block
     '()
     (list
-     (Instr 'movq (list (Imm 1) (Var 'x20843)))
-     (Instr 'movq (list (Imm 2) (Var 'y20844)))
-     (Instr 'cmpq (list (Imm 1) (Var 'x20843)))
-     (JmpIf 'l 'block20847)
-     (Jmp 'block20848))))
+     (Instr 'movq (list (Imm 1) (Var 'x20993)))
+     (Instr 'movq (list (Imm 2) (Var 'y20994)))
+     (Instr 'cmpq (list (Imm 1) (Var 'x20993)))
+     (JmpIf 'l 'block20997)
+     (Jmp 'block20998))))
   (cons
-   'block20848
+   'block20998
    (Block
     '()
     (list
-     (Instr 'cmpq (list (Imm 2) (Var 'x20843)))
-     (JmpIf 'e 'block20845)
-     (Jmp 'block20846))))
+     (Instr 'cmpq (list (Imm 2) (Var 'x20993)))
+     (JmpIf 'e 'block20995)
+     (Jmp 'block20996))))
   (cons
-   'block20847
+   'block20997
    (Block
     '()
     (list
-     (Instr 'cmpq (list (Imm 0) (Var 'x20843)))
-     (JmpIf 'e 'block20845)
-     (Jmp 'block20846))))
+     (Instr 'cmpq (list (Imm 0) (Var 'x20993)))
+     (JmpIf 'e 'block20995)
+     (Jmp 'block20996))))
   (cons
-   'block20846
+   'block20996
    (Block
     '()
     (list
-     (Instr 'movq (list (Var 'y20844) (Reg 'rax)))
+     (Instr 'movq (list (Var 'y20994) (Reg 'rax)))
      (Instr 'addq (list (Imm 10) (Reg 'rax)))
      (Jmp 'conclusion))))
   (cons
-   'block20845
+   'block20995
    (Block
     '()
     (list
-     (Instr 'movq (list (Var 'y20844) (Reg 'rax)))
+     (Instr 'movq (list (Var 'y20994) (Reg 'rax)))
      (Instr 'addq (list (Imm 2) (Reg 'rax)))
      (Jmp 'conclusion))))))
 
@@ -4760,48 +5854,48 @@ pass output:  @ utilities.rkt:2051
 type-check output:  @ utilities.rkt:2056
 (strip-has-type new-p):
 (X86Program
- '((locals-types (x20843 . Integer) (y20844 . Integer)))
+ '((locals-types (y20994 . Integer) (x20993 . Integer)))
  (list
   (cons
    'start
    (Block
     '()
     (list
-     (Instr 'movq (list (Imm 1) (Var 'x20843)))
-     (Instr 'movq (list (Imm 2) (Var 'y20844)))
-     (Instr 'cmpq (list (Imm 1) (Var 'x20843)))
-     (JmpIf 'l 'block20847)
-     (Jmp 'block20848))))
+     (Instr 'movq (list (Imm 1) (Var 'x20993)))
+     (Instr 'movq (list (Imm 2) (Var 'y20994)))
+     (Instr 'cmpq (list (Imm 1) (Var 'x20993)))
+     (JmpIf 'l 'block20997)
+     (Jmp 'block20998))))
   (cons
-   'block20848
+   'block20998
    (Block
     '()
     (list
-     (Instr 'cmpq (list (Imm 2) (Var 'x20843)))
-     (JmpIf 'e 'block20845)
-     (Jmp 'block20846))))
+     (Instr 'cmpq (list (Imm 2) (Var 'x20993)))
+     (JmpIf 'e 'block20995)
+     (Jmp 'block20996))))
   (cons
-   'block20847
+   'block20997
    (Block
     '()
     (list
-     (Instr 'cmpq (list (Imm 0) (Var 'x20843)))
-     (JmpIf 'e 'block20845)
-     (Jmp 'block20846))))
+     (Instr 'cmpq (list (Imm 0) (Var 'x20993)))
+     (JmpIf 'e 'block20995)
+     (Jmp 'block20996))))
   (cons
-   'block20846
+   'block20996
    (Block
     '()
     (list
-     (Instr 'movq (list (Var 'y20844) (Reg 'rax)))
+     (Instr 'movq (list (Var 'y20994) (Reg 'rax)))
      (Instr 'addq (list (Imm 10) (Reg 'rax)))
      (Jmp 'conclusion))))
   (cons
-   'block20845
+   'block20995
    (Block
     '()
     (list
-     (Instr 'movq (list (Var 'y20844) (Reg 'rax)))
+     (Instr 'movq (list (Var 'y20994) (Reg 'rax)))
      (Instr 'addq (list (Imm 2) (Reg 'rax)))
      (Jmp 'conclusion))))))
 
@@ -4823,139 +5917,139 @@ running pass: liveness analysis @ utilities.rkt:2048
 
 (#<set:>)
 (#<set:>)
-(#<set: #<Var: y20844>>)
-(#<set: #<Var: y20844>>)
-(#<set: #<Var: x20843> #<Var: y20844>>)
+(#<set: #<Var: y20994>>)
+(#<set: #<Var: y20994>>)
+(#<set: #<Var: x20993> #<Var: y20994>>)
 pass output:  @ utilities.rkt:2051
 (strip-has-type new-p^):
 (X86Program
- '((locals-types (x20843 . Integer) (y20844 . Integer)))
+ '((locals-types (y20994 . Integer) (x20993 . Integer)))
  (list
   (cons
-   'block20846
+   'block20995
    (Block
     (list (list 'live-sets (set (Reg 'rax)) (set) (set)))
     (list
-     (Instr 'movq (list (Var 'y20844) (Reg 'rax)))
-     (Instr 'addq (list (Imm 10) (Reg 'rax)))
-     (Jmp 'conclusion))))
-  (cons
-   'block20845
-   (Block
-    (list (list 'live-sets (set (Reg 'rax)) (set) (set)))
-    (list
-     (Instr 'movq (list (Var 'y20844) (Reg 'rax)))
+     (Instr 'movq (list (Var 'y20994) (Reg 'rax)))
      (Instr 'addq (list (Imm 2) (Reg 'rax)))
      (Jmp 'conclusion))))
   (cons
-   'block20848
+   'block20996
    (Block
+    (list (list 'live-sets (set (Reg 'rax)) (set) (set)))
     (list
-     (list
-      'live-sets
-      (set (Var 'y20844))
-      (set (Var 'y20844))
-      (set (Var 'y20844))))
-    (list
-     (Instr 'cmpq (list (Imm 2) (Var 'x20843)))
-     (JmpIf 'e 'block20845)
-     (Jmp 'block20846))))
+     (Instr 'movq (list (Var 'y20994) (Reg 'rax)))
+     (Instr 'addq (list (Imm 10) (Reg 'rax)))
+     (Jmp 'conclusion))))
   (cons
-   'block20847
+   'block20997
    (Block
     (list
      (list
       'live-sets
-      (set (Var 'y20844))
-      (set (Var 'y20844))
-      (set (Var 'y20844))))
+      (set (Var 'y20994))
+      (set (Var 'y20994))
+      (set (Var 'y20994))))
     (list
-     (Instr 'cmpq (list (Imm 0) (Var 'x20843)))
-     (JmpIf 'e 'block20845)
-     (Jmp 'block20846))))
+     (Instr 'cmpq (list (Imm 0) (Var 'x20993)))
+     (JmpIf 'e 'block20995)
+     (Jmp 'block20996))))
+  (cons
+   'block20998
+   (Block
+    (list
+     (list
+      'live-sets
+      (set (Var 'y20994))
+      (set (Var 'y20994))
+      (set (Var 'y20994))))
+    (list
+     (Instr 'cmpq (list (Imm 2) (Var 'x20993)))
+     (JmpIf 'e 'block20995)
+     (Jmp 'block20996))))
   (cons
    'start
    (Block
     (list
      (list
       'live-sets
-      (set (Var 'x20843))
-      (set (Var 'x20843) (Var 'y20844))
-      (set (Var 'x20843) (Var 'y20844))
-      (set (Var 'x20843) (Var 'y20844))
-      (set (Var 'x20843) (Var 'y20844))))
+      (set (Var 'x20993))
+      (set (Var 'x20993) (Var 'y20994))
+      (set (Var 'x20993) (Var 'y20994))
+      (set (Var 'x20993) (Var 'y20994))
+      (set (Var 'x20993) (Var 'y20994))))
     (list
-     (Instr 'movq (list (Imm 1) (Var 'x20843)))
-     (Instr 'movq (list (Imm 2) (Var 'y20844)))
-     (Instr 'cmpq (list (Imm 1) (Var 'x20843)))
-     (JmpIf 'l 'block20847)
-     (Jmp 'block20848))))))
+     (Instr 'movq (list (Imm 1) (Var 'x20993)))
+     (Instr 'movq (list (Imm 2) (Var 'y20994)))
+     (Instr 'cmpq (list (Imm 1) (Var 'x20993)))
+     (JmpIf 'l 'block20997)
+     (Jmp 'block20998))))))
 
 
 type-check output:  @ utilities.rkt:2056
 (strip-has-type new-p):
 (X86Program
- '((locals-types (x20843 . Integer) (y20844 . Integer)))
+ '((locals-types (y20994 . Integer) (x20993 . Integer)))
  (list
   (cons
-   'block20846
+   'block20995
    (Block
     (list (list 'live-sets (set (Reg 'rax)) (set) (set)))
     (list
-     (Instr 'movq (list (Var 'y20844) (Reg 'rax)))
-     (Instr 'addq (list (Imm 10) (Reg 'rax)))
-     (Jmp 'conclusion))))
-  (cons
-   'block20845
-   (Block
-    (list (list 'live-sets (set (Reg 'rax)) (set) (set)))
-    (list
-     (Instr 'movq (list (Var 'y20844) (Reg 'rax)))
+     (Instr 'movq (list (Var 'y20994) (Reg 'rax)))
      (Instr 'addq (list (Imm 2) (Reg 'rax)))
      (Jmp 'conclusion))))
   (cons
-   'block20848
+   'block20996
    (Block
+    (list (list 'live-sets (set (Reg 'rax)) (set) (set)))
     (list
-     (list
-      'live-sets
-      (set (Var 'y20844))
-      (set (Var 'y20844))
-      (set (Var 'y20844))))
-    (list
-     (Instr 'cmpq (list (Imm 2) (Var 'x20843)))
-     (JmpIf 'e 'block20845)
-     (Jmp 'block20846))))
+     (Instr 'movq (list (Var 'y20994) (Reg 'rax)))
+     (Instr 'addq (list (Imm 10) (Reg 'rax)))
+     (Jmp 'conclusion))))
   (cons
-   'block20847
+   'block20997
    (Block
     (list
      (list
       'live-sets
-      (set (Var 'y20844))
-      (set (Var 'y20844))
-      (set (Var 'y20844))))
+      (set (Var 'y20994))
+      (set (Var 'y20994))
+      (set (Var 'y20994))))
     (list
-     (Instr 'cmpq (list (Imm 0) (Var 'x20843)))
-     (JmpIf 'e 'block20845)
-     (Jmp 'block20846))))
+     (Instr 'cmpq (list (Imm 0) (Var 'x20993)))
+     (JmpIf 'e 'block20995)
+     (Jmp 'block20996))))
+  (cons
+   'block20998
+   (Block
+    (list
+     (list
+      'live-sets
+      (set (Var 'y20994))
+      (set (Var 'y20994))
+      (set (Var 'y20994))))
+    (list
+     (Instr 'cmpq (list (Imm 2) (Var 'x20993)))
+     (JmpIf 'e 'block20995)
+     (Jmp 'block20996))))
   (cons
    'start
    (Block
     (list
      (list
       'live-sets
-      (set (Var 'x20843))
-      (set (Var 'x20843) (Var 'y20844))
-      (set (Var 'x20843) (Var 'y20844))
-      (set (Var 'x20843) (Var 'y20844))
-      (set (Var 'x20843) (Var 'y20844))))
+      (set (Var 'x20993))
+      (set (Var 'x20993) (Var 'y20994))
+      (set (Var 'x20993) (Var 'y20994))
+      (set (Var 'x20993) (Var 'y20994))
+      (set (Var 'x20993) (Var 'y20994))))
     (list
-     (Instr 'movq (list (Imm 1) (Var 'x20843)))
-     (Instr 'movq (list (Imm 2) (Var 'y20844)))
-     (Instr 'cmpq (list (Imm 1) (Var 'x20843)))
-     (JmpIf 'l 'block20847)
-     (Jmp 'block20848))))))
+     (Instr 'movq (list (Imm 1) (Var 'x20993)))
+     (Instr 'movq (list (Imm 2) (Var 'y20994)))
+     (Instr 'cmpq (list (Imm 1) (Var 'x20993)))
+     (JmpIf 'l 'block20997)
+     (Jmp 'block20998))))))
 
 
 output:  @ utilities.rkt:2063
@@ -4973,140 +6067,140 @@ expected-result:
 
 running pass: build interference graph @ utilities.rkt:2048
 
-#<Var: x20843> -> #<Var: y20844>;
-#<Var: y20844> -> #<Var: x20843>;
+#<Var: x20993> -> #<Var: y20994>;
+#<Var: y20994> -> #<Var: x20993>;
 pass output:  @ utilities.rkt:2051
 (strip-has-type new-p^):
 (X86Program
- '((locals-types (x20843 . Integer) (y20844 . Integer))
+ '((locals-types (y20994 . Integer) (x20993 . Integer))
    (conflicts . #<unweighted-graph>))
  (list
   (cons
-   'block20846
+   'block20995
    (Block
     (list (list 'live-sets (set (Reg 'rax)) (set) (set)))
     (list
-     (Instr 'movq (list (Var 'y20844) (Reg 'rax)))
-     (Instr 'addq (list (Imm 10) (Reg 'rax)))
-     (Jmp 'conclusion))))
-  (cons
-   'block20845
-   (Block
-    (list (list 'live-sets (set (Reg 'rax)) (set) (set)))
-    (list
-     (Instr 'movq (list (Var 'y20844) (Reg 'rax)))
+     (Instr 'movq (list (Var 'y20994) (Reg 'rax)))
      (Instr 'addq (list (Imm 2) (Reg 'rax)))
      (Jmp 'conclusion))))
   (cons
-   'block20848
+   'block20996
    (Block
+    (list (list 'live-sets (set (Reg 'rax)) (set) (set)))
     (list
-     (list
-      'live-sets
-      (set (Var 'y20844))
-      (set (Var 'y20844))
-      (set (Var 'y20844))))
-    (list
-     (Instr 'cmpq (list (Imm 2) (Var 'x20843)))
-     (JmpIf 'e 'block20845)
-     (Jmp 'block20846))))
+     (Instr 'movq (list (Var 'y20994) (Reg 'rax)))
+     (Instr 'addq (list (Imm 10) (Reg 'rax)))
+     (Jmp 'conclusion))))
   (cons
-   'block20847
+   'block20997
    (Block
     (list
      (list
       'live-sets
-      (set (Var 'y20844))
-      (set (Var 'y20844))
-      (set (Var 'y20844))))
+      (set (Var 'y20994))
+      (set (Var 'y20994))
+      (set (Var 'y20994))))
     (list
-     (Instr 'cmpq (list (Imm 0) (Var 'x20843)))
-     (JmpIf 'e 'block20845)
-     (Jmp 'block20846))))
+     (Instr 'cmpq (list (Imm 0) (Var 'x20993)))
+     (JmpIf 'e 'block20995)
+     (Jmp 'block20996))))
+  (cons
+   'block20998
+   (Block
+    (list
+     (list
+      'live-sets
+      (set (Var 'y20994))
+      (set (Var 'y20994))
+      (set (Var 'y20994))))
+    (list
+     (Instr 'cmpq (list (Imm 2) (Var 'x20993)))
+     (JmpIf 'e 'block20995)
+     (Jmp 'block20996))))
   (cons
    'start
    (Block
     (list
      (list
       'live-sets
-      (set (Var 'x20843))
-      (set (Var 'x20843) (Var 'y20844))
-      (set (Var 'x20843) (Var 'y20844))
-      (set (Var 'x20843) (Var 'y20844))
-      (set (Var 'x20843) (Var 'y20844))))
+      (set (Var 'x20993))
+      (set (Var 'x20993) (Var 'y20994))
+      (set (Var 'x20993) (Var 'y20994))
+      (set (Var 'x20993) (Var 'y20994))
+      (set (Var 'x20993) (Var 'y20994))))
     (list
-     (Instr 'movq (list (Imm 1) (Var 'x20843)))
-     (Instr 'movq (list (Imm 2) (Var 'y20844)))
-     (Instr 'cmpq (list (Imm 1) (Var 'x20843)))
-     (JmpIf 'l 'block20847)
-     (Jmp 'block20848))))))
+     (Instr 'movq (list (Imm 1) (Var 'x20993)))
+     (Instr 'movq (list (Imm 2) (Var 'y20994)))
+     (Instr 'cmpq (list (Imm 1) (Var 'x20993)))
+     (JmpIf 'l 'block20997)
+     (Jmp 'block20998))))))
 
 
 type-check output:  @ utilities.rkt:2056
 (strip-has-type new-p):
 (X86Program
- '((locals-types (x20843 . Integer) (y20844 . Integer))
+ '((locals-types (y20994 . Integer) (x20993 . Integer))
    (conflicts . #<unweighted-graph>))
  (list
   (cons
-   'block20846
+   'block20995
    (Block
     (list (list 'live-sets (set (Reg 'rax)) (set) (set)))
     (list
-     (Instr 'movq (list (Var 'y20844) (Reg 'rax)))
-     (Instr 'addq (list (Imm 10) (Reg 'rax)))
-     (Jmp 'conclusion))))
-  (cons
-   'block20845
-   (Block
-    (list (list 'live-sets (set (Reg 'rax)) (set) (set)))
-    (list
-     (Instr 'movq (list (Var 'y20844) (Reg 'rax)))
+     (Instr 'movq (list (Var 'y20994) (Reg 'rax)))
      (Instr 'addq (list (Imm 2) (Reg 'rax)))
      (Jmp 'conclusion))))
   (cons
-   'block20848
+   'block20996
    (Block
+    (list (list 'live-sets (set (Reg 'rax)) (set) (set)))
     (list
-     (list
-      'live-sets
-      (set (Var 'y20844))
-      (set (Var 'y20844))
-      (set (Var 'y20844))))
-    (list
-     (Instr 'cmpq (list (Imm 2) (Var 'x20843)))
-     (JmpIf 'e 'block20845)
-     (Jmp 'block20846))))
+     (Instr 'movq (list (Var 'y20994) (Reg 'rax)))
+     (Instr 'addq (list (Imm 10) (Reg 'rax)))
+     (Jmp 'conclusion))))
   (cons
-   'block20847
+   'block20997
    (Block
     (list
      (list
       'live-sets
-      (set (Var 'y20844))
-      (set (Var 'y20844))
-      (set (Var 'y20844))))
+      (set (Var 'y20994))
+      (set (Var 'y20994))
+      (set (Var 'y20994))))
     (list
-     (Instr 'cmpq (list (Imm 0) (Var 'x20843)))
-     (JmpIf 'e 'block20845)
-     (Jmp 'block20846))))
+     (Instr 'cmpq (list (Imm 0) (Var 'x20993)))
+     (JmpIf 'e 'block20995)
+     (Jmp 'block20996))))
+  (cons
+   'block20998
+   (Block
+    (list
+     (list
+      'live-sets
+      (set (Var 'y20994))
+      (set (Var 'y20994))
+      (set (Var 'y20994))))
+    (list
+     (Instr 'cmpq (list (Imm 2) (Var 'x20993)))
+     (JmpIf 'e 'block20995)
+     (Jmp 'block20996))))
   (cons
    'start
    (Block
     (list
      (list
       'live-sets
-      (set (Var 'x20843))
-      (set (Var 'x20843) (Var 'y20844))
-      (set (Var 'x20843) (Var 'y20844))
-      (set (Var 'x20843) (Var 'y20844))
-      (set (Var 'x20843) (Var 'y20844))))
+      (set (Var 'x20993))
+      (set (Var 'x20993) (Var 'y20994))
+      (set (Var 'x20993) (Var 'y20994))
+      (set (Var 'x20993) (Var 'y20994))
+      (set (Var 'x20993) (Var 'y20994))))
     (list
-     (Instr 'movq (list (Imm 1) (Var 'x20843)))
-     (Instr 'movq (list (Imm 2) (Var 'y20844)))
-     (Instr 'cmpq (list (Imm 1) (Var 'x20843)))
-     (JmpIf 'l 'block20847)
-     (Jmp 'block20848))))))
+     (Instr 'movq (list (Imm 1) (Var 'x20993)))
+     (Instr 'movq (list (Imm 2) (Var 'y20994)))
+     (Instr 'cmpq (list (Imm 1) (Var 'x20993)))
+     (JmpIf 'l 'block20997)
+     (Jmp 'block20998))))))
 
 
 output:  @ utilities.rkt:2063
@@ -5122,5 +6216,183 @@ expected-result:
 12
 
 
-317 success(es) 0 failure(s) 0 error(s) 317 test(s) run
+running pass: register allocation @ utilities.rkt:2048
+
+move-graph: move-graph end
+locals: (y20994 x20993)
+cur-node neighbors potential-colors interfering-colors cur-color
+#<Var: x20993>
+(#<Var: y20994>)
+#<set:>
+#<set:>
+0
+updated-saturation: ((#<Var: y20994> . #<set: 0>) (#<Var: x20993> . #<set:>))
+old and updated-move-bias: 
+((#<Var: y20994> . 0) (#<Var: x20993> . 0))
+((#<Var: y20994> . 0) (#<Var: x20993> . 0))
+cur-node neighbors potential-colors interfering-colors cur-color
+#<Var: y20994>
+(#<Var: x20993>)
+#<set:>
+#<set: 0>
+1
+updated-saturation: ((#<Var: y20994> . #<set: 0>) (#<Var: x20993> . #<set: 1>))
+old and updated-move-bias: 
+((#<Var: y20994> . 0) (#<Var: x20993> . 0))
+((#<Var: y20994> . 0) (#<Var: x20993> . 0))
+variable-colors: ((#<Reg: rcx> . 0) (#<Reg: rdx> . 1) (#<Reg: rsi> . 2) (#<Reg: rdi> . 3) (#<Reg: r8> . 4) (#<Reg: r9> . 5) (#<Reg: r10> . 6) (#<Reg: r11> . 7) (#<Reg: rbx> . 8) (#<Reg: r12> . 9) (#<Reg: r13> . 10) (#<Reg: r14> . 11) (#<Reg: rax> . -1) (#<Reg: rsp> . -2) (#<Reg: rbp> . -3) (#<Reg: r15> . -4) (#<Var: x20993> . 0) (#<Var: y20994> . 1))
+pass output:  @ utilities.rkt:2051
+(strip-has-type new-p^):
+(X86Program
+ (list
+  '(locals-types (y20994 . Integer) (x20993 . Integer))
+  '(conflicts . #<unweighted-graph>)
+  (cons 'used_callee (set))
+  '(stack-space . 0))
+ (list
+  (cons
+   'block20995
+   (Block
+    (list (list 'live-sets (set (Reg 'rax)) (set) (set)))
+    (list
+     (Instr 'movq (list (Reg 'rdx) (Reg 'rax)))
+     (Instr 'addq (list (Imm 2) (Reg 'rax)))
+     (Jmp 'conclusion))))
+  (cons
+   'block20996
+   (Block
+    (list (list 'live-sets (set (Reg 'rax)) (set) (set)))
+    (list
+     (Instr 'movq (list (Reg 'rdx) (Reg 'rax)))
+     (Instr 'addq (list (Imm 10) (Reg 'rax)))
+     (Jmp 'conclusion))))
+  (cons
+   'block20997
+   (Block
+    (list
+     (list
+      'live-sets
+      (set (Var 'y20994))
+      (set (Var 'y20994))
+      (set (Var 'y20994))))
+    (list
+     (Instr 'cmpq (list (Imm 0) (Reg 'rcx)))
+     (JmpIf 'e 'block20995)
+     (Jmp 'block20996))))
+  (cons
+   'block20998
+   (Block
+    (list
+     (list
+      'live-sets
+      (set (Var 'y20994))
+      (set (Var 'y20994))
+      (set (Var 'y20994))))
+    (list
+     (Instr 'cmpq (list (Imm 2) (Reg 'rcx)))
+     (JmpIf 'e 'block20995)
+     (Jmp 'block20996))))
+  (cons
+   'start
+   (Block
+    (list
+     (list
+      'live-sets
+      (set (Var 'x20993))
+      (set (Var 'x20993) (Var 'y20994))
+      (set (Var 'x20993) (Var 'y20994))
+      (set (Var 'x20993) (Var 'y20994))
+      (set (Var 'x20993) (Var 'y20994))))
+    (list
+     (Instr 'movq (list (Imm 1) (Reg 'rcx)))
+     (Instr 'movq (list (Imm 2) (Reg 'rdx)))
+     (Instr 'cmpq (list (Imm 1) (Reg 'rcx)))
+     (JmpIf 'l 'block20997)
+     (Jmp 'block20998))))))
+
+
+type-check output:  @ utilities.rkt:2056
+(strip-has-type new-p):
+(X86Program
+ (list
+  '(locals-types (y20994 . Integer) (x20993 . Integer))
+  '(conflicts . #<unweighted-graph>)
+  (cons 'used_callee (set))
+  '(stack-space . 0))
+ (list
+  (cons
+   'block20995
+   (Block
+    (list (list 'live-sets (set (Reg 'rax)) (set) (set)))
+    (list
+     (Instr 'movq (list (Reg 'rdx) (Reg 'rax)))
+     (Instr 'addq (list (Imm 2) (Reg 'rax)))
+     (Jmp 'conclusion))))
+  (cons
+   'block20996
+   (Block
+    (list (list 'live-sets (set (Reg 'rax)) (set) (set)))
+    (list
+     (Instr 'movq (list (Reg 'rdx) (Reg 'rax)))
+     (Instr 'addq (list (Imm 10) (Reg 'rax)))
+     (Jmp 'conclusion))))
+  (cons
+   'block20997
+   (Block
+    (list
+     (list
+      'live-sets
+      (set (Var 'y20994))
+      (set (Var 'y20994))
+      (set (Var 'y20994))))
+    (list
+     (Instr 'cmpq (list (Imm 0) (Reg 'rcx)))
+     (JmpIf 'e 'block20995)
+     (Jmp 'block20996))))
+  (cons
+   'block20998
+   (Block
+    (list
+     (list
+      'live-sets
+      (set (Var 'y20994))
+      (set (Var 'y20994))
+      (set (Var 'y20994))))
+    (list
+     (Instr 'cmpq (list (Imm 2) (Reg 'rcx)))
+     (JmpIf 'e 'block20995)
+     (Jmp 'block20996))))
+  (cons
+   'start
+   (Block
+    (list
+     (list
+      'live-sets
+      (set (Var 'x20993))
+      (set (Var 'x20993) (Var 'y20994))
+      (set (Var 'x20993) (Var 'y20994))
+      (set (Var 'x20993) (Var 'y20994))
+      (set (Var 'x20993) (Var 'y20994))))
+    (list
+     (Instr 'movq (list (Imm 1) (Reg 'rcx)))
+     (Instr 'movq (list (Imm 2) (Reg 'rdx)))
+     (Instr 'cmpq (list (Imm 1) (Reg 'rcx)))
+     (JmpIf 'l 'block20997)
+     (Jmp 'block20998))))))
+
+
+output:  @ utilities.rkt:2063
+result:
+12
+
+
+testing @ utilities.rkt:2037
+test-name:
+"cond_test_98"
+
+expected-result:
+12
+
+
+356 success(es) 0 failure(s) 0 error(s) 356 test(s) run
 0
