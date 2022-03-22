@@ -254,6 +254,16 @@
      (let ([label (gensym 'block)])
        (set! basic-blocks (cons (cons label tail) basic-blocks))
        (Goto label))]))
+
+(define (Cmp? op)
+  (match op
+    ['eq? #t]
+    ['< #t]
+    ['<= #t]
+    ['> #t]
+    ['>= #t]
+    [_ #f]))
+
 (define (explicate_pred cnd thn els)
   (match cnd
     [(Var x)
@@ -266,13 +276,15 @@
         (if b els thn)]
        [(Var x)
         (IfStmt (Prim 'eq? (list (Var x) (Bool #f))) (create_block thn) (create_block els))])]
-    [(Prim op es) #:when (or (eq? op 'eq?) (eq? op '<))
+    [(Prim op es) #:when (Cmp? op)
                   (IfStmt (Prim op es) (create_block thn)
                           (create_block els))]
     [(Bool b) (if b thn els)]
     [(If cnd^ thn^ els^)
-     (define B1 (explicate_pred thn^ thn els))
-     (define B2 (explicate_pred els^ thn els))
+     (define thn-block (create_block thn))
+     (define els-block (create_block els))
+     (define B1 (explicate_pred thn^ thn-block els-block))
+     (define B2 (explicate_pred els^ thn-block els-block))
      (explicate_pred cnd^ B1 B2)]
     [else (error "explicate_pred unhandled case" cnd)]))
 
@@ -383,62 +395,42 @@
      (define partial-x86-blocks (for/fold ([partial-x86-blocks '()]) ([blocks e]) (dict-set partial-x86-blocks (car blocks) (Block '() (si-tail (cdr blocks))))))
      (X86Program info partial-x86-blocks)]))
 
-
-(define (compute-locations instr)
-  (match instr
-    [(Instr x86-op (list arg1 arg2))
-     ; arg2 cannot be immediate since we are writing into arg2
-     (match arg1
-       [(Imm n) (set arg2)]
-       [else (set arg1 arg2)])]
-    [(Instr 'negq (list arg1)) (set arg1)] ; arg1 cannot be immediate
-    [else (set)])) ;; for callq
-
 (define (compute-write-locations instr)
   ; TODO: handle retq instruction
   (match instr
-    [(Instr 'cmpq es)
-     (set (Reg 'rax))]
-    [(Instr 'set es)
-     (set (Reg 'rax))]
+    [(Instr 'cmpq es) (set)] ;TODO: prolly return empty set here: DONE, before we were returning rax
+    [(Instr 'set es) (set (Reg 'rax))]
     [(Instr x86-op (list arg1 arg2)) (set arg2)] ; arg2 cannot be immediate since we are writing into arg2
-    [(Instr 'negq (list arg1)) (set arg1)] ; arg1 cannot be immediate
+    [(Instr x86-op (list arg1)) (set arg1)] ; arg1 cannot be immediate, x86-op should only be negq
     [(Callq func-name n) (list->set caller-saved-registers)]
-    [else (set)]))
+    [_ (set)]))
 
 (define (compute-read-locations instr)
-  ; TODO: handle retq instruction
+  ; TODO: handle retq instruction: no need to because it will never be used before this pass
   (match instr
     [(Instr 'movq (list arg1 arg2))
      (match arg1
        [(Imm n) (set)]
        [else (set arg1)])]
-    [(Instr 'set es)
-     (set)]
-    [(Instr 'movzbq es)
-     (set (Reg 'rax))]
+    [(Instr 'set es) (set)]
+    [(Instr 'movzbq es) (set (Reg 'rax))]
     [(Instr x86-op (list arg1 arg2))
      ; handles xorq cmpq addq subq 
      (match* (arg1 arg2)
-       [((Imm n1) (Imm n2))
-        (set)]
-       [((Imm n1) arg2)
-        (set arg2)]
-       [(arg1 (Imm n2))
-        (set arg2)]
-       [(_ _)
-        (set arg1 arg2)])]
-    [(Instr 'negq (list arg1)) (set arg1)] ; arg1 cannot be immediate
+       [((Imm n1) (Imm n2)) (set)]
+       [((Imm n1) arg2) (set arg2)]
+       [(arg1 (Imm n2)) (set arg1)]
+       [(_ _) (set arg1 arg2)])]
+    [(Instr x86-op (list arg1)) (set arg1)] ; arg1 cannot be immediate, x86-op should only be negq
     [(Callq func-name n)
      (cond
        [(<= n 6) (list->set (take argument-registers n))]
        [else (list->set (take argument-registers 6))])]
-    [else (set)]))
+    [_ (set)]))
 
 (define (find-live-sets instrs live-after)
   (match instrs
     [(cons instr rest)
-     (define locations (compute-locations instr))
      (define read-locations (compute-read-locations instr))
      (define write-locations (compute-write-locations instr))
      (define live-after-cur (cond
@@ -457,7 +449,6 @@
         (add-vertex! graph label)
         (define reverse-instrs (reverse instrs))
         (define last-instr (car reverse-instrs))
-        (define second-last-instr (car (cdr reverse-instrs)))
 
         ; last instruction is always a jmp instruction
         (define label1 (Jmp-target last-instr))
@@ -467,14 +458,22 @@
            (add-directed-edge! graph label1 label)]
           [else
            #f])
+       
         ; second last instruction might be a JmpIf instruction
-        (match second-last-instr
-          [(JmpIf cc l)
-           (add-vertex! graph l)
-           (add-directed-edge! graph l label)]
+        (define rem-instr (cdr reverse-instrs))
+        (cond
+          [(not (empty? rem-instr))
+           (define second-last-instr (car (cdr reverse-instrs)))
+           (match second-last-instr
+             [(JmpIf cc l)
+              (add-vertex! graph l)
+              (add-directed-edge! graph l label)]
+             [else
+              #f])]
           [else
            #f])
         (generate-label-graph rest graph)])]
+
     [else
      graph]))
 
@@ -499,7 +498,7 @@
   (match p
     [(X86Program info e)
      (define label-graph (generate-label-graph e (make-multigraph '())))
-     (print-graph label-graph)
+     
      (define topo-order (tsort label-graph))
      (define initial-live-after (for/fold ([initial-live-after '()]) ([label topo-order]) (dict-set initial-live-after label (list (set)))))
      (define blocks (uncover_live_after_per_block e initial-live-after '() label-graph topo-order))
@@ -510,12 +509,7 @@
     (for ([v (in-neighbors graph u)])
       (display (format "~a -> ~a;\n" u v)))))
 
-(define (build-graph instrs live-sets locals)
-  (define graph (undirected-graph '()))
-  (for ([reg all-registers]) ;TODO: do we need to add vertices of all registers or only caller saved ones or none at all here?
-    (add-vertex! graph reg))
-  (for ([var locals]) ;need to do this otherwise error on var_test 6 or something
-    (add-vertex! graph (Var var)))
+(define (build-intereference-graph-block instrs live-sets cur-graph)
   (for ([live-set live-sets]
         [instr instrs])
     (match instr
@@ -523,28 +517,49 @@
        (for ([live-location (set->list live-set)])
          (cond
            [(not (or (equal? arg1 live-location) (equal? arg2 live-location)))
-            (add-edge! graph arg2 live-location)]))]
+            (add-edge! cur-graph arg2 live-location)]))]
+      [(Instr 'movzbq (list arg1 arg2))
+       (for ([live-location (set->list live-set)])
+         (cond
+           [(not (or (equal? arg1 live-location) (equal? arg2 live-location)))
+            (add-edge! cur-graph arg2 live-location)]))]
       [else
        (define write-locations (compute-write-locations instr))
        (for* ([live-location live-set]
               [write-location write-locations])
          (cond
            [(not (equal? live-location write-location))
-            (add-edge! graph live-location write-location)]))]))
-  graph)
-       
+            (add-edge! cur-graph live-location write-location)]))]))
+  cur-graph)
+
+(define (build-interference-graph blocks locals)
+  (define interference-graph (undirected-graph '()))
+
+  (for ([reg all-registers]) ;TODO: do we need to add vertices of all registers or only caller saved ones or none at all here?
+    (add-vertex! interference-graph reg))
+
+  (for ([var locals]) ;need to do this otherwise error on var_test 6 or something
+    (add-vertex! interference-graph (Var var)))
+  
+  (for ([block_key (dict-keys blocks)])
+    (define block (dict-ref blocks block_key))
+    (match block
+      [(Block sinfo instrs)
+       (define live-sets (dict-ref sinfo 'live-sets))
+       (set! interference-graph (build-intereference-graph-block instrs live-sets interference-graph))
+       ;(print-graph interference-graph)
+       ]))
+  
+  (print-graph interference-graph)
+  interference-graph)
  
 ;; build_interference: pseudo-x86 -> pseudo-x86
 (define (build_interference p)
   (match p
-    [(X86Program info e)
-     (match e
-      [`((start . ,(Block sinfo instrs)))
-       (define live-sets (dict-ref sinfo 'live-sets))
-       (define locals (dict-keys (dict-ref info 'locals-types)))
-       (define interference-graph (build-graph instrs live-sets locals))
-       (print-graph interference-graph)
-       (X86Program (dict-set info 'conflicts interference-graph) e)])]))
+    [(X86Program info blocks)
+     (define locals (dict-keys (dict-ref info 'locals-types)))
+     (define interference-graph (build-interference-graph blocks locals))
+     (X86Program (dict-set info 'conflicts interference-graph) blocks)]))
 
 (define graph-coloring-comparator                         
   (lambda (node1 node2)
@@ -554,7 +569,7 @@
       [else
        (> (color_priority_node-saturation node1) (color_priority_node-saturation node2))])))
 
-(define (build-move-graph instrs locals)
+(define (build-move-graph blocks locals)
   (define graph (undirected-graph '()))
 
   (for ([reg all-registers])
@@ -562,21 +577,27 @@
  
   (for ([var locals])
     (add-vertex! graph (Var var)))
-  
-  (for ([instr instrs])
-    (match instr
-      [(Instr 'movq (list arg1 arg2))
-       (match* (arg1 arg2)
-         [((Var x) (Var y))
-          (add-edge! graph arg1 arg2)]
-         [((Var x) (Reg r))
-          (cond
-            [(>= (dict-ref register-to-color arg2) 0) (add-edge! graph arg1 arg2)])]
-         [((Reg r) (Var x))
-          (cond
-            [(>= (dict-ref register-to-color arg1) 0) (add-edge! graph arg1 arg2)])]
-         [(_ _) (void)])]
-      [_ (void)]))
+
+  (for ([block_key (dict-keys blocks)])
+    (define block (dict-ref blocks block_key))
+    (match block
+      [(Block sinfo instrs)
+       (for ([instr instrs])
+         (match instr
+           ;no need to handle movzbq because it always moves al (rax) to something and no need of move biasing for rax
+           [(Instr 'movq (list arg1 arg2))
+            (match* (arg1 arg2)
+              [((Var x) (Var y))
+               (add-edge! graph arg1 arg2)]
+              [((Var x) (Reg r))
+               (cond
+                 [(>= (dict-ref register-to-color arg2) 0) (add-edge! graph arg1 arg2)])]
+              [((Reg r) (Var x))
+               (cond
+                 [(>= (dict-ref register-to-color arg1) 0) (add-edge! graph arg1 arg2)])]
+              [(_ _) (void)])]
+           [_ (void)]))
+       ]))
   graph)
 
 (define (find-mex s cur)
@@ -726,6 +747,8 @@
      (match u
        [(Reg r)
         (define v-list (for/list ([v (in-neighbors interference-graph u)]) v))
+        ;(displayln "v-list")
+        ;(displayln v-list)
         (define updated-saturation (get-initial-saturation-helper cur-saturation u (dict-ref register-to-color u) v-list))
         (get-initial-saturation updated-saturation rest interference-graph)]
        [_ (get-initial-saturation cur-saturation rest interference-graph)])]
@@ -755,6 +778,9 @@
 
 
 (define (color-graph interference-graph locals move-graph)
+
+  ;(display "locals: ")
+  ;(displayln locals)
 
   ; set default saturation, visited and move-bias of ONLY variables.
   (define-values (prev-saturation visited-prev move-bias-prev) (for/fold ([saturation '()]    
@@ -842,22 +868,30 @@
 ;; allocate_registers: pseudo-x86 -> pseudo-x86
 (define (allocate_registers p)
   (match p
-    [(X86Program info e)
-     (match e
-      [`((start . ,(Block sinfo instrs)))
-       (define locals (dict-keys (dict-ref info 'locals-types)))
-       (define interference-graph (dict-ref info 'conflicts))
-       (define move-graph (build-move-graph instrs locals))
-       (define variable-colors (color-graph interference-graph locals move-graph))
-       (display "variable-colors: ")
-       (displayln variable-colors)
-       (define used-callee (get-used-callee-registers locals (set) variable-colors))
-       (define new-info (dict-set info 'used_callee used-callee))
-       (define locals-homes (assign-home-to-locals locals variable-colors (set-count used-callee) '()))
-       (define stack-variable-colors (get-stack-colors locals variable-colors (set)))
-       (define stack-size (get-stack-space (set-count stack-variable-colors) (set-count used-callee)))
+    [(X86Program info blocks)
+     (define locals (dict-keys (dict-ref info 'locals-types)))
+     (define interference-graph (dict-ref info 'conflicts))
+     (define move-graph (build-move-graph blocks locals))
+     (display "move-graph: ")
+     (print-graph move-graph)
+     (displayln "move-graph end")
+     (define variable-colors (color-graph interference-graph locals move-graph))
+     (display "variable-colors: ")
+     (displayln variable-colors)
+     (define used-callee (get-used-callee-registers locals (set) variable-colors))
+     (define new-info (dict-set info 'used_callee used-callee))
+     (define locals-homes (assign-home-to-locals locals variable-colors (set-count used-callee) '()))
+     (define stack-variable-colors (get-stack-colors locals variable-colors (set)))
+     (define stack-size (get-stack-space (set-count stack-variable-colors) (set-count used-callee)))
+
+     (for ([block_key (dict-keys blocks)])
+       (define block (dict-ref blocks block_key))
+       (match block
+         [(Block sinfo instrs)
+          (set! blocks (dict-set blocks block_key (Block sinfo (assign-homes-instr instrs locals-homes))))
+          ]))
        
-       (X86Program (dict-set new-info 'stack-space stack-size) `((start . ,(Block sinfo (assign-homes-instr instrs locals-homes)))))])]))
+     (X86Program (dict-set new-info 'stack-space stack-size) blocks)]))
 
 ; assign homes of R1
 ;(define (assign-home-to-locals locals-types)
@@ -873,18 +907,22 @@
 
 
 ;; assign-homes : pseudo-x86 -> pseudo-x86
-(define (assign-homes p)
-  (match p
-    [(X86Program info e)
-     (match e
-      [`((start . ,(Block sinfo instrs)))
-        (define-values (stack-space locals-home) (assign-home-to-locals (dict-ref info 'locals-types)))
-        (X86Program (dict-set info 'stack-space stack-space) `((start . ,(Block sinfo (assign-homes-instr instrs locals-home)))))])]))
+;(define (assign-homes p)
+;  (match p
+;    [(X86Program info e)
+;     (match e
+;      [`((start . ,(Block sinfo instrs)))
+;        (define-values (stack-space locals-home) (assign-home-to-locals (dict-ref info 'locals-types)))
+;        (X86Program (dict-set info 'stack-space stack-space) `((start . ,(Block sinfo (assign-homes-instr instrs locals-home)))))])]))
 
 (define (pi-instr instrs)
   (match instrs
     [(cons (Instr 'movq (list arg1 arg2)) ss)
      #:when (equal? arg1 arg2) (pi-instr ss)]
+    [(cons (Instr 'movzbq (list arg1 (Deref arg2 n2))) ss)
+     (append (list (Instr 'movzbq (list arg1 (Reg 'rax))) (Instr 'movq (list (Reg 'rax) (Deref arg2 n2)))) (pi-instr ss))]
+    [(cons (Instr 'cmpq (list arg1 (Imm n2))) ss)
+     (append (list (Instr 'movq (list (Imm n2) (Reg 'rax))) (Instr 'cmpq (list arg1 (Reg 'rax)))) (pi-instr ss))]
     [(cons (Instr x86-op (list (Deref arg1 n1) (Deref arg2 n2))) ss)
      (append (list (Instr 'movq (list (Deref arg1 n1) (Reg 'rax))) (Instr x86-op (list (Reg 'rax) (Deref arg2 n2)))) (pi-instr ss))]
     [(cons instr ss) (cons instr (pi-instr ss))]
@@ -893,10 +931,16 @@
 ;; patch-instructions : psuedo-x86 -> x86
 (define (patch-instructions p)
   (match p
-    [(X86Program info e)
-     (match e
-      [`((start . ,(Block sinfo instrs)))
-        (X86Program info `((start . ,(Block sinfo (pi-instr instrs)))))])]))
+    [(X86Program info blocks)
+
+     (for ([block_key (dict-keys blocks)])
+       (define block (dict-ref blocks block_key))
+       (match block
+         [(Block sinfo instrs)
+          (set! blocks (dict-set blocks block_key (Block sinfo (pi-instr instrs))))
+          ]))
+
+     (X86Program info blocks)]))
 
 (define (pac-main stack-space used-callee)
   (define part-1 (list
@@ -925,10 +969,12 @@
     [(X86Program info blocks)
      (define used-callee (set->list (dict-ref info 'used_callee)))
      (define stack-space (- (dict-ref info 'stack-space) (* 8 (length used-callee))))
-     (define start (dict-ref blocks 'start))
+     ;(define start (dict-ref blocks 'start))
      (define main (Block '() (pac-main stack-space used-callee)))
      (define conclusion (Block '() (pac-conclusion stack-space (reverse used-callee))))
-     (X86Program info `((start . ,start) (main . ,main) (conclusion . ,conclusion)))]))
+     (set! blocks (dict-set blocks 'main main))
+     (set! blocks (dict-set blocks 'conclusion conclusion))
+     (X86Program info blocks)]))
 
 
 ;; Define the compiler passes to be used by interp-tests and the grader
@@ -941,11 +987,11 @@
     ("uniquify" ,uniquify ,interp-Lif ,type-check-Lif)
     ("remove complex opera*" ,remove-complex-opera* ,interp-Lif ,type-check-Lif)
     ("explicate control" ,explicate-control ,interp-Cif ,type-check-Cif)
-    ("instruction selection" ,select-instructions ,interp-x86-1)
-    ("liveness analysis" ,uncover_live ,interp-x86-1)
-    ("build interference graph" ,build_interference ,interp-x86-1)
-;    ("register allocation" ,allocate_registers ,interp-x86-0)
-;    ("patch instructions" ,patch-instructions ,interp-x86-0)
-;    ("prelude-and-conclusion" ,prelude-and-conclusion ,interp-x86-0)
+    ("instruction selection" ,select-instructions ,interp-pseudo-x86-1)
+    ("liveness analysis" ,uncover_live ,interp-pseudo-x86-1)
+    ("build interference graph" ,build_interference ,interp-pseudo-x86-1)
+    ("register allocation" ,allocate_registers ,interp-x86-1)
+    ("patch instructions" ,patch-instructions ,interp-x86-1)
+    ("prelude-and-conclusion" ,prelude-and-conclusion ,interp-x86-1)
     ))
 
