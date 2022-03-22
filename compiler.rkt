@@ -254,6 +254,7 @@
      (let ([label (gensym 'block)])
        (set! basic-blocks (cons (cons label tail) basic-blocks))
        (Goto label))]))
+
 (define (explicate_pred cnd thn els)
   (match cnd
     [(Var x)
@@ -271,8 +272,10 @@
                           (create_block els))]
     [(Bool b) (if b thn els)]
     [(If cnd^ thn^ els^)
-     (define B1 (explicate_pred thn^ thn els))
-     (define B2 (explicate_pred els^ thn els))
+     (define thn-block (create_block thn))
+     (define els-block (create_block els))
+     (define B1 (explicate_pred thn^ thn-block els-block))
+     (define B2 (explicate_pred els^ thn-block els-block))
      (explicate_pred cnd^ B1 B2)]
     [else (error "explicate_pred unhandled case" cnd)]))
 
@@ -425,7 +428,7 @@
        [((Imm n1) arg2)
         (set arg2)]
        [(arg1 (Imm n2))
-        (set arg2)]
+        (set arg1)]
        [(_ _)
         (set arg1 arg2)])]
     [(Instr 'negq (list arg1)) (set arg1)] ; arg1 cannot be immediate
@@ -457,7 +460,6 @@
         (add-vertex! graph label)
         (define reverse-instrs (reverse instrs))
         (define last-instr (car reverse-instrs))
-        (define second-last-instr (car (cdr reverse-instrs)))
 
         ; last instruction is always a jmp instruction
         (define label1 (Jmp-target last-instr))
@@ -467,14 +469,22 @@
            (add-directed-edge! graph label1 label)]
           [else
            #f])
+       
         ; second last instruction might be a JmpIf instruction
-        (match second-last-instr
-          [(JmpIf cc l)
-           (add-vertex! graph l)
-           (add-directed-edge! graph l label)]
+        (define rem-instr (cdr reverse-instrs))
+        (cond
+          [(not (empty? rem-instr))
+           (define second-last-instr (car (cdr reverse-instrs)))
+           (match second-last-instr
+             [(JmpIf cc l)
+              (add-vertex! graph l)
+              (add-directed-edge! graph l label)]
+             [else
+              #f])]
           [else
            #f])
         (generate-label-graph rest graph)])]
+
     [else
      graph]))
 
@@ -499,7 +509,7 @@
   (match p
     [(X86Program info e)
      (define label-graph (generate-label-graph e (make-multigraph '())))
-     (print-graph label-graph)
+     
      (define topo-order (tsort label-graph))
      (define initial-live-after (for/fold ([initial-live-after '()]) ([label topo-order]) (dict-set initial-live-after label (list (set)))))
      (define blocks (uncover_live_after_per_block e initial-live-after '() label-graph topo-order))
@@ -943,7 +953,7 @@
     ("explicate control" ,explicate-control ,interp-Cif ,type-check-Cif)
     ("instruction selection" ,select-instructions ,interp-x86-1)
     ("liveness analysis" ,uncover_live ,interp-x86-1)
-    ("build interference graph" ,build_interference ,interp-x86-1)
+;    ("build interference graph" ,build_interference ,interp-x86-1)
 ;    ("register allocation" ,allocate_registers ,interp-x86-0)
 ;    ("patch instructions" ,patch-instructions ,interp-x86-0)
 ;    ("prelude-and-conclusion" ,prelude-and-conclusion ,interp-x86-0)
