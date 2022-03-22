@@ -255,6 +255,15 @@
        (set! basic-blocks (cons (cons label tail) basic-blocks))
        (Goto label))]))
 
+(define (Cmp? op)
+  (match op
+    ['eq? #t]
+    ['< #t]
+    ['<= #t]
+    ['> #t]
+    ['>= #t]
+    [_ #f]))
+
 (define (explicate_pred cnd thn els)
   (match cnd
     [(Var x)
@@ -267,7 +276,7 @@
         (if b els thn)]
        [(Var x)
         (IfStmt (Prim 'eq? (list (Var x) (Bool #f))) (create_block thn) (create_block els))])]
-    [(Prim op es) #:when (or (eq? op 'eq?) (eq? op '<))
+    [(Prim op es) #:when (Cmp? op)
                   (IfStmt (Prim op es) (create_block thn)
                           (create_block els))]
     [(Bool b) (if b thn els)]
