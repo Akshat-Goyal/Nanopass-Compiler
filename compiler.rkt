@@ -919,6 +919,10 @@
   (match instrs
     [(cons (Instr 'movq (list arg1 arg2)) ss)
      #:when (equal? arg1 arg2) (pi-instr ss)]
+    [(cons (Instr 'movzbq (list arg1 (Deref arg2 n2))) ss)
+     (append (list (Instr 'movzbq (list arg1 (Reg 'rax))) (Instr 'movq (list (Reg 'rax) (Deref arg2 n2)))) (pi-instr ss))]
+    [(cons (Instr 'cmpq (list arg1 (Imm n2))) ss)
+     (append (list (Instr 'movq (list (Imm n2) (Reg 'rax))) (Instr 'cmpq (list arg1 (Reg 'rax)))) (pi-instr ss))]
     [(cons (Instr x86-op (list (Deref arg1 n1) (Deref arg2 n2))) ss)
      (append (list (Instr 'movq (list (Deref arg1 n1) (Reg 'rax))) (Instr x86-op (list (Reg 'rax) (Deref arg2 n2)))) (pi-instr ss))]
     [(cons instr ss) (cons instr (pi-instr ss))]
