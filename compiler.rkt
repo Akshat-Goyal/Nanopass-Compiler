@@ -915,6 +915,50 @@
 ;        (define-values (stack-space locals-home) (assign-home-to-locals (dict-ref info 'locals-types)))
 ;        (X86Program (dict-set info 'stack-space stack-space) `((start . ,(Block sinfo (assign-homes-instr instrs locals-home)))))])]))
 
+(define (remove-jumps-each-block e label-graph topo-order)
+  (match topo-order
+    [(cons label rest)
+     (define neighbors (get-neighbors label-graph label))
+     (define count (length neighbors))
+     (cond
+       [(eq? count 1)
+        (define parent-label (car neighbors))
+        (define parent-instructions (Block-instr* (dict-ref e parent-label)))
+        (define last-instruction (car (reverse parent-instructions)))
+        (match last-instruction
+          [(Jmp jmp-label)
+           (cond
+             [(eq? jmp-label label)
+              (displayln "removing label:")
+              (displayln label)
+              (define parent-instr-rev (reverse parent-instructions))
+              (displayln parent-instr-rev)
+              (define jmp-removed (reverse (cdr parent-instr-rev)))
+              (displayln jmp-removed)
+              (define updated-instrs (append jmp-removed (Block-instr* (dict-ref e label))))
+              (displayln updated-instrs)
+              (define parent-info (Block-info (dict-ref e parent-label)))
+              (define updated-e (dict-set e parent-label (Block parent-info updated-instrs)))
+              (remove-jumps-each-block updated-e label-graph rest)]
+             [else
+              (remove-jumps-each-block e label-graph rest)])]
+          [else
+           (remove-jumps-each-block e label-graph rest)])]
+       [else
+        (remove-jumps-each-block e label-graph rest)])]
+    [else
+     e]))
+
+(define (remove-jumps p)
+  (match p
+  [(X86Program info e)
+     (define label-graph (generate-label-graph e (make-multigraph '())))
+     (define topo-order (tsort label-graph))
+     (print-graph label-graph)
+     (displayln topo-order)
+     (define updated-e (remove-jumps-each-block e label-graph topo-order)) 
+     (X86Program info updated-e)]))
+
 (define (pi-instr instrs)
   (match instrs
     [(cons (Instr 'movq (list arg1 arg2)) ss)
@@ -991,6 +1035,7 @@
     ("liveness analysis" ,uncover_live ,interp-pseudo-x86-1)
     ("build interference graph" ,build_interference ,interp-pseudo-x86-1)
     ("register allocation" ,allocate_registers ,interp-x86-1)
+    ("remove jumps" ,remove-jumps ,interp-x86-1)
     ("patch instructions" ,patch-instructions ,interp-x86-1)
     ("prelude-and-conclusion" ,prelude-and-conclusion ,interp-x86-1)
     ))
