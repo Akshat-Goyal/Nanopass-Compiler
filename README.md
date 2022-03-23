@@ -75,7 +75,7 @@ the script for each assignment.
 
 ## Team Members
 
+- Vasu Singhal
 - Akshat Goyal
 - Tanish Lad
-- Vasu Singhal
 - Dhruv Sharma
