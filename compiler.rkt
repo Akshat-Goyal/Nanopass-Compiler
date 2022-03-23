@@ -104,16 +104,16 @@
 
 
 (define unavailable-registers-for-coloring (list
-                                (Reg 'rax)
-                                (Reg 'rsp)
-                                (Reg 'rbp)
-                                (Reg 'r15)))
+                                            (Reg 'rax)
+                                            (Reg 'rsp)
+                                            (Reg 'rbp)
+                                            (Reg 'r15)))
 
 (define-values (color-to-register register-to-color-prev) (for/fold ([color-to-register '()]
-                                                                [register-to-color '()])
-                                                               ([reg registers-for-coloring]
-                                                                [cur-color (in-range 0 12)])
-                                                       (values (dict-set color-to-register cur-color reg) (dict-set register-to-color reg cur-color))))
+                                                                     [register-to-color '()])
+                                                                    ([reg registers-for-coloring]
+                                                                     [cur-color (in-range 0 12)])
+                                                            (values (dict-set color-to-register cur-color reg) (dict-set register-to-color reg cur-color))))
 
 (define register-to-color (for/fold ([register-to-color register-to-color-prev])
                                     ([reg unavailable-registers-for-coloring]
@@ -229,19 +229,19 @@
        (If ((rco-exp env) cnd) ((rco-exp env) thn) ((rco-exp env) els))]
       [(Prim op (list e1))
        (cond
-        [(Atm? e1) (Prim op (list e1))]
-        [else
-         (define tmp-var ((rco-atom env) e1))
-         (Let tmp-var ((rco-exp env) e1) (Prim op (list (Var tmp-var))))])]
+         [(Atm? e1) (Prim op (list e1))]
+         [else
+          (define tmp-var ((rco-atom env) e1))
+          (Let tmp-var ((rco-exp env) e1) (Prim op (list (Var tmp-var))))])]
       [(Prim op (list e1 e2))
        (cond
-        [(not (Atm? e1))
-         (define tmp-var ((rco-atom env) e1))
-         (Let tmp-var ((rco-exp env) e1) ((rco-exp env) (Prim op (list (Var tmp-var) e2))))]
-        [(not (Atm? e2))
-         (define tmp-var ((rco-atom env) e2))
-         (Let tmp-var ((rco-exp env) e2) ((rco-exp env) (Prim op (list e1 (Var tmp-var)))))]
-        [else (Prim op (list e1 e2))])])))
+         [(not (Atm? e1))
+          (define tmp-var ((rco-atom env) e1))
+          (Let tmp-var ((rco-exp env) e1) ((rco-exp env) (Prim op (list (Var tmp-var) e2))))]
+         [(not (Atm? e2))
+          (define tmp-var ((rco-atom env) e2))
+          (Let tmp-var ((rco-exp env) e2) ((rco-exp env) (Prim op (list e1 (Var tmp-var)))))]
+         [else (Prim op (list e1 e2))])])))
 
 ;; remove-complex-opera* : R1 -> R1
 (define (remove-complex-opera* p)
@@ -289,7 +289,7 @@
         (delay (IfStmt (Prim 'eq? (list (Var x) (Bool #f))) (force (create_block thn)) (force (create_block els))))])]
     [(Prim op es) #:when (Cmp? op)
                   (delay (IfStmt (Prim op es) (force (create_block thn))
-                          (force (create_block els))))]
+                                 (force (create_block els))))]
     [(Bool b) (if b thn els)]
     [(If cnd^ thn^ els^)
      (delay 
@@ -368,17 +368,17 @@
     [(Prim '>= (list e1 e2))
      (append (list (Instr 'cmpq (list (si-atm e1) (si-atm e2))) (Instr 'set (list 'ge (ByteReg 'al))) (Instr 'movzbq (list (ByteReg 'al) v))) cont)]
     [(Prim 'read '()) 
-      (append (list (Callq 'read_int 0) (Instr 'movq (list (Reg 'rax) v))) cont)]
+     (append (list (Callq 'read_int 0) (Instr 'movq (list (Reg 'rax) v))) cont)]
     [(Prim '- (list e1))
-      #:when (equal? e1 v) (append (Instr 'negq (list v)) cont)]
+     #:when (equal? e1 v) (append (Instr 'negq (list v)) cont)]
     [(Prim '- (list e1)) 
-      (append (list (Instr 'movq (list (si-atm e1) v)) (Instr 'negq (list v))) cont)]
+     (append (list (Instr 'movq (list (si-atm e1) v)) (Instr 'negq (list v))) cont)]
     [(Prim op (list e1 e2))
-      #:when (equal? e1 v) (cons (Instr (dict-ref op-x86-dict op) (list (si-atm e2) v)) cont)]
+     #:when (equal? e1 v) (cons (Instr (dict-ref op-x86-dict op) (list (si-atm e2) v)) cont)]
     [(Prim '+ (list e1 e2))
-      #:when (equal? e2 v) (cons (Instr 'addq (list (si-atm e1) v)) cont)]
+     #:when (equal? e2 v) (cons (Instr 'addq (list (si-atm e1) v)) cont)]
     [(Prim op (list e1 e2))
-      (append (list (Instr 'movq (list (si-atm e1) v)) (Instr (dict-ref op-x86-dict op) (list (si-atm e2) v))) cont)]))
+     (append (list (Instr 'movq (list (si-atm e1) v)) (Instr (dict-ref op-x86-dict op) (list (si-atm e2) v))) cont)]))
 
 (define (si-stmt e cont)
   (match e
@@ -447,8 +447,8 @@
      (define read-locations (compute-read-locations instr))
      (define write-locations (compute-write-locations instr))
      (define live-after-cur (cond
-       [(empty? live-after) (set)]
-       [else (car live-after)]))
+                              [(empty? live-after) (set)]
+                              [else (car live-after)]))
      (define live-before (set-union (set-subtract live-after-cur write-locations) read-locations))
      (find-live-sets rest (cons live-before live-after))]
     [else live-after]))
@@ -869,7 +869,7 @@
   (match instrs
     [(cons (Instr x86-op args) ss)
      (cons (Instr x86-op (for/list ([arg args]) 
-                          (if (Var? arg) (dict-ref locals-home (Var-name arg)) arg))) 
+                           (if (Var? arg) (dict-ref locals-home (Var-name arg)) arg))) 
            (assign-homes-instr ss locals-home))]
     [(cons instr ss) (cons instr (assign-homes-instr ss locals-home))]
     [else instrs]))
@@ -964,7 +964,7 @@
 
 (define (remove-jumps p)
   (match p
-  [(X86Program info e)
+    [(X86Program info e)
      (define label-graph (generate-label-graph e (make-multigraph '())))
      (define topo-order (tsort label-graph))
      (print-graph label-graph)
@@ -1001,23 +1001,23 @@
 
 (define (pac-main stack-space used-callee)
   (define part-1 (list
-    (Instr 'pushq (list (Reg 'rbp)))
-    (Instr 'movq (list (Reg 'rsp) (Reg 'rbp)))))
+                  (Instr 'pushq (list (Reg 'rbp)))
+                  (Instr 'movq (list (Reg 'rsp) (Reg 'rbp)))))
   (define part-2 (for/list ([reg used-callee])
                    (Instr 'pushq (list reg))))
   (define part-3 (list
-    (Instr 'subq (list (Imm stack-space) (Reg 'rsp)))
-    (Jmp 'start)))
+                  (Instr 'subq (list (Imm stack-space) (Reg 'rsp)))
+                  (Jmp 'start)))
   (append part-1 part-2 part-3))
 
 (define (pac-conclusion stack-space reversed-used-callee)
   (define part-1 (list
-    (Instr 'addq (list (Imm stack-space) (Reg 'rsp)))))
+                  (Instr 'addq (list (Imm stack-space) (Reg 'rsp)))))
   (define part-2 (for/list ([reg reversed-used-callee])
                    (Instr 'popq (list reg))))
   (define part-3 (list
-    (Instr 'popq (list (Reg 'rbp)))
-    (Retq)))
+                  (Instr 'popq (list (Reg 'rbp)))
+                  (Retq)))
   (append part-1 part-2 part-3))
 
 ;; prelude-and-conclusion : x86 -> x86
