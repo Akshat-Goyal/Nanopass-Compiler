@@ -248,14 +248,6 @@
   (match p
     [(Program info e) (Program info ((rco-exp '()) e))]))
 
-;(define (create_block tail)
-;  (match tail
-;    [(Goto label) (Goto label)]
-;    [else
-;     (let ([label (gensym 'block)])
-;       (set! basic-blocks (cons (cons label tail) basic-blocks))
-;       (Goto label))]))
-
 (define (create_block tail)
   (delay
     (define t (force tail))
@@ -409,7 +401,7 @@
      (X86Program info partial-x86-blocks)]))
 
 (define (compute-write-locations instr)
-  ; TODO: handle retq instruction
+  ; TODO: handle retq instruction: not needed
   (match instr
     [(Instr 'cmpq es) (set)] ;TODO: prolly return empty set here: DONE, before we were returning rax
     [(Instr 'set es) (set (Reg 'rax))]
@@ -496,7 +488,7 @@
      (define cur-block (dict-ref e label))
      (define instrs (Block-instr* cur-block))
      (define initial-live-after (dict-ref live-afters label))
-     (displayln initial-live-after)
+     ;(displayln initial-live-after)
      (define live-sets (find-live-sets (reverse instrs) initial-live-after))
      (define updated-cur-block (Block `((live-sets . ,(cdr live-sets))) instrs))
      (define updated-blocks (dict-set blocks label updated-cur-block))
@@ -511,7 +503,6 @@
   (match p
     [(X86Program info e)
      (define label-graph (generate-label-graph e (make-multigraph '())))
-     
      (define topo-order (tsort label-graph))
      (define initial-live-after (for/fold ([initial-live-after '()]) ([label topo-order]) (dict-set initial-live-after label (list (set)))))
      (define blocks (uncover_live_after_per_block e initial-live-after '() label-graph topo-order))
@@ -563,7 +554,7 @@
        ;(print-graph interference-graph)
        ]))
   
-  (print-graph interference-graph)
+  ;(print-graph interference-graph)
   interference-graph)
  
 ;; build_interference: pseudo-x86 -> pseudo-x86
@@ -721,19 +712,19 @@
           (define potential-colors (find-move-biasing-colors move-graph cur-node color (list->set neighbors) visited)) ; returns a set
           (define interfering-colors (find-interfering-colors color neighbors visited)); returns a set
           (define cur-color (find-correct-color potential-colors interfering-colors))
-          (displayln "cur-node neighbors potential-colors interfering-colors cur-color")
-          (displayln cur-node)
-          (displayln neighbors)
-          (displayln potential-colors)
-          (displayln interfering-colors)
-          (displayln cur-color)
+          ;(displayln "cur-node neighbors potential-colors interfering-colors cur-color")
+          ;(displayln cur-node)
+          ;(displayln neighbors)
+          ;(displayln potential-colors)
+          ;(displayln interfering-colors)
+          ;(displayln cur-color)
           (define updated-saturation (update-saturation saturation cur-color neighbors))
-          (display "updated-saturation: ")
-          (displayln updated-saturation)
+          ;(display "updated-saturation: ")
+          ;(displayln updated-saturation)
           (define updated-move-bias (update-move-bias move-bias (for/list ([u (in-neighbors move-graph cur-node)]) u)))
-          (displayln "old and updated-move-bias: ")
-          (displayln move-bias)
-          (displayln updated-move-bias)
+          ;(displayln "old and updated-move-bias: ")
+          ;(displayln move-bias)
+          ;(displayln updated-move-bias)
           (define updated-visited (dict-set visited cur-node #t))
           (define updated-color (dict-set color cur-node cur-color))
           (define updated-pq (update-pq pq updated-saturation updated-move-bias neighbors))
@@ -885,12 +876,12 @@
      (define locals (dict-keys (dict-ref info 'locals-types)))
      (define interference-graph (dict-ref info 'conflicts))
      (define move-graph (build-move-graph blocks locals))
-     (display "move-graph: ")
-     (print-graph move-graph)
-     (displayln "move-graph end")
+     ;(display "move-graph: ")
+     ;(print-graph move-graph)
+     ;(displayln "move-graph end")
      (define variable-colors (color-graph interference-graph locals move-graph))
-     (display "variable-colors: ")
-     (displayln variable-colors)
+     ;(display "variable-colors: ")
+     ;(displayln variable-colors)
      (define used-callee (get-used-callee-registers locals (set) variable-colors))
      (define new-info (dict-set info 'used_callee used-callee))
      (define locals-homes (assign-home-to-locals locals variable-colors (set-count used-callee) '()))
@@ -942,14 +933,14 @@
           [(Jmp jmp-label)
            (cond
              [(eq? jmp-label label)
-              (displayln "removing label:")
-              (displayln label)
+              ;(displayln "removing label:")
+              ;(displayln label)
               (define parent-instr-rev (reverse parent-instructions))
-              (displayln parent-instr-rev)
+              ;(displayln parent-instr-rev)
               (define jmp-removed (reverse (cdr parent-instr-rev)))
-              (displayln jmp-removed)
+              ;(displayln jmp-removed)
               (define updated-instrs (append jmp-removed (Block-instr* (dict-ref e label))))
-              (displayln updated-instrs)
+              ;(displayln updated-instrs)
               (define parent-info (Block-info (dict-ref e parent-label)))
               (define updated-e (dict-set e parent-label (Block parent-info updated-instrs)))
               (remove-jumps-each-block updated-e label-graph rest)]
@@ -967,8 +958,8 @@
     [(X86Program info e)
      (define label-graph (generate-label-graph e (make-multigraph '())))
      (define topo-order (tsort label-graph))
-     (print-graph label-graph)
-     (displayln topo-order)
+     ;(print-graph label-graph)
+     ;(displayln topo-order)
      (define updated-e (remove-jumps-each-block e label-graph topo-order)) 
      (X86Program info updated-e)]))
 
