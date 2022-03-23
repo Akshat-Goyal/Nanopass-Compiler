@@ -1,6 +1,7 @@
 #lang racket
 (require racket/set racket/stream)
 (require racket/fixnum)
+(require racket/promise)
 ;(require "interp-Lint.rkt")
 ;(require "interp-Lvar.rkt")
 ;(require "interp-Cvar.rkt")
@@ -247,13 +248,23 @@
   (match p
     [(Program info e) (Program info ((rco-exp '()) e))]))
 
+;(define (create_block tail)
+;  (match tail
+;    [(Goto label) (Goto label)]
+;    [else
+;     (let ([label (gensym 'block)])
+;       (set! basic-blocks (cons (cons label tail) basic-blocks))
+;       (Goto label))]))
+
 (define (create_block tail)
-  (match tail
-    [(Goto label) (Goto label)]
-    [else
-     (let ([label (gensym 'block)])
-       (set! basic-blocks (cons (cons label tail) basic-blocks))
-       (Goto label))]))
+  (delay
+    (define t (force tail))
+    (match t
+      [(Goto label) (Goto label)]
+      [else
+       (let ([label (gensym 'block)])
+         (set! basic-blocks (cons (cons label t) basic-blocks))
+         (Goto label))])))
 
 (define (Cmp? op)
   (match op
@@ -267,7 +278,7 @@
 (define (explicate_pred cnd thn els)
   (match cnd
     [(Var x)
-     (IfStmt (Prim 'eq? (list (Var x) (Bool #t))) (create_block thn) (create_block els))]
+     (delay (IfStmt (Prim 'eq? (list (Var x) (Bool #t))) (force (create_block thn)) (force (create_block els))))]
     [(Let x rhs body)
      (explicate-assign rhs x (explicate_pred body thn els))]
     [(Prim 'not (list e))
@@ -275,46 +286,48 @@
        [(Bool b)
         (if b els thn)]
        [(Var x)
-        (IfStmt (Prim 'eq? (list (Var x) (Bool #f))) (create_block thn) (create_block els))])]
+        (delay (IfStmt (Prim 'eq? (list (Var x) (Bool #f))) (force (create_block thn)) (force (create_block els))))])]
     [(Prim op es) #:when (Cmp? op)
-                  (IfStmt (Prim op es) (create_block thn)
-                          (create_block els))]
+                  (delay (IfStmt (Prim op es) (force (create_block thn))
+                          (force (create_block els))))]
     [(Bool b) (if b thn els)]
     [(If cnd^ thn^ els^)
-     (define thn-block (create_block thn))
-     (define els-block (create_block els))
-     (define B1 (explicate_pred thn^ thn-block els-block))
-     (define B2 (explicate_pred els^ thn-block els-block))
-     (explicate_pred cnd^ B1 B2)]
+     (delay 
+       (define thn-block (create_block thn))
+       (define els-block (create_block els))
+       (define B1 (explicate_pred thn^ thn-block els-block))
+       (define B2 (explicate_pred els^ thn-block els-block))
+       (force (explicate_pred cnd^ B1 B2)))]
     [else (error "explicate_pred unhandled case" cnd)]))
 
 ; (let ([x (if (let ([x #t]) (if x x (not x))) #t #f)]) (if x 10 (- 10)))
 
 (define (explicate-tail e)
   (match e
-    [(Var x) (Return (Var x))]
-    [(Int n) (Return (Int n))]
+    [(Var x) (delay (Return (Var x)))]
+    [(Int n) (delay (Return (Int n)))]
     [(Let x rhs body) (explicate-assign rhs x (explicate-tail body))]
-    [(Prim op es) (Return (Prim op es))]
+    [(Prim op es) (delay (Return (Prim op es)))]
     [(If cnd exp1 exp2)
      (define B1 (explicate-tail exp1))
      (define B2 (explicate-tail exp2))
      (explicate_pred cnd B1 B2)]
-    [(Bool b) (Return (Bool b))]
+    [(Bool b) (delay (Return (Bool b)))]
     [else (error "explicate-tail unhandled case" e)]))
 
 (define (explicate-assign e x cont)
   (match e
-    [(Var y) (Seq (Assign (Var x) (Var y)) cont)]
-    [(Int n) (Seq (Assign (Var x) (Int n)) cont)]
+    [(Var y) (delay (Seq (Assign (Var x) (Var y)) (force cont)))]
+    [(Int n) (delay (Seq (Assign (Var x) (Int n)) (force cont)))]
     [(Let y rhs body) (explicate-assign rhs y (explicate-assign body x cont))]
-    [(Prim op es) (Seq (Assign (Var x) (Prim op es)) cont)]
+    [(Prim op es) (delay (Seq (Assign (Var x) (Prim op es)) (force cont)))]
     [(If cnd exp1 exp2)
-     (define tail-block (create_block cont))
-     (define B1 (explicate-assign exp1 x tail-block))
-     (define B2 (explicate-assign exp2 x tail-block))
-     (explicate_pred cnd B1 B2)]
-    [(Bool b) (Seq (Assign (Var x) (Bool b)) cont)]
+     (delay
+       (define tail-block (create_block cont))
+       (define B1 (explicate-assign exp1 x tail-block))
+       (define B2 (explicate-assign exp2 x tail-block))
+       (force (explicate_pred cnd B1 B2)))]
+    [(Bool b) (delay (Seq (Assign (Var x) (Bool b)) (force cont)))]
     [else (error "explicate-assign unhandled case" e)]))
 
 ;; explicate-control : R1 -> C0
@@ -322,7 +335,7 @@
   (match p 
     [(Program info e)
      (set! basic-blocks (list))
-     (define tail (explicate-tail e))
+     (define tail (force (explicate-tail e)))
      (set! basic-blocks (cons (cons 'start tail) basic-blocks))
      (CProgram info basic-blocks)]))
 
