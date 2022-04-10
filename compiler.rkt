@@ -165,10 +165,10 @@
 
 (define (shrink-exp e)
   (match e
-    [(Void) (Void)]
     [(Var x) (Var x)]
     [(Int n) (Int n)]
     [(Bool b) (Bool b)]
+    [(Void) (Void)]
     [(Let x rhs body)
      (Let x (shrink-exp rhs) (shrink-exp body))]
     [(If cnd thn els)
@@ -194,6 +194,7 @@
       [(Var x) (Var (dict-ref env x))]
       [(Int n) (Int n)]
       [(Bool b) (Bool b)]
+      [(Void) (Void)]
       [(Let x e body)
        (define new-e ((uniquify-exp env) e))
        (define new-x (gensym x))
@@ -202,6 +203,7 @@
        (Let new-x new-e new-body)]
       [(If cnd thn els)
        (If ((uniquify-exp env) cnd) ((uniquify-exp env) thn) ((uniquify-exp env) els))]
+      [(HasType e T) (HasType ((uniquify-exp env) e) T)]
       [(Prim op es)
        (Prim op (for/list ([e es]) ((uniquify-exp env) e)))])))
 
@@ -1037,7 +1039,7 @@
   `(
     ;("partial evaluator", pe-Lint, interp-Lvar)
     ("shrink" ,shrink ,interp-Lvec ,type-check-Lvec)
-;    ("uniquify" ,uniquify ,interp-Lif ,type-check-Lif)
+    ("uniquify" ,uniquify ,interp-Lvec ,type-check-Lvec)
 ;    ("remove complex opera*" ,remove-complex-opera* ,interp-Lif ,type-check-Lif)
 ;    ("explicate control" ,explicate-control ,interp-Cif ,type-check-Cif)
 ;    ("instruction selection" ,select-instructions ,interp-pseudo-x86-1)
