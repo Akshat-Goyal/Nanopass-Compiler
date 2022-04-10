@@ -8,6 +8,7 @@
 (require "interp.rkt")
 ;(require "interp-Lif.rkt")
 (require "interp-Lvec.rkt")
+(require "interp-Lvec-prime.rkt")
 (require "interp-Cif.rkt")
 (require "type-check-Lvec.rkt")
 ;(require "type-check-Lif.rkt")
@@ -212,6 +213,61 @@
   (match p
     [(Program info e) (Program info ((uniquify-exp '()) e))]))
 
+(define (expose-allocation-exp exp)
+  (match exp
+      [(Var x) (Var x)]
+      [(Int n) (Int n)]
+      [(Bool b) (Bool b)]
+      [(Void) (Void)]
+      [(Let x e body)
+       (Let x (expose-allocation-exp e) (expose-allocation-exp body))]
+      [(If cnd thn els)
+       (If (expose-allocation-exp cnd) (expose-allocation-exp thn) (expose-allocation-exp els))]
+      [(HasType e T) ;e should be a vector
+       (match e
+         [(Prim 'vector es)
+          (define vec-name (gensym 'alloc))
+          (define vec-len (length es))
+          (define vec-element-names (for/list
+                                         ([i (range vec-len)])
+                                       (gensym 'vecinit)))
+          (define vector-set-lets
+            (for/fold ([body (Var vec-name)])
+                      ([element-name (reverse vec-element-names)]
+                       [vec-ind (range (- vec-len 1) -1 -1)])
+              ;(display "1: ")
+              ;(displayln body)
+              (set! body (Let (gensym '_)
+                              (Prim 'vector-set! (list (Var vec-name) (Int vec-ind) (Var element-name))) body))
+              ;(display "2: ")
+              ;(displayln body)
+              body))
+          ;(display "3: ")
+          ;(displayln vector-set-lets)
+          (define allocate-exp (Let vec-name (Allocate vec-len T) vector-set-lets))
+          (define req-bytes (* 8 (+ vec-len 1)))
+          (define collect-exp (Let (gensym '_)
+                                   (If (Prim '< (list (Prim '+ (list (GlobalValue 'free_ptr) (Int req-bytes)))
+                                                      (GlobalValue 'fromspace_end)))
+                                       (Void)
+                                       (Collect req-bytes)) allocate-exp))
+          (define vector-element-exps
+            (for/fold ([body collect-exp])
+                      ([element-name (reverse vec-element-names)]
+                       [e es])
+              (set! body (Let element-name
+                              (expose-allocation-exp e) body))
+              body))
+
+          vector-element-exps])]
+         ; e cannot be anything else? TODO: check this
+      [(Prim op es)
+       (Prim op (for/list ([e es]) (expose-allocation-exp e)))]))
+
+(define (expose-allocation p)
+  (match p
+    [(Program info e) (Program info (expose-allocation-exp e))]))
+
 (define (rco-atom env)
   (lambda (e)
     (gensym 'tmp)))
@@ -404,7 +460,7 @@
 (define (select-instructions p)
   (match p
     [(CProgram info e)
-     (define partial-x86-blocks (for/fold ([partial-x86-blocks '()]) ([blocks e]) (dict-set partial-x86-blocks (car blocks) (Block '() (si-tail (cdr blocks))))))
+     (define partial-x86-blocks (for/fold ([partial-x86-blocks '()]) ([block e]) (dict-set partial-x86-blocks (car block) (Block '() (si-tail (cdr block))))))
      (X86Program info partial-x86-blocks)]))
 
 (define (compute-write-locations instr)
@@ -1040,6 +1096,7 @@
     ;("partial evaluator", pe-Lint, interp-Lvar)
     ("shrink" ,shrink ,interp-Lvec ,type-check-Lvec)
     ("uniquify" ,uniquify ,interp-Lvec ,type-check-Lvec)
+    ("expose allocation" ,expose-allocation ,interp-Lvec-prime ,type-check-Lvec)
 ;    ("remove complex opera*" ,remove-complex-opera* ,interp-Lif ,type-check-Lif)
 ;    ("explicate control" ,explicate-control ,interp-Cif ,type-check-Cif)
 ;    ("instruction selection" ,select-instructions ,interp-pseudo-x86-1)
