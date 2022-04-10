@@ -6,9 +6,11 @@
 ;(require "interp-Lvar.rkt")
 ;(require "interp-Cvar.rkt")
 (require "interp.rkt")
-(require "interp-Lif.rkt")
+;(require "interp-Lif.rkt")
+(require "interp-Lvec.rkt")
 (require "interp-Cif.rkt")
-(require "type-check-Lif.rkt")
+(require "type-check-Lvec.rkt")
+;(require "type-check-Lif.rkt")
 (require "type-check-Cif.rkt")
 ;(require "type-check-Lvar.rkt")
 ;(require "type-check-Cvar.rkt")
@@ -163,6 +165,7 @@
 
 (define (shrink-exp e)
   (match e
+    [(Void) (Void)]
     [(Var x) (Var x)]
     [(Int n) (Int n)]
     [(Bool b) (Bool b)]
@@ -176,6 +179,8 @@
      (If (shrink-exp e1) (Bool #t) (shrink-exp e2))]
     [(Prim '- (list e1 e2))
      (Prim '+ (list (shrink-exp e1) (Prim '- (list (shrink-exp e2)))))]
+    [(HasType e T)
+     (HasType (shrink-exp e) T)]
     [(Prim op es)
      (Prim op (for/list ([e es]) (shrink-exp e)))]))
 
@@ -1031,16 +1036,16 @@
 (define compiler-passes
   `(
     ;("partial evaluator", pe-Lint, interp-Lvar)
-    ("shrink" ,shrink ,interp-Lif ,type-check-Lif)
-    ("uniquify" ,uniquify ,interp-Lif ,type-check-Lif)
-    ("remove complex opera*" ,remove-complex-opera* ,interp-Lif ,type-check-Lif)
-    ("explicate control" ,explicate-control ,interp-Cif ,type-check-Cif)
-    ("instruction selection" ,select-instructions ,interp-pseudo-x86-1)
-    ("liveness analysis" ,uncover_live ,interp-pseudo-x86-1)
-    ("build interference graph" ,build_interference ,interp-pseudo-x86-1)
-    ("register allocation" ,allocate_registers ,interp-x86-1)
-    ("remove jumps" ,remove-jumps ,interp-x86-1)
-    ("patch instructions" ,patch-instructions ,interp-x86-1)
-    ("prelude-and-conclusion" ,prelude-and-conclusion ,interp-x86-1)
+    ("shrink" ,shrink ,interp-Lvec ,type-check-Lvec)
+;    ("uniquify" ,uniquify ,interp-Lif ,type-check-Lif)
+;    ("remove complex opera*" ,remove-complex-opera* ,interp-Lif ,type-check-Lif)
+;    ("explicate control" ,explicate-control ,interp-Cif ,type-check-Cif)
+;    ("instruction selection" ,select-instructions ,interp-pseudo-x86-1)
+;    ("liveness analysis" ,uncover_live ,interp-pseudo-x86-1)
+;    ("build interference graph" ,build_interference ,interp-pseudo-x86-1)
+;    ("register allocation" ,allocate_registers ,interp-x86-1)
+;    ("remove jumps" ,remove-jumps ,interp-x86-1)
+;    ("patch instructions" ,patch-instructions ,interp-x86-1)
+;    ("prelude-and-conclusion" ,prelude-and-conclusion ,interp-x86-1)
     ))
 
