@@ -285,11 +285,15 @@
       [(Var x) (Var x)]
       [(Int n) (Int n)]
       [(Bool b) (Bool b)]
+      [(Void) (Void)]
       [(Prim 'read '()) (Prim 'read '())]
       [(Let x e body) 
        (Let x ((rco-exp env) e) ((rco-exp env) body))]
       [(If cnd thn els)
        (If ((rco-exp env) cnd) ((rco-exp env) thn) ((rco-exp env) els))]
+      [(Collect bytes) (Collect bytes)]
+      [(Allocate len T) (Allocate len T)]
+      [(GlobalValue var) (GlobalValue var)]
       [(Prim op (list e1))
        (cond
          [(Atm? e1) (Prim op (list e1))]
@@ -304,7 +308,20 @@
          [(not (Atm? e2))
           (define tmp-var ((rco-atom env) e2))
           (Let tmp-var ((rco-exp env) e2) ((rco-exp env) (Prim op (list e1 (Var tmp-var)))))]
-         [else (Prim op (list e1 e2))])])))
+         [else (Prim op (list e1 e2))])]
+      ;3 arguments only in vector-set! TODO: check if all operands need to be atomic or not
+      [(Prim op (list e1 e2 e3))
+       (cond
+         [(not (Atm? e1))
+          (define tmp-var ((rco-atom env) e1))
+          (Let tmp-var ((rco-exp env) e1) ((rco-exp env) (Prim op (list (Var tmp-var) e2 e3))))]
+         [(not (Atm? e2))
+          (define tmp-var ((rco-atom env) e2))
+          (Let tmp-var ((rco-exp env) e2) ((rco-exp env) (Prim op (list e1 (Var tmp-var) e3))))]
+         [(not (Atm? e3))
+          (define tmp-var ((rco-atom env) e3))
+          (Let tmp-var ((rco-exp env) e3) ((rco-exp env) (Prim op (list e1 e2 (Var tmp-var)))))]
+         [else (Prim op (list e1 e2 e3))])])))
 
 ;; remove-complex-opera* : R1 -> R1
 (define (remove-complex-opera* p)
@@ -1097,7 +1114,7 @@
     ("shrink" ,shrink ,interp-Lvec ,type-check-Lvec)
     ("uniquify" ,uniquify ,interp-Lvec ,type-check-Lvec)
     ("expose allocation" ,expose-allocation ,interp-Lvec-prime ,type-check-Lvec)
-;    ("remove complex opera*" ,remove-complex-opera* ,interp-Lif ,type-check-Lif)
+    ("remove complex opera*" ,remove-complex-opera* ,interp-Lvec-prime ,type-check-Lvec)
 ;    ("explicate control" ,explicate-control ,interp-Cif ,type-check-Cif)
 ;    ("instruction selection" ,select-instructions ,interp-pseudo-x86-1)
 ;    ("liveness analysis" ,uncover_live ,interp-pseudo-x86-1)
