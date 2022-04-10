@@ -6,10 +6,14 @@
 ;(require "interp-Lvar.rkt")
 ;(require "interp-Cvar.rkt")
 (require "interp.rkt")
-(require "interp-Lif.rkt")
-(require "interp-Cif.rkt")
-(require "type-check-Lif.rkt")
-(require "type-check-Cif.rkt")
+(require "interp-Lwhile.rkt")
+(require "interp-Cwhile.rkt")
+(require "type-check-Lwhile.rkt")
+(require "type-check-Cwhile.rkt")
+;(require "interp-Lif.rkt")
+;(require "interp-Cif.rkt")
+;(require "type-check-Lif.rkt")
+;(require "type-check-Cif.rkt")
 ;(require "type-check-Lvar.rkt")
 ;(require "type-check-Cvar.rkt")
 (require "utilities.rkt")
@@ -26,17 +30,6 @@
 ;; anything important, but is nevertheless an example of a pass. It
 ;; flips the arguments of +. -Jeremy
 
-(define basic-blocks (list))
-
-(define (display-pq pq)
-  (cond
-    [(equal? 0 (pqueue-count pq))
-     (displayln "-----")]
-    [else
-     (define top (pqueue-pop! pq))
-     (displayln (color_priority_node-name top))
-     (display-pq pq)]))
-
 (define (flip-exp e)
   (match e
     [(Var x) e]
@@ -48,6 +41,17 @@
   (match e
     [(Program info e) (Program info (flip-exp e))]))
 
+
+(define basic-blocks (list))
+
+(define (display-pq pq)
+  (cond
+    [(equal? 0 (pqueue-count pq))
+     (displayln "-----")]
+    [else
+     (define top (pqueue-pop! pq))
+     (displayln (color_priority_node-name top))
+     (display-pq pq)]))
 
 (define caller-saved-registers (list
                                 (Reg 'rax)
@@ -189,6 +193,7 @@
       [(Var x) (Var (dict-ref env x))]
       [(Int n) (Int n)]
       [(Bool b) (Bool b)]
+      [(Void) (Void)]
       [(Let x e body)
        (define new-e ((uniquify-exp env) e))
        (define new-x (gensym x))
@@ -197,6 +202,14 @@
        (Let new-x new-e new-body)]
       [(If cnd thn els)
        (If ((uniquify-exp env) cnd) ((uniquify-exp env) thn) ((uniquify-exp env) els))]
+      [(SetBang x rhs)
+       (define new-x (dict-ref env x))
+       (define new-rhs ((uniquify-exp env) rhs))
+       (SetBang new-x new-rhs)]
+      [(Begin es body)
+       (Begin (for/list ([e es]) ((uniquify-exp env) e)) ((uniquify-exp env) body))]
+      [(WhileLoop cnd body)
+       (WhileLoop ((uniquify-exp env) cnd) ((uniquify-exp env) body))]
       [(Prim op es)
        (Prim op (for/list ([e es]) ((uniquify-exp env) e)))])))
 
@@ -1031,10 +1044,10 @@
 (define compiler-passes
   `(
     ;("partial evaluator", pe-Lint, interp-Lvar)
-    ("shrink" ,shrink ,interp-Lif ,type-check-Lif)
-    ("uniquify" ,uniquify ,interp-Lif ,type-check-Lif)
-    ("remove complex opera*" ,remove-complex-opera* ,interp-Lif ,type-check-Lif)
-    ("explicate control" ,explicate-control ,interp-Cif ,type-check-Cif)
+    ("shrink" ,shrink ,interp-Lwhile ,type-check-Lwhile)
+    ("uniquify" ,uniquify ,interp-Lwhile ,type-check-Lwhile)
+    ("remove complex opera*" ,remove-complex-opera* ,interp-Lwhile ,type-check-Lwhile)
+    ("explicate control" ,explicate-control ,interp-Cwhile ,type-check-Cwhile)
     ("instruction selection" ,select-instructions ,interp-pseudo-x86-1)
     ("liveness analysis" ,uncover_live ,interp-pseudo-x86-1)
     ("build interference graph" ,build_interference ,interp-pseudo-x86-1)
