@@ -211,3 +211,4 @@
 
 (define (type-check-Cif p)
   (send (new type-check-Cif-class) type-check-program p))
+  
