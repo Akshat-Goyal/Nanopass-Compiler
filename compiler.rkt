@@ -170,10 +170,17 @@
     [(Var x) (Var x)]
     [(Int n) (Int n)]
     [(Bool b) (Bool b)]
+    [(Void) (Void)]
     [(Let x rhs body)
      (Let x (shrink-exp rhs) (shrink-exp body))]
     [(If cnd thn els)
      (If (shrink-exp cnd) (shrink-exp thn) (shrink-exp els))]
+    [(SetBang x rhs)
+     (SetBang x (shrink-exp rhs))]
+    [(Begin es body)
+     (Begin (for/list ([e es]) (shrink-exp e)) (shrink-exp body))]
+    [(WhileLoop cnd body)
+     (WhileLoop (shrink-exp cnd) (shrink-exp body))]
     [(Prim 'and (list e1 e2))
      (If (shrink-exp e1) (shrink-exp e2) (Bool #f))]
     [(Prim 'or (list e1 e2))
@@ -218,6 +225,48 @@
   (match p
     [(Program info e) (Program info ((uniquify-exp '()) e))]))
 
+(define (collect-set! e)
+  (match e
+    [(Var x) (set)]
+    [(Int n) (set)]
+    [(Bool b) (set)]
+    [(Void) (set)]
+    [(Let x rhs body)
+     (set-union (collect-set! rhs) (collect-set! body))]
+    [(If cnd thn els)
+     (set-union (collect-set! cnd) (collect-set! thn) (collect-set! els))]
+    [(SetBang x rhs)
+     (set-union (set x) (collect-set! rhs))]
+    [(Begin es body)
+     (define set!-es-vars (for/fold ([set!-vars (set)]) ([e es]) (set-union set!-vars (collect-set! e))))
+     (set-union set!-es-vars (collect-set! body))]
+    [(WhileLoop cnd body)
+     (set-union (collect-set! cnd) (collect-set! body))]
+    [(Prim op es)
+     (for/fold ([set!-vars (set)]) ([e es]) (set-union set!-vars (collect-set! e)))]))
+
+(define ((uncover-get!-exp set!-vars) e)
+  (match e
+    [(Var x)
+     (if (set-member? set!-vars x)
+        (GetBang x)
+        (Var x))]
+    [(Int n) (Int n)]
+    [(Bool b) (Bool b)]
+    [(Void) (Void)]
+    [(Let x rhs body)
+     (Let x ((uncover-get!-exp set!-vars) rhs) ((uncover-get!-exp set!-vars) body))]
+    [(If cnd thn els)
+     (If ((uncover-get!-exp set!-vars) cnd) ((uncover-get!-exp set!-vars) thn) ((uncover-get!-exp set!-vars) els))]
+    [(SetBang x rhs)
+     (SetBang x ((uncover-get!-exp set!-vars) rhs))]
+    [(Begin es body)
+     (Begin (for/list ([e es]) ((uncover-get!-exp set!-vars) e)) ((uncover-get!-exp set!-vars) body))]
+    [(WhileLoop cnd body)
+     (WhileLoop ((uncover-get!-exp set!-vars) cnd) ((uncover-get!-exp set!-vars) body))]
+    [(Prim op es)
+     (Prim op (for/list ([e es]) ((uncover-get!-exp set!-vars) e)))]))
+
 (define (rco-atom env)
   (lambda (e)
     (gensym 'tmp)))
@@ -227,6 +276,7 @@
     [(Int n) #t]
     [(Var x) #t]
     [(Bool b) #t]
+    [(Void) #t]
     [_ #f]))
 
 (define (rco-exp env)
@@ -235,6 +285,7 @@
       [(Var x) (Var x)]
       [(Int n) (Int n)]
       [(Bool b) (Bool b)]
+      [(Void) (Void)]
       [(Prim 'read '()) (Prim 'read '())]
       [(Let x e body) 
        (Let x ((rco-exp env) e) ((rco-exp env) body))]
@@ -254,12 +305,15 @@
          [(not (Atm? e2))
           (define tmp-var ((rco-atom env) e2))
           (Let tmp-var ((rco-exp env) e2) ((rco-exp env) (Prim op (list e1 (Var tmp-var)))))]
-         [else (Prim op (list e1 e2))])])))
+         [else (Prim op (list e1 e2))])]
+      [_ e])))
 
 ;; remove-complex-opera* : R1 -> R1
 (define (remove-complex-opera* p)
   (match p
-    [(Program info e) (Program info ((rco-exp '()) e))]))
+    [(Program info e) 
+     (define set!-vars (collect-set! e))
+     (Program info ((rco-exp '()) ((uncover-get!-exp set!-vars) e)))]))
 
 (define (create_block tail)
   (delay
@@ -1047,13 +1101,13 @@
     ("shrink" ,shrink ,interp-Lwhile ,type-check-Lwhile)
     ("uniquify" ,uniquify ,interp-Lwhile ,type-check-Lwhile)
     ("remove complex opera*" ,remove-complex-opera* ,interp-Lwhile ,type-check-Lwhile)
-    ("explicate control" ,explicate-control ,interp-Cwhile ,type-check-Cwhile)
-    ("instruction selection" ,select-instructions ,interp-pseudo-x86-1)
-    ("liveness analysis" ,uncover_live ,interp-pseudo-x86-1)
-    ("build interference graph" ,build_interference ,interp-pseudo-x86-1)
-    ("register allocation" ,allocate_registers ,interp-x86-1)
-    ("remove jumps" ,remove-jumps ,interp-x86-1)
-    ("patch instructions" ,patch-instructions ,interp-x86-1)
-    ("prelude-and-conclusion" ,prelude-and-conclusion ,interp-x86-1)
+    ;;; ("explicate control" ,explicate-control ,interp-Cwhile ,type-check-Cwhile)
+    ;;; ("instruction selection" ,select-instructions ,interp-pseudo-x86-1)
+    ;;; ("liveness analysis" ,uncover_live ,interp-pseudo-x86-1)
+    ;;; ("build interference graph" ,build_interference ,interp-pseudo-x86-1)
+    ;;; ("register allocation" ,allocate_registers ,interp-x86-1)
+    ;;; ("remove jumps" ,remove-jumps ,interp-x86-1)
+    ;;; ("patch instructions" ,patch-instructions ,interp-x86-1)
+    ;;; ("prelude-and-conclusion" ,prelude-and-conclusion ,interp-x86-1)
     ))
 
