@@ -430,19 +430,37 @@
     [(Var x) (Var x)]
     [(Int n) (Imm n)]
     [(Bool #t) (Imm 1)]
-    [(Bool #f) (Imm 0)]))
+    [(Bool #f) (Imm 0)]
+    [(Void) (Imm 0)]))
+
+(define (get-int-value e)
+  (match e
+    [(Int n) n]))
 
 (define (si-exp v e cont [op-x86-dict '((+ . addq) (- . subq))])
   (match e
     [(Var y) (cons (Instr 'movq (list (si-atm e) v)) cont)]
     [(Int n) (cons (Instr 'movq (list (si-atm e) v)) cont)]
     [(Bool b) (cons (Instr 'movq (list (si-atm e) v)) cont)]
+    [(Void) (cons (Instr 'movq (list (si-atm e) v)) cont)]
+    [(GlobalValue var) (cons (Instr 'movq (list (Global var) v)) cont)]
+    [(Allocate len T)]
+    
     [(Prim 'not (list e1))
      (cond
        [(equal? v e1)
         (cons (Instr 'xorq (list (Imm 1) v)) cont)]
        [else
         (append (list (Instr 'movq (list (si-atm e1) v)) (Instr 'xor (list (Imm 1) v))) cont)])]
+    [(Prim 'vector-ref (list vec-name vec-ind))
+     (append (list (Instr 'movq vec-name (Reg 'r11))
+                   (Instr 'movq (Deref 'r11 (* 8 (+ (get-int-value vec-ind) 1))) v)) cont)]
+    [(Prim 'vector-set (list vec-name vec-ind val))
+     (append (list (Instr 'movq vec-name (Reg 'r11))
+                   (Instr 'movq (si-atm val) (Deref 'r11 (* 8 (+ (get-int-value vec-ind) 1))))
+                   (Instr 'movq (Imm 0) v)) cont)]
+    [(Prim 'vector-length (list vec-name))
+     
     [(Prim 'eq? (list e1 e2))
      (append (list (Instr 'cmpq (list (si-atm e1) (si-atm e2))) (Instr 'set (list 'e (ByteReg 'al))) (Instr 'movzbq (list (ByteReg 'al) v))) cont)]
     [(Prim '< (list e1 e2))
@@ -468,7 +486,10 @@
 
 (define (si-stmt e cont)
   (match e
-    [(Assign (Var x) exp) (si-exp (Var x) exp cont)]))
+    [(Assign (Var x) exp) (si-exp (Var x) exp cont)]
+    [(Collect bytes) (append (list (Instr 'movq (list (Reg 'r15) (Reg 'rdi)))
+                                   (Instr 'movq (list (Imm bytes) (Reg 'rsi)))
+                                   (Callq 'collect 2)) cont)]))
 
 (define (si-tail e)
   (match e
