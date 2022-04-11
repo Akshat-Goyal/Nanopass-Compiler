@@ -267,6 +267,10 @@
     [(Prim op es)
      (Prim op (for/list ([e es]) ((uncover-get!-exp set!-vars) e)))]))
 
+(define (uncover-get! p)
+  (match p
+    [(Program info e) (Program info ((uncover-get!-exp (collect-set! e)) e))]))
+
 (define (rco-atom env)
   (lambda (e)
     (gensym 'tmp)))
@@ -311,9 +315,7 @@
 ;; remove-complex-opera* : R1 -> R1
 (define (remove-complex-opera* p)
   (match p
-    [(Program info e) 
-     (define set!-vars (collect-set! e))
-     (Program info ((rco-exp '()) ((uncover-get!-exp set!-vars) e)))]))
+    [(Program info e) (Program info ((rco-exp '()) e))]))
 
 (define (create_block tail)
   (delay
@@ -1100,6 +1102,7 @@
     ;("partial evaluator", pe-Lint, interp-Lvar)
     ("shrink" ,shrink ,interp-Lwhile ,type-check-Lwhile)
     ("uniquify" ,uniquify ,interp-Lwhile ,type-check-Lwhile)
+    ("uncover get" ,uncover-get! ,interp-Lwhile ,type-check-Lwhile)
     ("remove complex opera*" ,remove-complex-opera* ,interp-Lwhile ,type-check-Lwhile)
     ;;; ("explicate control" ,explicate-control ,interp-Cwhile ,type-check-Cwhile)
     ;;; ("instruction selection" ,select-instructions ,interp-pseudo-x86-1)
