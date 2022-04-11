@@ -290,11 +290,18 @@
       [(Int n) (Int n)]
       [(Bool b) (Bool b)]
       [(Void) (Void)]
+      [(GetBang x) (Var x)]
       [(Prim 'read '()) (Prim 'read '())]
       [(Let x e body) 
        (Let x ((rco-exp env) e) ((rco-exp env) body))]
       [(If cnd thn els)
        (If ((rco-exp env) cnd) ((rco-exp env) thn) ((rco-exp env) els))]
+      [(SetBang x rhs)
+       (SetBang x ((rco-exp env) rhs))]
+      [(Begin es body)
+       (Begin (for/list ([e es]) ((rco-exp env) e)) ((rco-exp env) body))]
+      [(WhileLoop cnd body)
+       (WhileLoop ((rco-exp env) cnd) ((rco-exp env) body))]
       [(Prim op (list e1))
        (cond
          [(Atm? e1) (Prim op (list e1))]
@@ -309,8 +316,7 @@
          [(not (Atm? e2))
           (define tmp-var ((rco-atom env) e2))
           (Let tmp-var ((rco-exp env) e2) ((rco-exp env) (Prim op (list e1 (Var tmp-var)))))]
-         [else (Prim op (list e1 e2))])]
-      [_ e])))
+         [else (Prim op (list e1 e2))])])))
 
 ;; remove-complex-opera* : R1 -> R1
 (define (remove-complex-opera* p)
@@ -359,27 +365,68 @@
        (define B1 (explicate_pred thn^ thn-block els-block))
        (define B2 (explicate_pred els^ thn-block els-block))
        (force (explicate_pred cnd^ B1 B2)))]
+    [(Begin es body)
+     (explicate-effect (Begin es (Void)) (explicate_pred body thn els))]
     [else (error "explicate_pred unhandled case" cnd)]))
 
 ; (let ([x (if (let ([x #t]) (if x x (not x))) #t #f)]) (if x 10 (- 10)))
+
+(define (explicate-effect e cont)
+  (match e
+    [(Var x) cont]
+    [(Int n) cont]
+    [(Bool b) cont]
+    [(Void) cont]
+    [(Prim op es) cont]
+    [(Let x rhs body) (explicate-assign rhs x (explicate-effect body cont))]
+    [(If cnd thn els)
+     (define cont-block (create_block cont))
+     (define B1 (explicate-effect thn cont-block))
+     (define B2 (explicate-effect els cont-block))
+     (explicate_pred cnd B1 B2)]
+    [(SetBang x rhs) (explicate-assign rhs x cont)]
+    [(Begin es body)
+     (match es
+      [(list) (explicate-effect body cont)]
+      [(cons e rest) (explicate-effect e (explicate-effect (Begin rest body) cont))])]
+    [(WhileLoop cnd body)
+     (define loop-label (gensym 'block))
+     (define thn (explicate-effect body (Goto loop-label)))
+     (define els cont)
+     (define loop (explicate_pred cnd thn els))
+     (set! basic-blocks (cons (cons loop-label loop) basic-blocks))
+     (Goto loop-label)]
+    [else (error "explicate-effect unhandled case" e)]))
 
 (define (explicate-tail e)
   (match e
     [(Var x) (delay (Return (Var x)))]
     [(Int n) (delay (Return (Int n)))]
+    [(Bool b) (delay (Return (Bool b)))]
+    [(Void) (delay (Return (Void)))]
     [(Let x rhs body) (explicate-assign rhs x (explicate-tail body))]
     [(Prim op es) (delay (Return (Prim op es)))]
     [(If cnd exp1 exp2)
      (define B1 (explicate-tail exp1))
      (define B2 (explicate-tail exp2))
      (explicate_pred cnd B1 B2)]
-    [(Bool b) (delay (Return (Bool b)))]
+    [(SetBang x rhs) (explicate-assign rhs x (Return (Void)))]
+    [(Begin es body) (explicate-effect (Begin es (Void)) (explicate-tail body))]
+    [(WhileLoop cnd body)
+     (define loop-label (gensym 'block))
+     (define thn (explicate-effect body (Goto loop-label)))
+     (define els (Return (Void)))
+     (define loop (explicate_pred cnd thn els))
+     (set! basic-blocks (cons (cons loop-label loop) basic-blocks))
+     (Goto loop-label)]
     [else (error "explicate-tail unhandled case" e)]))
 
 (define (explicate-assign e x cont)
   (match e
     [(Var y) (delay (Seq (Assign (Var x) (Var y)) (force cont)))]
     [(Int n) (delay (Seq (Assign (Var x) (Int n)) (force cont)))]
+    [(Bool b) (delay (Seq (Assign (Var x) (Bool b)) (force cont)))]
+    [(Void) (delay (Seq (Assign (Var x) (Void)) (force cont)))]
     [(Let y rhs body) (explicate-assign rhs y (explicate-assign body x cont))]
     [(Prim op es) (delay (Seq (Assign (Var x) (Prim op es)) (force cont)))]
     [(If cnd exp1 exp2)
@@ -388,7 +435,17 @@
        (define B1 (explicate-assign exp1 x tail-block))
        (define B2 (explicate-assign exp2 x tail-block))
        (force (explicate_pred cnd B1 B2)))]
-    [(Bool b) (delay (Seq (Assign (Var x) (Bool b)) (force cont)))]
+    [(SetBang y rhs) 
+     (explicate-assign rhs y (explicate-assign (Void) x cont))]
+    [(Begin es body)
+     (explicate-effect (Begin es (Void)) (explicate-assign body x cont))]
+    [(WhileLoop cnd body)
+     (define loop-label (gensym 'block))
+     (define thn (explicate-effect body (Goto loop-label)))
+     (define els (Seq (Assign (Var x) (Void)) cont))
+     (define loop (explicate_pred cnd thn els))
+     (set! basic-blocks (cons (cons loop-label loop) basic-blocks))
+     (Goto loop-label)]
     [else (error "explicate-assign unhandled case" e)]))
 
 ;; explicate-control : R1 -> C0
@@ -1104,7 +1161,7 @@
     ("uniquify" ,uniquify ,interp-Lwhile ,type-check-Lwhile)
     ("uncover get" ,uncover-get! ,interp-Lwhile ,type-check-Lwhile)
     ("remove complex opera*" ,remove-complex-opera* ,interp-Lwhile ,type-check-Lwhile)
-    ;;; ("explicate control" ,explicate-control ,interp-Cwhile ,type-check-Cwhile)
+    ("explicate control" ,explicate-control ,interp-Cwhile ,type-check-Cwhile)
     ;;; ("instruction selection" ,select-instructions ,interp-pseudo-x86-1)
     ;;; ("liveness analysis" ,uncover_live ,interp-pseudo-x86-1)
     ;;; ("build interference graph" ,build_interference ,interp-pseudo-x86-1)
