@@ -463,13 +463,15 @@
     [(Var x) (Var x)]
     [(Int n) (Imm n)]
     [(Bool #t) (Imm 1)]
-    [(Bool #f) (Imm 0)]))
+    [(Bool #f) (Imm 0)]
+    [(Void) (Imm 0)]))
 
 (define (si-exp v e cont [op-x86-dict '((+ . addq) (- . subq))])
   (match e
     [(Var y) (cons (Instr 'movq (list (si-atm e) v)) cont)]
     [(Int n) (cons (Instr 'movq (list (si-atm e) v)) cont)]
     [(Bool b) (cons (Instr 'movq (list (si-atm e) v)) cont)]
+    [(Void) (cons (Instr 'movq (list (si-atm e) v)) cont)]
     [(Prim 'not (list e1))
      (cond
        [(equal? v e1)
@@ -501,7 +503,8 @@
 
 (define (si-stmt e cont)
   (match e
-    [(Assign (Var x) exp) (si-exp (Var x) exp cont)]))
+    [(Assign (Var x) exp) (si-exp (Var x) exp cont)]
+    [(Prim 'read '()) (cons (Callq 'read_int 0) cont)]))
 
 (define (si-tail e)
   (match e
@@ -1163,7 +1166,7 @@
     ("uncover get" ,uncover-get! ,interp-Lwhile ,type-check-Lwhile)
     ("remove complex opera*" ,remove-complex-opera* ,interp-Lwhile ,type-check-Lwhile)
     ("explicate control" ,explicate-control ,interp-Cwhile ,type-check-Cwhile)
-    ;;; ("instruction selection" ,select-instructions ,interp-pseudo-x86-1)
+    ("instruction selection" ,select-instructions ,interp-pseudo-x86-2)
     ;;; ("liveness analysis" ,uncover_live ,interp-pseudo-x86-1)
     ;;; ("build interference graph" ,build_interference ,interp-pseudo-x86-1)
     ;;; ("register allocation" ,allocate_registers ,interp-x86-1)
