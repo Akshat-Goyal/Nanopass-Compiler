@@ -365,8 +365,10 @@
                   (delay (IfStmt (Prim op es) (force (create_block thn))
                                  (force (create_block els))))]
     [(Prim op es) #:when (eq? op 'vector-ref)
-                  (delay (IfStmt (Prim op es) (force (create_block thn))
-                                 (force (create_block els))))]
+                  (define tmp (gensym 'tmp))
+                  (define new-cont (IfStmt (Prim 'eq? (list (Var tmp) (Bool #t))) (force (create_block thn))
+                                           (force (create_block els))))
+                  (delay (Seq (Assign (Var tmp) cnd) new-cont))]
     [(Bool b) (if b thn els)]
     [(If cnd^ thn^ els^)
      (delay 
