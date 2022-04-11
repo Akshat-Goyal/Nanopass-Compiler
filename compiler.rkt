@@ -377,6 +377,7 @@
     [(Int n) cont]
     [(Bool b) cont]
     [(Void) cont]
+    [(Prim 'read '()) (Seq (Prim 'read '()) cont)]
     [(Prim op es) cont]
     [(Let x rhs body) (explicate-assign rhs x (explicate-effect body cont))]
     [(If cnd thn els)
