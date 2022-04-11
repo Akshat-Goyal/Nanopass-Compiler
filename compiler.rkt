@@ -9,10 +9,12 @@
 ;(require "interp-Lif.rkt")
 (require "interp-Lvec.rkt")
 (require "interp-Lvec-prime.rkt")
-(require "interp-Cif.rkt")
+;(require "interp-Cif.rkt")
+(require "interp-Cvec.rkt")
 (require "type-check-Lvec.rkt")
 ;(require "type-check-Lif.rkt")
-(require "type-check-Cif.rkt")
+;(require "type-check-Cif.rkt")
+(require "type-check-Cvec.rkt")
 ;(require "type-check-Lvar.rkt")
 ;(require "type-check-Cvar.rkt")
 (require "utilities.rkt")
@@ -362,6 +364,9 @@
     [(Prim op es) #:when (Cmp? op)
                   (delay (IfStmt (Prim op es) (force (create_block thn))
                                  (force (create_block els))))]
+    [(Prim op es) #:when (eq? op 'vector-ref)
+                  (delay (IfStmt (Prim op es) (force (create_block thn))
+                                 (force (create_block els))))]
     [(Bool b) (if b thn els)]
     [(If cnd^ thn^ els^)
      (delay 
@@ -379,27 +384,34 @@
     [(Var x) (delay (Return (Var x)))]
     [(Int n) (delay (Return (Int n)))]
     [(Let x rhs body) (explicate-assign rhs x (explicate-tail body))]
-    [(Prim op es) (delay (Return (Prim op es)))]
+    [(Prim op es) (delay (Return (Prim op es)))] ;handles vector operations too
     [(If cnd exp1 exp2)
      (define B1 (explicate-tail exp1))
      (define B2 (explicate-tail exp2))
      (explicate_pred cnd B1 B2)]
     [(Bool b) (delay (Return (Bool b)))]
+    [(Void) (delay (Return (Void)))]
+    [(Allocate len T) (delay (Return (Allocate len T)))]
+    [(GlobalValue var) (delay (Return (GlobalValue var)))]
     [else (error "explicate-tail unhandled case" e)]))
 
 (define (explicate-assign e x cont)
   (match e
-    [(Var y) (delay (Seq (Assign (Var x) (Var y)) (force cont)))]
-    [(Int n) (delay (Seq (Assign (Var x) (Int n)) (force cont)))]
+    [(Var y) (delay (Seq (Assign (Var x) e) (force cont)))]
+    [(Int n) (delay (Seq (Assign (Var x) e) (force cont)))]
     [(Let y rhs body) (explicate-assign rhs y (explicate-assign body x cont))]
-    [(Prim op es) (delay (Seq (Assign (Var x) (Prim op es)) (force cont)))]
+    [(Prim op es) (delay (Seq (Assign (Var x) e) (force cont)))] ;handles vector operations too
     [(If cnd exp1 exp2)
      (delay
        (define tail-block (create_block cont))
        (define B1 (explicate-assign exp1 x tail-block))
        (define B2 (explicate-assign exp2 x tail-block))
        (force (explicate_pred cnd B1 B2)))]
-    [(Bool b) (delay (Seq (Assign (Var x) (Bool b)) (force cont)))]
+    [(Bool b) (delay (Seq (Assign (Var x) e) (force cont)))]
+    [(Void) (delay (Seq (Assign (Var x) e) (force cont)))] ;TODO: will this situation ever happen?
+    [(Allocate len T) (delay (Seq (Assign (Var x) e) (force cont)))]
+    [(GlobalValue var) (delay (Seq (Assign (Var x) e) (force cont)))]
+    [(Collect bytes) (delay (Seq (Collect bytes) (force cont)))]
     [else (error "explicate-assign unhandled case" e)]))
 
 ;; explicate-control : R1 -> C0
@@ -1115,7 +1127,7 @@
     ("uniquify" ,uniquify ,interp-Lvec ,type-check-Lvec)
     ("expose allocation" ,expose-allocation ,interp-Lvec-prime ,type-check-Lvec)
     ("remove complex opera*" ,remove-complex-opera* ,interp-Lvec-prime ,type-check-Lvec)
-;    ("explicate control" ,explicate-control ,interp-Cif ,type-check-Cif)
+    ("explicate control" ,explicate-control ,interp-Cvec ,type-check-Cvec)
 ;    ("instruction selection" ,select-instructions ,interp-pseudo-x86-1)
 ;    ("liveness analysis" ,uncover_live ,interp-pseudo-x86-1)
 ;    ("build interference graph" ,build_interference ,interp-pseudo-x86-1)
