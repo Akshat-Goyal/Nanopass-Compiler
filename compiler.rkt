@@ -256,7 +256,7 @@
           (define vector-element-exps
             (for/fold ([body collect-exp])
                       ([element-name (reverse vec-element-names)]
-                       [e es])
+                       [e (reverse es)])
               (set! body (Let element-name
                               (expose-allocation-exp e) body))
               body))
@@ -437,6 +437,28 @@
   (match e
     [(Int n) n]))
 
+(define (ptr? type)
+  (match type
+    [`(Vector ,ts ...) 1]
+    [_ 0]))
+
+(define (get-vector-metadata len T cur_tag cur_ind)
+  ;(display "1: ")
+  ;(displayln T)
+  ;1 for 1st fowarding bit
+  (define initial_tag (bitwise-ior 1 (arithmetic-shift len 1)))
+  (for/fold ([cur_tag initial_tag])
+            ([type T]
+             [cur_ind (range 7 (+ 7 len))])
+    (bitwise-ior cur_tag (arithmetic-shift (ptr? type) cur_ind))))
+
+; DONT KNOW WHY THIS DOESNT WORK
+;  (match T
+;    [(cons `(Vector ,ts ...) rest) (get-vector-metadata len rest (bitwise-ior cur_tag (arithmetic-shift 1 cur_ind)) (+ cur_ind 1))]
+;    [(cons e rest) (get-vector-metadata len rest cur_tag (+ cur_ind 1))]
+;    [else
+;     (bitwise-ior cur_tag 1 (arithmetic-shift len 1))]))
+
 (define (si-exp v e cont [op-x86-dict '((+ . addq) (- . subq))])
   (match e
     [(Var y) (cons (Instr 'movq (list (si-atm e) v)) cont)]
@@ -444,8 +466,15 @@
     [(Bool b) (cons (Instr 'movq (list (si-atm e) v)) cont)]
     [(Void) (cons (Instr 'movq (list (si-atm e) v)) cont)]
     [(GlobalValue var) (cons (Instr 'movq (list (Global var) v)) cont)]
-    [(Allocate len T)]
-    
+    [(Allocate len `(Vector ,T ...))
+     ;(display "2: ")
+     ;(displayln T)
+     ;(displayln (cdr T))
+     (define tag (get-vector-metadata len T 0 7))
+     (append (list (Instr 'movq (list (Global 'free_ptr) (Reg 'r11)))
+                   (Instr 'addq (list (Imm (* 8 (+ len 1))) (Global 'free_ptr)))
+                   (Instr 'movq (list (Imm tag) (Deref 'r11 0)))
+                   (Instr 'movq (list (Reg 'r11) v))) cont)]
     [(Prim 'not (list e1))
      (cond
        [(equal? v e1)
@@ -453,14 +482,18 @@
        [else
         (append (list (Instr 'movq (list (si-atm e1) v)) (Instr 'xor (list (Imm 1) v))) cont)])]
     [(Prim 'vector-ref (list vec-name vec-ind))
-     (append (list (Instr 'movq vec-name (Reg 'r11))
-                   (Instr 'movq (Deref 'r11 (* 8 (+ (get-int-value vec-ind) 1))) v)) cont)]
-    [(Prim 'vector-set (list vec-name vec-ind val))
-     (append (list (Instr 'movq vec-name (Reg 'r11))
-                   (Instr 'movq (si-atm val) (Deref 'r11 (* 8 (+ (get-int-value vec-ind) 1))))
-                   (Instr 'movq (Imm 0) v)) cont)]
+     (append (list (Instr 'movq (list vec-name (Reg 'r11)))
+                   (Instr 'movq (list (Deref 'r11 (* 8 (+ (get-int-value vec-ind) 1))) v))) cont)]
+    [(Prim 'vector-set! (list vec-name vec-ind val))
+     (append (list (Instr 'movq (list vec-name (Reg 'r11)))
+                   (Instr 'movq (list (si-atm val) (Deref 'r11 (* 8 (+ (get-int-value vec-ind) 1)))))
+                   (Instr 'movq (list (Imm 0) v))) cont)]
     [(Prim 'vector-length (list vec-name))
-     
+     (append (list (Instr 'movq (list vec-name (Reg 'r11)))
+                   (Instr 'movq (list (Deref 'r11 0) (Reg 'r11)))
+                   (Instr 'sarq (list (Imm 1) (Reg 'r11)))
+                   (Instr 'andq (list (Imm 63) (Reg 'r11)))
+                   (Instr 'movq (list (Reg 'r11) v))) cont)]
     [(Prim 'eq? (list e1 e2))
      (append (list (Instr 'cmpq (list (si-atm e1) (si-atm e2))) (Instr 'set (list 'e (ByteReg 'al))) (Instr 'movzbq (list (ByteReg 'al) v))) cont)]
     [(Prim '< (list e1 e2))
@@ -1151,7 +1184,7 @@
     ("expose allocation" ,expose-allocation ,interp-Lvec-prime ,type-check-Lvec)
     ("remove complex opera*" ,remove-complex-opera* ,interp-Lvec-prime ,type-check-Lvec)
     ("explicate control" ,explicate-control ,interp-Cvec ,type-check-Cvec)
-;    ("instruction selection" ,select-instructions ,interp-pseudo-x86-1)
+    ("instruction selection" ,select-instructions ,interp-pseudo-x86-2)
 ;    ("liveness analysis" ,uncover_live ,interp-pseudo-x86-1)
 ;    ("build interference graph" ,build_interference ,interp-pseudo-x86-1)
 ;    ("register allocation" ,allocate_registers ,interp-x86-1)
