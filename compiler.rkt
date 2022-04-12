@@ -548,13 +548,20 @@
      (define partial-x86-blocks (for/fold ([partial-x86-blocks '()]) ([block e]) (dict-set partial-x86-blocks (car block) (Block '() (si-tail (cdr block))))))
      (X86Program info partial-x86-blocks)]))
 
+(define (get-locations arg)
+  (match arg
+    [(Deref r offset) (set (Reg r))]
+    [(Global var) (set)]
+    [(Imm n) (set)]
+    [_ (set arg)]))
+
 (define (compute-write-locations instr)
   ; TODO: handle retq instruction: not needed
   (match instr
     [(Instr 'cmpq es) (set)] ;TODO: prolly return empty set here: DONE, before we were returning rax
     [(Instr 'set es) (set (Reg 'rax))]
-    [(Instr x86-op (list arg1 arg2)) (set arg2)] ; arg2 cannot be immediate since we are writing into arg2
-    [(Instr x86-op (list arg1)) (set arg1)] ; arg1 cannot be immediate, x86-op should only be negq
+    [(Instr x86-op (list arg1 arg2)) (get-locations arg2)] ; arg2 cannot be immediate since we are writing into arg2
+    [(Instr x86-op (list arg1)) (get-locations arg1)] ; arg1 cannot be immediate, x86-op should only be negq
     [(Callq func-name n) (list->set caller-saved-registers)]
     [_ (set)]))
 
@@ -564,17 +571,17 @@
     [(Instr 'movq (list arg1 arg2))
      (match arg1
        [(Imm n) (set)]
-       [else (set arg1)])]
+       [else (get-locations arg1)])]
     [(Instr 'set es) (set)]
     [(Instr 'movzbq es) (set (Reg 'rax))]
     [(Instr x86-op (list arg1 arg2))
      ; handles xorq cmpq addq subq 
      (match* (arg1 arg2)
        [((Imm n1) (Imm n2)) (set)]
-       [((Imm n1) arg2) (set arg2)]
-       [(arg1 (Imm n2)) (set arg1)]
-       [(_ _) (set arg1 arg2)])]
-    [(Instr x86-op (list arg1)) (set arg1)] ; arg1 cannot be immediate, x86-op should only be negq
+       [((Imm n1) arg2) (get-locations arg2)]
+       [(arg1 (Imm n2)) (get-locations arg1)]
+       [(_ _) (set-union (get-locations arg1) (get-locations arg2))])]
+    [(Instr x86-op (list arg1)) (get-locations arg1)] ; arg1 cannot be immediate, x86-op should only be negq
     [(Callq func-name n)
      (cond
        [(<= n 6) (list->set (take argument-registers n))]
@@ -668,13 +675,13 @@
       [(Instr 'movq (list arg1 arg2))
        (for ([live-location (set->list live-set)])
          (cond
-           [(not (or (equal? arg1 live-location) (equal? arg2 live-location)))
-            (add-edge! cur-graph arg2 live-location)]))]
+           [(not (or (equal? (car (set->list (get-locations arg1))) live-location) (equal? (car (set->list (get-locations arg2))) live-location)))
+            (add-edge! cur-graph (car (set->list (get-locations arg2))) live-location)]))]
       [(Instr 'movzbq (list arg1 arg2))
        (for ([live-location (set->list live-set)])
          (cond
-           [(not (or (equal? arg1 live-location) (equal? arg2 live-location)))
-            (add-edge! cur-graph arg2 live-location)]))]
+           [(not (or (equal? (car (set->list (get-locations arg1))) live-location) (equal? (car (set->list (get-locations arg2))) live-location)))
+            (add-edge! cur-graph (car (set->list (get-locations arg2))) live-location)]))]
       [else
        (define write-locations (compute-write-locations instr))
        (for* ([live-location live-set]
