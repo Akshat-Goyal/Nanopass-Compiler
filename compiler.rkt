@@ -527,7 +527,7 @@
 (define (select-instructions p)
   (match p
     [(CProgram info e)
-     (define partial-x86-blocks (for/fold ([partial-x86-blocks '()]) ([blocks e]) (dict-set partial-x86-blocks (car blocks) (Block '() (si-tail (cdr blocks))))))
+     (define partial-x86-blocks (for/fold ([partial-x86-blocks '()]) ([block e]) (dict-set partial-x86-blocks (car block) (Block '() (si-tail (cdr block))))))
      (X86Program info partial-x86-blocks)]))
 
 (define (compute-write-locations instr)
@@ -563,17 +563,17 @@
        [else (list->set (take argument-registers 6))])]
     [_ (set)]))
 
-(define (find-live-sets instrs live-after)
+(define (find-live-sets instrs live-sets)
   (match instrs
     [(cons instr rest)
      (define read-locations (compute-read-locations instr))
      (define write-locations (compute-write-locations instr))
      (define live-after-cur (cond
-                              [(empty? live-after) (set)]
-                              [else (car live-after)]))
+                              [(empty? live-sets) (set)]
+                              [else (car live-sets)]))
      (define live-before (set-union (set-subtract live-after-cur write-locations) read-locations))
-     (find-live-sets rest (cons live-before live-after))]
-    [else live-after]))
+     (find-live-sets rest (cons live-before live-sets))]
+    [else live-sets]))
     
 ;; uncover_live: pseudo-x86 -> pseudo-x86
 (define (generate-label-graph e graph)
@@ -629,14 +629,34 @@
     [else
      blocks]))
 
+(define (analyze_dataflow blocks live-afters label-graph)
+  (define-values (updated-blocks updated-live-afters) 
+    (for/fold ([updated-blocks blocks] [updated-live-afters live-afters]) 
+              ([label-block-pair blocks])
+      (define label (car label-block-pair)) 
+      (define block (cdr label-block-pair)) 
+      (define instrs (Block-instr* block))
+      (define live-after (dict-ref live-afters label))
+      (define live-sets (find-live-sets (reverse instrs) (list live-after)))
+      (define updated-block (Block `((live-sets . ,(cdr live-sets))) instrs))
+      (define updated-blocks^ (dict-set updated-blocks label updated-block))
+      (define updated-live-afters^ 
+        (for/fold ([updated-live-afters^ updated-live-afters])
+                  ([adj (in-neighbors label-graph label)])
+          (dict-set updated-live-afters^ adj (set-union (car live-sets) (dict-ref updated-live-afters adj)))))
+      (values updated-blocks^ updated-live-afters^)))
+  (cond
+    [(equal? live-afters updated-live-afters) updated-blocks]
+    [else (analyze_dataflow updated-blocks updated-live-afters label-graph)]))
+
 (define (uncover_live p)
   (match p
     [(X86Program info e)
      (define label-graph (generate-label-graph e (make-multigraph '())))
-     (define topo-order (tsort label-graph))
-     (define initial-live-after (for/fold ([initial-live-after '()]) ([label topo-order]) (dict-set initial-live-after label (list (set)))))
-     (define blocks (uncover_live_after_per_block e initial-live-after '() label-graph topo-order))
-     (X86Program info blocks)]))
+     (define label-list (for/list ([block e]) (car block)))
+     (define initial-live-afters (for/fold ([initial-live-afters '()]) ([label label-list]) (dict-set initial-live-afters label (set))))
+     (define updated-blocks (analyze_dataflow e initial-live-afters label-graph))
+     (X86Program info updated-blocks)]))
 
 (define (print-graph graph)
   (for ([u (in-vertices graph)])
@@ -1166,12 +1186,12 @@
     ("uncover get" ,uncover-get! ,interp-Lwhile ,type-check-Lwhile)
     ("remove complex opera*" ,remove-complex-opera* ,interp-Lwhile ,type-check-Lwhile)
     ("explicate control" ,explicate-control ,interp-Cwhile ,type-check-Cwhile)
-    ("instruction selection" ,select-instructions ,interp-pseudo-x86-2)
-    ;;; ("liveness analysis" ,uncover_live ,interp-pseudo-x86-1)
-    ;;; ("build interference graph" ,build_interference ,interp-pseudo-x86-1)
-    ;;; ("register allocation" ,allocate_registers ,interp-x86-1)
-    ;;; ("remove jumps" ,remove-jumps ,interp-x86-1)
-    ;;; ("patch instructions" ,patch-instructions ,interp-x86-1)
-    ;;; ("prelude-and-conclusion" ,prelude-and-conclusion ,interp-x86-1)
+    ("instruction selection" ,select-instructions ,interp-pseudo-x86-1)
+    ("liveness analysis" ,uncover_live ,interp-pseudo-x86-1)
+    ("build interference graph" ,build_interference ,interp-pseudo-x86-1)
+    ("register allocation" ,allocate_registers ,interp-x86-1)
+    ("remove jumps" ,remove-jumps ,interp-x86-1)
+    ("patch instructions" ,patch-instructions ,interp-x86-1)
+    ("prelude-and-conclusion" ,prelude-and-conclusion ,interp-x86-1)
     ))
 
