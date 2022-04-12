@@ -442,6 +442,11 @@
     [`(Vector ,ts ...) 1]
     [_ 0]))
 
+(define (ptr-bool? type)
+  (match type
+    [`(Vector ,ts ...) #t]
+    [_ #f]))
+
 (define (get-vector-metadata len T cur_tag cur_ind)
   ;(display "1: ")
   ;(displayln T)
@@ -668,36 +673,65 @@
     (for ([v (in-neighbors graph u)])
       (display (format "~a -> ~a;\n" u v)))))
 
-(define (build-intereference-graph-block instrs live-sets cur-graph)
+(define (get-register-if-memory-access arg)
+  (match arg
+    [(Deref r offset) (Reg r)]
+    [_ arg]))
+
+(define (get-variable-name arg)
+  (match arg
+    [(Var x) x]
+    [else (error "get-variable-name unhandled case" arg)]))
+
+(define (build-intereference-graph-block instrs live-sets cur-graph locals-types)
   (for ([live-set live-sets]
         [instr instrs])
+    
+    ;(display "1 instruction: ")
+    ;(displayln instr)
+
+    ;(display "2 live-set: ")
+    ;(displayln live-set)
+    
     (match instr
       [(Instr 'movq (list arg1 arg2))
        (for ([live-location (set->list live-set)])
          (cond
-           [(not (or (equal? (car (set->list (get-locations arg1))) live-location) (equal? (car (set->list (get-locations arg2))) live-location)))
-            (add-edge! cur-graph (car (set->list (get-locations arg2))) live-location)]))]
+           [(not (or (equal? (get-register-if-memory-access arg1) live-location) (equal? (get-register-if-memory-access arg2) live-location)))
+            (add-edge! cur-graph (get-register-if-memory-access arg2) live-location)]))]
       [(Instr 'movzbq (list arg1 arg2))
        (for ([live-location (set->list live-set)])
          (cond
-           [(not (or (equal? (car (set->list (get-locations arg1))) live-location) (equal? (car (set->list (get-locations arg2))) live-location)))
-            (add-edge! cur-graph (car (set->list (get-locations arg2))) live-location)]))]
+           [(not (or (equal? (get-register-if-memory-access arg1) live-location) (equal? (get-register-if-memory-access arg2) live-location)))
+            (add-edge! cur-graph (get-register-if-memory-access arg2) live-location)]))]
       [else
        (define write-locations (compute-write-locations instr))
        (for* ([live-location live-set]
               [write-location write-locations])
          (cond
            [(not (equal? live-location write-location))
-            (add-edge! cur-graph live-location write-location)]))]))
+            (add-edge! cur-graph live-location write-location)]))
+       (match instr
+         [(Callq 'collect n)
+          (for ([live-location live-set])
+            (cond
+              [(and (not (set-member? (list->set all-registers) live-location))
+                    (ptr-bool? (dict-ref locals-types (get-variable-name live-location))))
+               (displayln "***************: tuple variable is live during call to collect IMP IMP IMP")
+               (for ([r all-registers])
+                 (add-edge! cur-graph r live-location))] ;this adds repeat edges for caller saved registers, TODO: check if graph handles multiple edges as single. if not? then change all registers to callee-saved registers only
+              ))]
+         [_ (void)])
+       ]))
   cur-graph)
 
-(define (build-interference-graph blocks locals)
+(define (build-interference-graph blocks locals-types)
   (define interference-graph (undirected-graph '()))
 
   (for ([reg all-registers]) ;TODO: do we need to add vertices of all registers or only caller saved ones or none at all here?
     (add-vertex! interference-graph reg))
 
-  (for ([var locals]) ;need to do this otherwise error on var_test 6 or something
+  (for ([var (dict-keys locals-types)]) ;need to do this otherwise error on var_test 6 or something
     (add-vertex! interference-graph (Var var)))
   
   (for ([block_key (dict-keys blocks)])
@@ -705,7 +739,7 @@
     (match block
       [(Block sinfo instrs)
        (define live-sets (dict-ref sinfo 'live-sets))
-       (set! interference-graph (build-intereference-graph-block instrs live-sets interference-graph))
+       (set! interference-graph (build-intereference-graph-block instrs live-sets interference-graph locals-types))
        ;(print-graph interference-graph)
        ]))
   
@@ -716,8 +750,8 @@
 (define (build_interference p)
   (match p
     [(X86Program info blocks)
-     (define locals (dict-keys (dict-ref info 'locals-types)))
-     (define interference-graph (build-interference-graph blocks locals))
+     (define locals-types (dict-ref info 'locals-types))
+     (define interference-graph (build-interference-graph blocks locals-types))
      (X86Program (dict-set info 'conflicts interference-graph) blocks)]))
 
 (define graph-coloring-comparator                         
@@ -744,7 +778,7 @@
        (for ([instr instrs])
          (match instr
            ;no need to handle movzbq because it always moves al (rax) to something and no need of move biasing for rax
-           [(Instr 'movq (list arg1 arg2))
+           [(Instr 'movq (list arg1 arg2)) ;TODO: check if we also need to use get-locations function here too: prolly not
             (match* (arg1 arg2)
               [((Var x) (Var y))
                (add-edge! graph arg1 arg2)]
@@ -1192,8 +1226,8 @@
     ("remove complex opera*" ,remove-complex-opera* ,interp-Lvec-prime ,type-check-Lvec)
     ("explicate control" ,explicate-control ,interp-Cvec ,type-check-Cvec)
     ("instruction selection" ,select-instructions ,interp-pseudo-x86-2)
-;    ("liveness analysis" ,uncover_live ,interp-pseudo-x86-1)
-;    ("build interference graph" ,build_interference ,interp-pseudo-x86-1)
+    ("liveness analysis" ,uncover_live ,interp-pseudo-x86-2)
+    ("build interference graph" ,build_interference ,interp-pseudo-x86-2)
 ;    ("register allocation" ,allocate_registers ,interp-x86-1)
 ;    ("remove jumps" ,remove-jumps ,interp-x86-1)
 ;    ("patch instructions" ,patch-instructions ,interp-x86-1)
