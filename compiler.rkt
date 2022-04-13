@@ -660,25 +660,31 @@
     [else
      blocks]))
 
-(define (analyze_dataflow blocks live-afters label-graph)
+(define (transfer label live-after blocks)
+  (define block (dict-ref blocks label)) 
+  (define instrs (Block-instr* block))
+  (find-live-sets (reverse instrs) (list live-after)))
+
+(define (analyze_dataflow G transfer live-afters join blocks)
   (define-values (updated-blocks updated-live-afters) 
     (for/fold ([updated-blocks blocks] [updated-live-afters live-afters]) 
               ([label-block-pair blocks])
       (define label (car label-block-pair)) 
-      (define block (cdr label-block-pair)) 
+      (define block (cdr label-block-pair))
       (define instrs (Block-instr* block))
       (define live-after (dict-ref live-afters label))
-      (define live-sets (find-live-sets (reverse instrs) (list live-after)))
+      ;;; (define live-sets (find-live-sets (reverse instrs) (list live-after)))
+      (define live-sets (transfer label live-after blocks)) 
       (define updated-block (Block `((live-sets . ,(cdr live-sets))) instrs))
       (define updated-blocks^ (dict-set updated-blocks label updated-block))
       (define updated-live-afters^ 
         (for/fold ([updated-live-afters^ updated-live-afters])
-                  ([adj (in-neighbors label-graph label)])
-          (dict-set updated-live-afters^ adj (set-union (car live-sets) (dict-ref updated-live-afters adj)))))
+                  ([adj (in-neighbors G label)])
+          (dict-set updated-live-afters^ adj (join (car live-sets) (dict-ref updated-live-afters adj)))))
       (values updated-blocks^ updated-live-afters^)))
   (cond
     [(equal? live-afters updated-live-afters) updated-blocks]
-    [else (analyze_dataflow updated-blocks updated-live-afters label-graph)]))
+    [else (analyze_dataflow G transfer updated-live-afters join updated-blocks)]))
 
 (define (uncover_live p)
   (match p
@@ -686,7 +692,7 @@
      (define label-graph (generate-label-graph e (make-multigraph '())))
      (define label-list (for/list ([block e]) (car block)))
      (define initial-live-afters (for/fold ([initial-live-afters '()]) ([label label-list]) (dict-set initial-live-afters label (set))))
-     (define updated-blocks (analyze_dataflow e initial-live-afters label-graph))
+     (define updated-blocks (analyze_dataflow label-graph transfer initial-live-afters set-union e))
      (X86Program info updated-blocks)]))
 
 (define (print-graph graph)
