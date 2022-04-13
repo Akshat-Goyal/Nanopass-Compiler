@@ -16,7 +16,7 @@
 (require "interp-Cvar.rkt")
 (require "compiler.rkt")
 
-(debug-level 1)
+;(debug-level 1)
 ;(AST-output-syntax 'concrete-syntax)
 
 ;; all the files in the tests/ directory with extension ".rkt".
@@ -34,7 +34,7 @@
           (string=? r (car (string-split p "_"))))
         all-tests)))
 
-(interp-tests "vectors" type-check-Lvec compiler-passes interp-Lvec "vectors_test" (tests-for "vectors"))
+;(interp-tests "vectors" type-check-Lvec compiler-passes interp-Lvec "vectors_test" (tests-for "vectors"))
 ;(interp-tests "while" type-check-Lvec compiler-passes interp-Lvec "while_test" (tests-for "while"))
 ;(interp-tests "cond" type-check-Lvec compiler-passes interp-Lvec "cond_test" (tests-for "cond"))
 ;(interp-tests "var" type-check-Lvec compiler-passes interp-Lvec "var_test" (tests-for "var"))
