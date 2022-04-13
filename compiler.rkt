@@ -717,7 +717,7 @@
             (cond
               [(and (not (set-member? (list->set all-registers) live-location))
                     (ptr-bool? (dict-ref locals-types (get-variable-name live-location))))
-               (displayln "***************: tuple variable is live during call to collect IMP IMP IMP")
+               ;(displayln "***************: tuple variable is live during call to collect IMP IMP IMP")
                (for ([r all-registers])
                  (add-edge! cur-graph r live-location))] ;this adds repeat edges for caller saved registers, TODO: check if graph handles multiple edges as single. if not? then change all registers to callee-saved registers only
               ))]
@@ -1035,7 +1035,7 @@
        [(<= var-color 10) ;change here everytime there is a change in registers available for coloring
         (assign-home-to-locals rest variable-colors used-callee (dict-set cur-locals-homes var (dict-ref color-to-register var-color)))]
        [(even? var-color) ;below, it should be +8 itself and not -8 because vector stack grows upwards instead of downwards ;first vector spill goes in 0(%r15), next in +8(%r15)
-        (define offset (* 8 (/ (- var-color (+ 10 2)) 2))) ;change here everytime there is a change in registers available for coloring, 10 is the max color of a register
+        (define offset (* -8 (/ (- var-color 10) 2))) ;change here everytime there is a change in registers available for coloring, 10 is the max color of a register
         (assign-home-to-locals rest variable-colors used-callee (dict-set cur-locals-homes var (Deref 'r15 offset)))]
        [else ;(odd? var-color) ;first spill goes in -8(%rbp)
         (define place (/ (- (+ var-color 1) 10) 2)) ;change here everytime there is a change in registers available for coloring, 10 is the max color of a register
@@ -1202,25 +1202,53 @@
 
      (X86Program info blocks)]))
 
-(define (pac-main stack-space used-callee)
+(define (pac-main stack-space used-callee vector-stack-spills)
   (define part-1 (list
                   (Instr 'pushq (list (Reg 'rbp)))
                   (Instr 'movq (list (Reg 'rsp) (Reg 'rbp)))))
+
   (define part-2 (for/list ([reg used-callee])
                    (Instr 'pushq (list reg))))
-  (define part-3 (list
-                  (Instr 'subq (list (Imm stack-space) (Reg 'rsp)))
-                  (Jmp 'start)))
-  (append part-1 part-2 part-3))
 
-(define (pac-conclusion stack-space reversed-used-callee)
+  (define part-3 (list
+                  (Instr 'subq (list (Imm stack-space) (Reg 'rsp)))))
+
+  (define heap_size 16384)
+  (define root_stack_size 16384)
+  
+  (define part-4 (list
+                  (Instr 'movq (list (Imm root_stack_size) (Reg 'rdi)))
+                  (Instr 'movq (list (Imm heap_size) (Reg 'rsi)))
+                  (Callq 'initialize 2)
+                  (Instr 'movq (list (Global 'rootstack_begin) (Reg 'r15)))))
+
+  (define part-5 (for/fold ([init_list '()])
+                           ([i (range (- vector-stack-spills 1) -1 -1)])
+                   (cons (Instr 'movq (list (Imm 0) (Deref 'r15 (* 8 i)))) init_list)))
+
+  ;(display "part-5: ")
+  ;(displayln part-5)
+                   
+  (define part-6 (list
+                  (Instr 'addq (list (Imm (* 8 vector-stack-spills)) (Reg 'r15)))))
+                   
+  (define part-7 (list
+                  (Jmp 'start)))
+                   
+  (append part-1 part-2 part-3 part-4 part-5 part-6 part-7))
+
+(define (pac-conclusion stack-space reversed-used-callee vector-stack-spills)
   (define part-1 (list
+                  (Instr 'subq (list (Imm (* 8 vector-stack-spills)) (Reg 'r15)))
                   (Instr 'addq (list (Imm stack-space) (Reg 'rsp)))))
+  
   (define part-2 (for/list ([reg reversed-used-callee])
                    (Instr 'popq (list reg))))
+
   (define part-3 (list
                   (Instr 'popq (list (Reg 'rbp)))
                   (Retq)))
+
   (append part-1 part-2 part-3))
 
 ;; prelude-and-conclusion : x86 -> x86
@@ -1230,8 +1258,9 @@
      (define used-callee (set->list (dict-ref info 'used_callee)))
      (define stack-space (- (dict-ref info 'stack-space) (* 8 (length used-callee))))
      ;(define start (dict-ref blocks 'start))
-     (define main (Block '() (pac-main stack-space used-callee)))
-     (define conclusion (Block '() (pac-conclusion stack-space (reverse used-callee))))
+     (define num-root-spills (dict-ref info 'num-root-spills))
+     (define main (Block '() (pac-main stack-space used-callee num-root-spills)))
+     (define conclusion (Block '() (pac-conclusion stack-space (reverse used-callee) num-root-spills)))
      (set! blocks (dict-set blocks 'main main))
      (set! blocks (dict-set blocks 'conclusion conclusion))
      (X86Program info blocks)]))
@@ -1254,6 +1283,6 @@
     ("register allocation" ,allocate_registers ,interp-x86-2)
     ("remove jumps" ,remove-jumps ,interp-x86-2)
     ("patch instructions" ,patch-instructions ,interp-x86-2)
-;    ("prelude-and-conclusion" ,prelude-and-conclusion ,interp-x86-1)
+    ("prelude-and-conclusion" ,prelude-and-conclusion ,interp-x86-2)
     ))
 
