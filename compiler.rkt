@@ -546,7 +546,7 @@
       [(Instr x86-op (list arg1 arg2)) 
        (cons (Instr x86-op (list (dict-ref env arg1 arg1) arg2)) (constant-propagation-instrs rest (dict-remove env arg2)))]
       [(Instr x86-op (list arg)) 
-       (cons (Instr x86-op (list (dict-ref env arg arg))) (constant-propagation-instrs rest (dict-remove env arg)))]
+       (cons instr (constant-propagation-instrs rest (dict-remove env arg)))]
       [_ (cons instr (constant-propagation-instrs rest env))])]
     [_ instrs]))
 
