@@ -2,14 +2,21 @@
 #lang racket
 
 (require "utilities.rkt")
+(require "interp.rkt")
 (require "interp-Lvar.rkt")
 (require "interp-Lif.rkt")
-(require "interp-Cif.rkt")
-(require "type-check-Lif.rkt")
+(require "interp-Lwhile.rkt")
 (require "interp-Cvar.rkt")
-(require "interp.rkt")
+(require "interp-Lvec.rkt")
+(require "interp-Cif.rkt")
+(require "interp-Cwhile.rkt")
+(require "type-check-Lif.rkt")
+(require "type-check-Lwhile.rkt")
+(require "type-check-Lvec.rkt")
+(require "interp-Cvar.rkt")
 (require "compiler.rkt")
-(debug-level 1)
+
+;(debug-level 1)
 ;(AST-output-syntax 'concrete-syntax)
 
 ;; all the files in the tests/ directory with extension ".rkt".
@@ -27,11 +34,15 @@
           (string=? r (car (string-split p "_"))))
         all-tests)))
 
-(interp-tests "cond" type-check-Lif compiler-passes interp-Lif "cond_test" (tests-for "cond"))
-(interp-tests "var" #f compiler-passes interp-Lvar "var_test" (tests-for "var"))
+;(interp-tests "vectors" type-check-Lvec compiler-passes interp-Lvec "vectors_test" (tests-for "vectors"))
+;(interp-tests "while" type-check-Lvec compiler-passes interp-Lvec "while_test" (tests-for "while"))
+;(interp-tests "cond" type-check-Lvec compiler-passes interp-Lvec "cond_test" (tests-for "cond"))
+;(interp-tests "var" type-check-Lvec compiler-passes interp-Lvec "var_test" (tests-for "var"))
 
 ;; Uncomment the following when all the passes are complete to
 ;; test the final x86 code.
-(compiler-tests "cond" type-check-Lif compiler-passes "cond_test" (tests-for "cond"))
-(compiler-tests "var" #f compiler-passes "var_test" (tests-for "var"))
+(compiler-tests "vectors" type-check-Lvec compiler-passes "vectors_test" (tests-for "vectors"))
+;(compiler-tests "while" type-check-Lvec compiler-passes "while_test" (tests-for "while"))
+;(compiler-tests "cond" type-check-Lvec compiler-passes "cond_test" (tests-for "cond"))
+;(compiler-tests "var" type-check-Lvec compiler-passes "var_test" (tests-for "var"))
 
