@@ -82,7 +82,6 @@
                        (Reg 'r8)
                        (Reg 'r9)
                        (Reg 'r10)
-                       (Reg 'r11)
                        (Reg 'rbx)
                        (Reg 'r12)
                        (Reg 'r13)
@@ -90,7 +89,8 @@
                        (Reg 'rax)
                        (Reg 'rsp)
                        (Reg 'rbp)
-                       (Reg 'r15)))
+                       (Reg 'r15)
+                       (Reg 'r11)))
 
 
 (define registers-for-coloring (list
@@ -101,7 +101,6 @@
                                 (Reg 'r8)
                                 (Reg 'r9)
                                 (Reg 'r10)
-                                (Reg 'r11)
                                 (Reg 'rbx)
                                 (Reg 'r12)
                                 (Reg 'r13)
@@ -112,17 +111,18 @@
                                             (Reg 'rax)
                                             (Reg 'rsp)
                                             (Reg 'rbp)
-                                            (Reg 'r15)))
+                                            (Reg 'r15)
+                                            (Reg 'r11)))
 
 (define-values (color-to-register register-to-color-prev) (for/fold ([color-to-register '()]
                                                                      [register-to-color '()])
                                                                     ([reg registers-for-coloring]
-                                                                     [cur-color (in-range 0 12)])
+                                                                     [cur-color (in-range 0 11)])
                                                             (values (dict-set color-to-register cur-color reg) (dict-set register-to-color reg cur-color))))
 
 (define register-to-color (for/fold ([register-to-color register-to-color-prev])
                                     ([reg unavailable-registers-for-coloring]
-                                     [cur-color (in-range -1 -5 -1)])
+                                     [cur-color (in-range -1 -6 -1)])
                             (dict-set register-to-color reg cur-color)))
 
 
@@ -809,9 +809,9 @@
     [else
      (let ([move-bias-color (set-first allowed-colors)])
        (cond
-         [(< move-bias-color 13)
+         [(< move-bias-color 11) ;change here and in next case everytime there is a change in the available registers for coloring
           move-bias-color]
-         [(< mex 13)
+         [(< mex 11)
           mex]
          [else
           move-bias-color]))]))
@@ -1017,8 +1017,8 @@
     [(cons var rest)
      (define var-color (dict-ref variable-colors (Var var)))
      (cond
-       [(and (>= var-color 8) (<= var-color 11)) (get-used-callee-registers rest (set-add cur-used-callee (dict-ref color-to-register var-color)) variable-colors)] ;TODO: change this hardcoded colors to something more general
-       [else (get-used-callee-registers rest cur-used-callee variable-colors)])] 
+       [(and (>= var-color 7) (<= var-color 10)) (get-used-callee-registers rest (set-add cur-used-callee (dict-ref color-to-register var-color)) variable-colors)] ;TODO: change this hardcoded colors to something more general
+       [else (get-used-callee-registers rest cur-used-callee variable-colors)])] ;change above everytime there is a change in registers available for coloring
     [_ cur-used-callee]))
 
 
@@ -1027,10 +1027,10 @@
     [(cons var rest)
      (define var-color (dict-ref variable-colors (Var var)))
      (cond
-       [(<= var-color 11)
+       [(<= var-color 10) ;change here everytime there is a change in registers available for coloring
         (assign-home-to-locals rest variable-colors used-callee (dict-set cur-locals-homes var (dict-ref color-to-register var-color)))]
        [else
-        (define offset (* -8 (- (+ var-color used-callee) 11)))
+        (define offset (* -8 (- (+ var-color used-callee) 10))) ;change here everytime there is a change in registers available for coloring
         (assign-home-to-locals rest variable-colors used-callee (dict-set cur-locals-homes var (Deref 'rbp offset)))])]
     [_ cur-locals-homes]))
 
@@ -1039,7 +1039,7 @@
     [(cons var rest)
      (define var-color (dict-ref variable-colors (Var var)))
      (cond
-       [(<= var-color 11)
+       [(<= var-color 10) ;change above everytime there is a change in registers available for coloring
         (get-stack-colors rest variable-colors cur-stack-colors)]
        [else
         (get-stack-colors rest variable-colors (set-add cur-stack-colors var-color))])]
