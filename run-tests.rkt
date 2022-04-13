@@ -29,7 +29,7 @@
           (string=? r (car (string-split p "_"))))
         all-tests)))
 
-;(interp-tests "vectors" type-check-Lvec compiler-passes interp-Lvec "vectors_test" (tests-for "vectors"))
+(interp-tests "vectors" type-check-Lvec compiler-passes interp-Lvec "vectors_test" (tests-for "vectors"))
 ;(interp-tests "cond" type-check-Lif compiler-passes interp-Lif "cond_test" (tests-for "cond"))
 ;(interp-tests "var" #f compiler-passes interp-Lvar "var_test" (tests-for "var"))
 

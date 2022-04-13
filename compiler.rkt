@@ -1034,7 +1034,7 @@
      (cond
        [(<= var-color 10) ;change here everytime there is a change in registers available for coloring
         (assign-home-to-locals rest variable-colors used-callee (dict-set cur-locals-homes var (dict-ref color-to-register var-color)))]
-       [(even? var-color) ;below, it should be +8 itself and not -8 because vector stack grows upwards instead of downwards ;first vector spill goes in 0(%r15), next in +8(%r15)
+       [(even? var-color)
         (define offset (* -8 (/ (- var-color 10) 2))) ;change here everytime there is a change in registers available for coloring, 10 is the max color of a register
         (assign-home-to-locals rest variable-colors used-callee (dict-set cur-locals-homes var (Deref 'r15 offset)))]
        [else ;(odd? var-color) ;first spill goes in -8(%rbp)
