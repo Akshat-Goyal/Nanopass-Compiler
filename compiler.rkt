@@ -615,7 +615,7 @@
        [(equal? v e1)
         (cons (Instr 'xorq (list (Imm 1) v)) cont)]
        [else
-        (append (list (Instr 'movq (list (si-atm e1) v)) (Instr 'xor (list (Imm 1) v))) cont)])]
+        (append (list (Instr 'movq (list (si-atm e1) v)) (Instr 'xorq (list (Imm 1) v))) cont)])]
     [(Prim 'vector-ref (list vec-name vec-ind))
      (append (list (Instr 'movq (list vec-name (Reg 'r11)))
                    (Instr 'movq (list (Deref 'r11 (* 8 (+ (get-int-value vec-ind) 1))) v))) cont)]
@@ -656,6 +656,9 @@
   (match e
     [(Assign (Var x) exp) (si-exp (Var x) exp cont)]
     [(Prim 'read '()) (cons (Callq 'read_int 0) cont)] ;TODO: check this
+    [(Prim 'vector-set! (list vec-name vec-ind val))
+     (append (list (Instr 'movq (list vec-name (Reg 'r11)))
+                   (Instr 'movq (list (si-atm val) (Deref 'r11 (* 8 (+ (get-int-value vec-ind) 1)))))) cont)]
     [(Collect bytes) (append (list (Instr 'movq (list (Reg 'r15) (Reg 'rdi)))
                                    (Instr 'movq (list (Imm bytes) (Reg 'rsi)))
                                    (Callq 'collect 2)) cont)]))

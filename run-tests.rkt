@@ -34,15 +34,15 @@
           (string=? r (car (string-split p "_"))))
         all-tests)))
 
-;(interp-tests "vectors" type-check-Lvec compiler-passes interp-Lvec "vectors_test" (tests-for "vectors"))
-(interp-tests "while" type-check-Lvec compiler-passes interp-Lvec "while_test" (tests-for "while"))
+(interp-tests "vectors" type-check-Lvec compiler-passes interp-Lvec "vectors_test" (tests-for "vectors"))
+;(interp-tests "while" type-check-Lvec compiler-passes interp-Lvec "while_test" (tests-for "while"))
 ;(interp-tests "cond" type-check-Lvec compiler-passes interp-Lvec "cond_test" (tests-for "cond"))
 ;(interp-tests "var" type-check-Lvec compiler-passes interp-Lvec "var_test" (tests-for "var"))
 
 ;; Uncomment the following when all the passes are complete to
 ;; test the final x86 code.
-;(compiler-tests "vectors" type-check-Lvec compiler-passes "vectors_test" (tests-for "vectors"))
-(compiler-tests "while" type-check-Lvec compiler-passes "while_test" (tests-for "while"))
+(compiler-tests "vectors" type-check-Lvec compiler-passes "vectors_test" (tests-for "vectors"))
+;(compiler-tests "while" type-check-Lvec compiler-passes "while_test" (tests-for "while"))
 ;(compiler-tests "cond" type-check-Lvec compiler-passes "cond_test" (tests-for "cond"))
 ;(compiler-tests "var" type-check-Lvec compiler-passes "var_test" (tests-for "var"))
 
