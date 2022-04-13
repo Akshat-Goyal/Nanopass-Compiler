@@ -530,6 +530,37 @@
      (define partial-x86-blocks (for/fold ([partial-x86-blocks '()]) ([block e]) (dict-set partial-x86-blocks (car block) (Block '() (si-tail (cdr block))))))
      (X86Program info partial-x86-blocks)]))
 
+(define (constant-propagation-instrs instrs env)
+  (match instrs
+    [(cons instr rest)
+     (match instr
+      [(Instr 'movq (list (Var x) (Var y)))
+       (define const (dict-ref env (Var x) #f))
+       (if (equal? const #f)
+          (cons instr (constant-propagation-instrs rest (dict-remove env (Var y))))
+          (cons (Instr 'movq (list const (Var y))) (constant-propagation-instrs rest (dict-set env (Var y) const))))]
+      [(Instr 'movq (list (Imm n) (Var y)))
+       (cons instr (constant-propagation-instrs rest (dict-set env (Var y) (Imm n))))]
+      [(Instr 'cmpq (list arg1 arg2)) 
+       (cons (Instr 'cmpq (list (dict-ref env arg1 arg1) arg2)) (constant-propagation-instrs rest env))]
+      [(Instr x86-op (list arg1 arg2)) 
+       (cons (Instr x86-op (list (dict-ref env arg1 arg1) arg2)) (constant-propagation-instrs rest (dict-remove env arg2)))]
+      [(Instr x86-op (list arg)) 
+       (cons (Instr x86-op (list (dict-ref env arg arg))) (constant-propagation-instrs rest (dict-remove env arg)))]
+      [_ (cons instr (constant-propagation-instrs rest env))])]
+    [_ instrs]))
+
+(define (constant-propagation p)
+  (match p
+    [(X86Program info e)
+     (define partial-x86-blocks (for/list ([label-block-pair e]) 
+                                  (define label (car label-block-pair))
+                                  (define block (cdr label-block-pair))
+                                  (define updated-instrs (constant-propagation-instrs (Block-instr* block) '()))
+                                  (define updated-block (Block (Block-info block) updated-instrs))
+                                  (cons label updated-block)))
+     (X86Program info partial-x86-blocks)]))
+
 (define (compute-write-locations instr)
   ; TODO: handle retq instruction: not needed
   (match instr
@@ -1187,6 +1218,7 @@
     ("remove complex opera*" ,remove-complex-opera* ,interp-Lwhile ,type-check-Lwhile)
     ("explicate control" ,explicate-control ,interp-Cwhile ,type-check-Cwhile)
     ("instruction selection" ,select-instructions ,interp-pseudo-x86-1)
+    ("constant propagation" ,constant-propagation ,interp-pseudo-x86-1)
     ("liveness analysis" ,uncover_live ,interp-pseudo-x86-1)
     ("build interference graph" ,build_interference ,interp-pseudo-x86-1)
     ("register allocation" ,allocate_registers ,interp-x86-1)
