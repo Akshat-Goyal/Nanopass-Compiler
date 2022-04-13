@@ -5,17 +5,22 @@
 ;(require "interp-Lint.rkt")
 ;(require "interp-Lvar.rkt")
 ;(require "interp-Cvar.rkt")
-(require "interp.rkt")
-(require "interp-Lwhile.rkt")
-(require "interp-Cwhile.rkt")
-(require "type-check-Lwhile.rkt")
-(require "type-check-Cwhile.rkt")
 ;(require "interp-Lif.rkt")
 ;(require "interp-Cif.rkt")
 ;(require "type-check-Lif.rkt")
 ;(require "type-check-Cif.rkt")
 ;(require "type-check-Lvar.rkt")
 ;(require "type-check-Cvar.rkt")
+(require "interp.rkt")
+;(require "interp-Lwhile.rkt")
+;(require "interp-Cwhile.rkt")
+;(require "type-check-Lwhile.rkt")
+;(require "type-check-Cwhile.rkt")
+(require "interp-Lvec.rkt")
+(require "interp-Lvec-prime.rkt")
+(require "interp-Cvec.rkt")
+(require "type-check-Lvec.rkt")
+(require "type-check-Cvec.rkt")
 (require "utilities.rkt")
 (require graph)
 (require "./priority_queue.rkt")
@@ -81,7 +86,6 @@
                        (Reg 'r8)
                        (Reg 'r9)
                        (Reg 'r10)
-                       (Reg 'r11)
                        (Reg 'rbx)
                        (Reg 'r12)
                        (Reg 'r13)
@@ -89,7 +93,8 @@
                        (Reg 'rax)
                        (Reg 'rsp)
                        (Reg 'rbp)
-                       (Reg 'r15)))
+                       (Reg 'r15)
+                       (Reg 'r11)))
 
 
 (define registers-for-coloring (list
@@ -100,7 +105,6 @@
                                 (Reg 'r8)
                                 (Reg 'r9)
                                 (Reg 'r10)
-                                (Reg 'r11)
                                 (Reg 'rbx)
                                 (Reg 'r12)
                                 (Reg 'r13)
@@ -111,17 +115,18 @@
                                             (Reg 'rax)
                                             (Reg 'rsp)
                                             (Reg 'rbp)
-                                            (Reg 'r15)))
+                                            (Reg 'r15)
+                                            (Reg 'r11)))
 
 (define-values (color-to-register register-to-color-prev) (for/fold ([color-to-register '()]
                                                                      [register-to-color '()])
                                                                     ([reg registers-for-coloring]
-                                                                     [cur-color (in-range 0 12)])
+                                                                     [cur-color (in-range 0 11)])
                                                             (values (dict-set color-to-register cur-color reg) (dict-set register-to-color reg cur-color))))
 
 (define register-to-color (for/fold ([register-to-color register-to-color-prev])
                                     ([reg unavailable-registers-for-coloring]
-                                     [cur-color (in-range -1 -5 -1)])
+                                     [cur-color (in-range -1 -6 -1)])
                             (dict-set register-to-color reg cur-color)))
 
 
@@ -187,6 +192,8 @@
      (If (shrink-exp e1) (Bool #t) (shrink-exp e2))]
     [(Prim '- (list e1 e2))
      (Prim '+ (list (shrink-exp e1) (Prim '- (list (shrink-exp e2)))))]
+    [(HasType e T)
+     (HasType (shrink-exp e) T)]
     [(Prim op es)
      (Prim op (for/list ([e es]) (shrink-exp e)))]))
 
@@ -217,6 +224,7 @@
        (Begin (for/list ([e es]) ((uniquify-exp env) e)) ((uniquify-exp env) body))]
       [(WhileLoop cnd body)
        (WhileLoop ((uniquify-exp env) cnd) ((uniquify-exp env) body))]
+      [(HasType e T) (HasType ((uniquify-exp env) e) T)]
       [(Prim op es)
        (Prim op (for/list ([e es]) ((uniquify-exp env) e)))])))
 
@@ -224,6 +232,67 @@
 (define (uniquify p)
   (match p
     [(Program info e) (Program info ((uniquify-exp '()) e))]))
+
+(define (expose-allocation-exp exp)
+  (match exp
+    [(Var x) (Var x)]
+    [(Int n) (Int n)]
+    [(Bool b) (Bool b)]
+    [(Void) (Void)]
+    [(Let x e body)
+     (Let x (expose-allocation-exp e) (expose-allocation-exp body))]
+    [(If cnd thn els)
+     (If (expose-allocation-exp cnd) (expose-allocation-exp thn) (expose-allocation-exp els))]
+    [(SetBang x rhs)
+     (SetBang x (expose-allocation-exp rhs))]
+    [(Begin es body)
+     (Begin (for/list ([e es]) (expose-allocation-exp e)) (expose-allocation-exp body))]
+    [(WhileLoop cnd body)
+     (WhileLoop (expose-allocation-exp cnd) (expose-allocation-exp body))]
+    [(HasType e T) ;e should be a vector
+     (match e
+       [(Prim 'vector es)
+        (define vec-name (gensym 'alloc))
+        (define vec-len (length es))
+        (define vec-element-names (for/list
+                                      ([i (range vec-len)])
+                                    (gensym 'vecinit)))
+        (define vector-set-lets
+          (for/fold ([body (Var vec-name)])
+                    ([element-name (reverse vec-element-names)]
+                     [vec-ind (range (- vec-len 1) -1 -1)])
+            ;(display "1: ")
+            ;(displayln body)
+            (set! body (Let (gensym '_)
+                            (Prim 'vector-set! (list (Var vec-name) (Int vec-ind) (Var element-name))) body))
+            ;(display "2: ")
+            ;(displayln body)
+            body))
+        ;(display "3: ")
+        ;(displayln vector-set-lets)
+        (define allocate-exp (Let vec-name (Allocate vec-len T) vector-set-lets))
+        (define req-bytes (* 8 (+ vec-len 1)))
+        (define collect-exp (Let (gensym '_)
+                                 (If (Prim '< (list (Prim '+ (list (GlobalValue 'free_ptr) (Int req-bytes)))
+                                                    (GlobalValue 'fromspace_end)))
+                                     (Void)
+                                     (Collect req-bytes)) allocate-exp))
+        (define vector-element-exps
+          (for/fold ([body collect-exp])
+                    ([element-name (reverse vec-element-names)]
+                     [e (reverse es)])
+            (set! body (Let element-name
+                            (expose-allocation-exp e) body))
+            body))
+
+        vector-element-exps])]
+    ; e cannot be anything else? TODO: check this
+    [(Prim op es)
+     (Prim op (for/list ([e es]) (expose-allocation-exp e)))]))
+
+(define (expose-allocation p)
+  (match p
+    [(Program info e) (Program info (expose-allocation-exp e))]))
 
 (define (collect-set! e)
   (match e
@@ -243,7 +312,8 @@
     [(WhileLoop cnd body)
      (set-union (collect-set! cnd) (collect-set! body))]
     [(Prim op es)
-     (for/fold ([set!-vars (set)]) ([e es]) (set-union set!-vars (collect-set! e)))]))
+     (for/fold ([set!-vars (set)]) ([e es]) (set-union set!-vars (collect-set! e)))]
+    [_ (set)]))
 
 (define ((uncover-get!-exp set!-vars) e)
   (match e
@@ -265,7 +335,8 @@
     [(WhileLoop cnd body)
      (WhileLoop ((uncover-get!-exp set!-vars) cnd) ((uncover-get!-exp set!-vars) body))]
     [(Prim op es)
-     (Prim op (for/list ([e es]) ((uncover-get!-exp set!-vars) e)))]))
+     (Prim op (for/list ([e es]) ((uncover-get!-exp set!-vars) e)))]
+    [_ e])) ;_ should cover Collect, Allocate, and GlobalValue
 
 (define (uncover-get! p)
   (match p
@@ -302,6 +373,9 @@
        (Begin (for/list ([e es]) ((rco-exp env) e)) ((rco-exp env) body))]
       [(WhileLoop cnd body)
        (WhileLoop ((rco-exp env) cnd) ((rco-exp env) body))]
+      [(Collect bytes) (Collect bytes)]
+      [(Allocate len T) (Allocate len T)]
+      [(GlobalValue var) (GlobalValue var)]
       [(Prim op (list e1))
        (cond
          [(Atm? e1) (Prim op (list e1))]
@@ -316,7 +390,20 @@
          [(not (Atm? e2))
           (define tmp-var ((rco-atom env) e2))
           (Let tmp-var ((rco-exp env) e2) ((rco-exp env) (Prim op (list e1 (Var tmp-var)))))]
-         [else (Prim op (list e1 e2))])])))
+         [else (Prim op (list e1 e2))])]
+      ;3 arguments only in vector-set! TODO: check if all operands need to be atomic or not
+      [(Prim op (list e1 e2 e3))
+       (cond
+         [(not (Atm? e1))
+          (define tmp-var ((rco-atom env) e1))
+          (Let tmp-var ((rco-exp env) e1) ((rco-exp env) (Prim op (list (Var tmp-var) e2 e3))))]
+         [(not (Atm? e2))
+          (define tmp-var ((rco-atom env) e2))
+          (Let tmp-var ((rco-exp env) e2) ((rco-exp env) (Prim op (list e1 (Var tmp-var) e3))))]
+         [(not (Atm? e3))
+          (define tmp-var ((rco-atom env) e3))
+          (Let tmp-var ((rco-exp env) e3) ((rco-exp env) (Prim op (list e1 e2 (Var tmp-var)))))]
+         [else (Prim op (list e1 e2 e3))])])))
 
 ;; remove-complex-opera* : R1 -> R1
 (define (remove-complex-opera* p)
@@ -324,14 +411,12 @@
     [(Program info e) (Program info ((rco-exp '()) e))]))
 
 (define (create_block tail)
-  (delay
-    (define t (force tail))
-    (match t
-      [(Goto label) (Goto label)]
-      [else
-       (let ([label (gensym 'block)])
-         (set! basic-blocks (cons (cons label t) basic-blocks))
-         (Goto label))])))
+  (match tail
+    [(Goto label) (Goto label)]
+    [else
+     (let ([label (gensym 'block)])
+       (set! basic-blocks (cons (cons label tail) basic-blocks))
+       (Goto label))]))
 
 (define (Cmp? op)
   (match op
@@ -345,7 +430,7 @@
 (define (explicate_pred cnd thn els)
   (match cnd
     [(Var x)
-     (delay (IfStmt (Prim 'eq? (list (Var x) (Bool #t))) (force (create_block thn)) (force (create_block els))))]
+     (IfStmt (Prim 'eq? (list (Var x) (Bool #t))) (create_block thn) (create_block els))]
     [(Let x rhs body)
      (explicate-assign rhs x (explicate_pred body thn els))]
     [(Prim 'not (list e))
@@ -353,18 +438,22 @@
        [(Bool b)
         (if b els thn)]
        [(Var x)
-        (delay (IfStmt (Prim 'eq? (list (Var x) (Bool #f))) (force (create_block thn)) (force (create_block els))))])]
+        (IfStmt (Prim 'eq? (list (Var x) (Bool #f))) (create_block thn) (create_block els))])]
     [(Prim op es) #:when (Cmp? op)
-                  (delay (IfStmt (Prim op es) (force (create_block thn))
-                                 (force (create_block els))))]
+                  (IfStmt (Prim op es) (create_block thn)
+                          (create_block els))]
+    [(Prim op es) #:when (eq? op 'vector-ref)
+                  (define tmp (gensym 'tmp))
+                  (define new-cont (IfStmt (Prim 'eq? (list (Var tmp) (Bool #t))) (create_block thn)
+                                           (create_block els)))
+                  (Seq (Assign (Var tmp) cnd) new-cont)]
     [(Bool b) (if b thn els)]
     [(If cnd^ thn^ els^)
-     (delay 
-       (define thn-block (create_block thn))
-       (define els-block (create_block els))
-       (define B1 (explicate_pred thn^ thn-block els-block))
-       (define B2 (explicate_pred els^ thn-block els-block))
-       (force (explicate_pred cnd^ B1 B2)))]
+     (define thn-block (create_block thn))
+     (define els-block (create_block els))
+     (define B1 (explicate_pred thn^ thn-block els-block))
+     (define B2 (explicate_pred els^ thn-block els-block))
+     (explicate_pred cnd^ B1 B2)]
     [(Begin es body)
      (explicate-effect (Begin es (Void)) (explicate_pred body thn els))]
     [else (error "explicate_pred unhandled case" cnd)]))
@@ -373,18 +462,19 @@
 
 (define (explicate-effect e cont)
   (match e
-    [(Var x) (force cont)]
-    [(Int n) (force cont)]
-    [(Bool b) (force cont)]
-    [(Void) (force cont)]
-    [(Prim 'read '()) (Seq (Prim 'read '()) (force cont))]
-    [(Prim op es) (force cont)]
+    [(Var x) cont]
+    [(Int n) cont]
+    [(Bool b) cont]
+    [(Void) cont]
+    [(Prim 'read '()) (Seq (Prim 'read '()) cont)]
+    [(Prim 'vector-set! es) (Seq (Prim 'vector-set! es) cont)]
+    [(Prim op es) cont]
     [(Let x rhs body) (explicate-assign rhs x (explicate-effect body cont))]
     [(If cnd thn els)
      (define cont-block (create_block cont))
      (define B1 (explicate-effect thn cont-block))
      (define B2 (explicate-effect els cont-block))
-     (force (explicate_pred cnd B1 B2))]
+     (explicate_pred cnd B1 B2)]
     [(SetBang x rhs) (explicate-assign rhs x cont)]
     [(Begin es body)
      (match es
@@ -394,19 +484,22 @@
      (define loop-label (gensym 'block))
      (define thn (explicate-effect body (Goto loop-label)))
      (define els cont)
-     (define loop (force (explicate_pred cnd thn els)))
+     (define loop (explicate_pred cnd thn els))
      (set! basic-blocks (cons (cons loop-label loop) basic-blocks))
      (Goto loop-label)]
+    [(Allocate len T) cont]
+    [(GlobalValue var) cont]
+    [(Collect bytes) (Seq (Collect bytes) cont)]
     [else (error "explicate-effect unhandled case" e)]))
 
 (define (explicate-tail e)
   (match e
-    [(Var x) (delay (Return (Var x)))]
-    [(Int n) (delay (Return (Int n)))]
-    [(Bool b) (delay (Return (Bool b)))]
-    [(Void) (delay (Return (Void)))]
+    [(Var x) (Return (Var x))]
+    [(Int n) (Return (Int n))]
+    [(Bool b) (Return (Bool b))]
+    [(Void) (Return (Void))]
     [(Let x rhs body) (explicate-assign rhs x (explicate-tail body))]
-    [(Prim op es) (delay (Return (Prim op es)))]
+    [(Prim op es) (Return (Prim op es))] ;handles vector operations too
     [(If cnd exp1 exp2)
      (define B1 (explicate-tail exp1))
      (define B2 (explicate-tail exp2))
@@ -417,25 +510,26 @@
      (define loop-label (gensym 'block))
      (define thn (explicate-effect body (Goto loop-label)))
      (define els (Return (Void)))
-     (define loop (force (explicate_pred cnd thn els)))
+     (define loop (explicate_pred cnd thn els))
      (set! basic-blocks (cons (cons loop-label loop) basic-blocks))
      (Goto loop-label)]
+    [(Allocate len T) (Return (Allocate len T))]
+    [(GlobalValue var) (Return (GlobalValue var))]
     [else (error "explicate-tail unhandled case" e)]))
 
 (define (explicate-assign e x cont)
   (match e
-    [(Var y) (delay (Seq (Assign (Var x) (Var y)) (force cont)))]
-    [(Int n) (delay (Seq (Assign (Var x) (Int n)) (force cont)))]
-    [(Bool b) (delay (Seq (Assign (Var x) (Bool b)) (force cont)))]
-    [(Void) (delay (Seq (Assign (Var x) (Void)) (force cont)))]
+    [(Var y) (Seq (Assign (Var x) (Var y)) cont)]
+    [(Int n) (Seq (Assign (Var x) (Int n)) cont)]
+    [(Bool b) (Seq (Assign (Var x) (Bool b)) cont)]
+    [(Void) (Seq (Assign (Var x) (Void)) cont)]
     [(Let y rhs body) (explicate-assign rhs y (explicate-assign body x cont))]
-    [(Prim op es) (delay (Seq (Assign (Var x) (Prim op es)) (force cont)))]
+    [(Prim op es) (Seq (Assign (Var x) e) cont)] ;handles vector operations too
     [(If cnd exp1 exp2)
-     (delay
        (define tail-block (create_block cont))
        (define B1 (explicate-assign exp1 x tail-block))
        (define B2 (explicate-assign exp2 x tail-block))
-       (force (explicate_pred cnd B1 B2)))]
+       (explicate_pred cnd B1 B2)]
     [(SetBang y rhs) 
      (explicate-assign rhs y (explicate-assign (Void) x cont))]
     [(Begin es body)
@@ -444,9 +538,12 @@
      (define loop-label (gensym 'block))
      (define thn (explicate-effect body (Goto loop-label)))
      (define els (Seq (Assign (Var x) (Void)) cont))
-     (define loop (force (explicate_pred cnd thn els)))
+     (define loop (explicate_pred cnd thn els))
      (set! basic-blocks (cons (cons loop-label loop) basic-blocks))
      (Goto loop-label)]
+    [(Allocate len T) (Seq (Assign (Var x) e) cont)]
+    [(GlobalValue var) (Seq (Assign (Var x) e) cont)]
+    [(Collect bytes) (Seq (Collect bytes) cont)]
     [else (error "explicate-assign unhandled case" e)]))
 
 ;; explicate-control : R1 -> C0
@@ -454,7 +551,7 @@
   (match p 
     [(Program info e)
      (set! basic-blocks (list))
-     (define tail (force (explicate-tail e)))
+     (define tail (explicate-tail e))
      (set! basic-blocks (cons (cons 'start tail) basic-blocks))
      (CProgram info basic-blocks)]))
 
@@ -466,18 +563,72 @@
     [(Bool #f) (Imm 0)]
     [(Void) (Imm 0)]))
 
+(define (get-int-value e)
+  (match e
+    [(Int n) n]))
+
+(define (ptr? type)
+  (match type
+    [`(Vector ,ts ...) 1]
+    [_ 0]))
+
+(define (ptr-bool? type)
+  (match type
+    [`(Vector ,ts ...) #t]
+    [_ #f]))
+
+(define (get-vector-metadata len T cur_tag cur_ind)
+  ;(display "1: ")
+  ;(displayln T)
+  ;1 for 1st fowarding bit
+  (define initial_tag (bitwise-ior 1 (arithmetic-shift len 1)))
+  (for/fold ([cur_tag initial_tag])
+            ([type T]
+             [cur_ind (range 7 (+ 7 len))])
+    (bitwise-ior cur_tag (arithmetic-shift (ptr? type) cur_ind))))
+
+; DONT KNOW WHY THIS DOESNT WORK
+;  (match T
+;    [(cons `(Vector ,ts ...) rest) (get-vector-metadata len rest (bitwise-ior cur_tag (arithmetic-shift 1 cur_ind)) (+ cur_ind 1))]
+;    [(cons e rest) (get-vector-metadata len rest cur_tag (+ cur_ind 1))]
+;    [else
+;     (bitwise-ior cur_tag 1 (arithmetic-shift len 1))]))
+
 (define (si-exp v e cont [op-x86-dict '((+ . addq) (- . subq))])
   (match e
     [(Var y) (cons (Instr 'movq (list (si-atm e) v)) cont)]
     [(Int n) (cons (Instr 'movq (list (si-atm e) v)) cont)]
     [(Bool b) (cons (Instr 'movq (list (si-atm e) v)) cont)]
     [(Void) (cons (Instr 'movq (list (si-atm e) v)) cont)]
+    [(GlobalValue var) (cons (Instr 'movq (list (Global var) v)) cont)]
+    [(Allocate len `(Vector ,T ...))
+     ;(display "2: ")
+     ;(displayln T)
+     ;(displayln (cdr T))
+     (define tag (get-vector-metadata len T 0 7))
+     (append (list (Instr 'movq (list (Global 'free_ptr) (Reg 'r11)))
+                   (Instr 'addq (list (Imm (* 8 (+ len 1))) (Global 'free_ptr)))
+                   (Instr 'movq (list (Imm tag) (Deref 'r11 0)))
+                   (Instr 'movq (list (Reg 'r11) v))) cont)]
     [(Prim 'not (list e1))
      (cond
        [(equal? v e1)
         (cons (Instr 'xorq (list (Imm 1) v)) cont)]
        [else
         (append (list (Instr 'movq (list (si-atm e1) v)) (Instr 'xor (list (Imm 1) v))) cont)])]
+    [(Prim 'vector-ref (list vec-name vec-ind))
+     (append (list (Instr 'movq (list vec-name (Reg 'r11)))
+                   (Instr 'movq (list (Deref 'r11 (* 8 (+ (get-int-value vec-ind) 1))) v))) cont)]
+    [(Prim 'vector-set! (list vec-name vec-ind val))
+     (append (list (Instr 'movq (list vec-name (Reg 'r11)))
+                   (Instr 'movq (list (si-atm val) (Deref 'r11 (* 8 (+ (get-int-value vec-ind) 1)))))
+                   (Instr 'movq (list (Imm 0) v))) cont)]
+    [(Prim 'vector-length (list vec-name))
+     (append (list (Instr 'movq (list vec-name (Reg 'r11)))
+                   (Instr 'movq (list (Deref 'r11 0) (Reg 'r11)))
+                   (Instr 'sarq (list (Imm 1) (Reg 'r11)))
+                   (Instr 'andq (list (Imm 63) (Reg 'r11)))
+                   (Instr 'movq (list (Reg 'r11) v))) cont)]
     [(Prim 'eq? (list e1 e2))
      (append (list (Instr 'cmpq (list (si-atm e1) (si-atm e2))) (Instr 'set (list 'e (ByteReg 'al))) (Instr 'movzbq (list (ByteReg 'al) v))) cont)]
     [(Prim '< (list e1 e2))
@@ -504,7 +655,10 @@
 (define (si-stmt e cont)
   (match e
     [(Assign (Var x) exp) (si-exp (Var x) exp cont)]
-    [(Prim 'read '()) (cons (Callq 'read_int 0) cont)]))
+    [(Prim 'read '()) (cons (Callq 'read_int 0) cont)] ;TODO: check this
+    [(Collect bytes) (append (list (Instr 'movq (list (Reg 'r15) (Reg 'rdi)))
+                                   (Instr 'movq (list (Imm bytes) (Reg 'rsi)))
+                                   (Callq 'collect 2)) cont)]))
 
 (define (si-tail e)
   (match e
@@ -561,13 +715,20 @@
                                   (cons label updated-block)))
      (X86Program info partial-x86-blocks)]))
 
+(define (get-locations arg)
+  (match arg
+    [(Deref r offset) (set (Reg r))]
+    [(Global var) (set)]
+    [(Imm n) (set)]
+    [_ (set arg)]))
+
 (define (compute-write-locations instr)
   ; TODO: handle retq instruction: not needed
   (match instr
     [(Instr 'cmpq es) (set)] ;TODO: prolly return empty set here: DONE, before we were returning rax
     [(Instr 'set es) (set (Reg 'rax))]
-    [(Instr x86-op (list arg1 arg2)) (set arg2)] ; arg2 cannot be immediate since we are writing into arg2
-    [(Instr x86-op (list arg1)) (set arg1)] ; arg1 cannot be immediate, x86-op should only be negq
+    [(Instr x86-op (list arg1 arg2)) (get-locations arg2)] ; arg2 cannot be immediate since we are writing into arg2
+    [(Instr x86-op (list arg1)) (get-locations arg1)] ; arg1 cannot be immediate, x86-op should only be negq
     [(Callq func-name n) (list->set caller-saved-registers)]
     [_ (set)]))
 
@@ -577,17 +738,17 @@
     [(Instr 'movq (list arg1 arg2))
      (match arg1
        [(Imm n) (set)]
-       [else (set arg1)])]
+       [else (get-locations arg1)])]
     [(Instr 'set es) (set)]
     [(Instr 'movzbq es) (set (Reg 'rax))]
     [(Instr x86-op (list arg1 arg2))
      ; handles xorq cmpq addq subq 
      (match* (arg1 arg2)
        [((Imm n1) (Imm n2)) (set)]
-       [((Imm n1) arg2) (set arg2)]
-       [(arg1 (Imm n2)) (set arg1)]
-       [(_ _) (set arg1 arg2)])]
-    [(Instr x86-op (list arg1)) (set arg1)] ; arg1 cannot be immediate, x86-op should only be negq
+       [((Imm n1) arg2) (get-locations arg2)]
+       [(arg1 (Imm n2)) (get-locations arg1)]
+       [(_ _) (set-union (get-locations arg1) (get-locations arg2))])]
+    [(Instr x86-op (list arg1)) (get-locations arg1)] ; arg1 cannot be immediate, x86-op should only be negq
     [(Callq func-name n)
      (cond
        [(<= n 6) (list->set (take argument-registers n))]
@@ -643,22 +804,22 @@
     [else
      graph]))
 
-(define (uncover_live_after_per_block e live-afters blocks label-graph topo-order)
-  (match topo-order
-    [(cons label rest)
-     (define cur-block (dict-ref e label))
-     (define instrs (Block-instr* cur-block))
-     (define initial-live-after (dict-ref live-afters label))
-     ;(displayln initial-live-after)
-     (define live-sets (find-live-sets (reverse instrs) initial-live-after))
-     (define updated-cur-block (Block `((live-sets . ,(cdr live-sets))) instrs))
-     (define updated-blocks (dict-set blocks label updated-cur-block))
-     (define updated-live-afters (for/fold ([updated-live-afters live-afters])
-                                           ([adj (in-neighbors label-graph label)])
-                                   (dict-set updated-live-afters adj (list (set-union (car live-sets) (car (dict-ref live-afters adj))))))) 
-     (uncover_live_after_per_block e updated-live-afters updated-blocks label-graph rest)]
-    [else
-     blocks]))
+;(define (uncover_live_after_per_block e live-afters blocks label-graph topo-order)
+;  (match topo-order
+;    [(cons label rest)
+;     (define cur-block (dict-ref e label))
+;     (define instrs (Block-instr* cur-block))
+;     (define initial-live-after (dict-ref live-afters label))
+;     ;(displayln initial-live-after)
+;     (define live-sets (find-live-sets (reverse instrs) initial-live-after))
+;     (define updated-cur-block (Block `((live-sets . ,(cdr live-sets))) instrs))
+;     (define updated-blocks (dict-set blocks label updated-cur-block))
+;     (define updated-live-afters (for/fold ([updated-live-afters live-afters])
+;                                           ([adj (in-neighbors label-graph label)])
+;                                   (dict-set updated-live-afters adj (list (set-union (car live-sets) (car (dict-ref live-afters adj))))))) 
+;     (uncover_live_after_per_block e updated-live-afters updated-blocks label-graph rest)]
+;    [else
+;     blocks]))
 
 (define (transfer label live-after blocks)
   (define block (dict-ref blocks label)) 
@@ -700,36 +861,65 @@
     (for ([v (in-neighbors graph u)])
       (display (format "~a -> ~a;\n" u v)))))
 
-(define (build-intereference-graph-block instrs live-sets cur-graph)
+(define (get-register-if-memory-access arg)
+  (match arg
+    [(Deref r offset) (Reg r)]
+    [_ arg]))
+
+(define (get-variable-name arg)
+  (match arg
+    [(Var x) x]
+    [else (error "get-variable-name unhandled case" arg)]))
+
+(define (build-intereference-graph-block instrs live-sets cur-graph locals-types)
   (for ([live-set live-sets]
         [instr instrs])
+    
+    ;(display "1 instruction: ")
+    ;(displayln instr)
+
+    ;(display "2 live-set: ")
+    ;(displayln live-set)
+    
     (match instr
       [(Instr 'movq (list arg1 arg2))
        (for ([live-location (set->list live-set)])
          (cond
-           [(not (or (equal? arg1 live-location) (equal? arg2 live-location)))
-            (add-edge! cur-graph arg2 live-location)]))]
+           [(not (or (equal? (get-register-if-memory-access arg1) live-location) (equal? (get-register-if-memory-access arg2) live-location)))
+            (add-edge! cur-graph (get-register-if-memory-access arg2) live-location)]))]
       [(Instr 'movzbq (list arg1 arg2))
        (for ([live-location (set->list live-set)])
          (cond
-           [(not (or (equal? arg1 live-location) (equal? arg2 live-location)))
-            (add-edge! cur-graph arg2 live-location)]))]
+           [(not (or (equal? (get-register-if-memory-access arg1) live-location) (equal? (get-register-if-memory-access arg2) live-location)))
+            (add-edge! cur-graph (get-register-if-memory-access arg2) live-location)]))]
       [else
        (define write-locations (compute-write-locations instr))
        (for* ([live-location live-set]
               [write-location write-locations])
          (cond
            [(not (equal? live-location write-location))
-            (add-edge! cur-graph live-location write-location)]))]))
+            (add-edge! cur-graph live-location write-location)]))
+       (match instr
+         [(Callq 'collect n)
+          (for ([live-location live-set])
+            (cond
+              [(and (not (set-member? (list->set all-registers) live-location))
+                    (ptr-bool? (dict-ref locals-types (get-variable-name live-location))))
+               ;(displayln "***************: tuple variable is live during call to collect IMP IMP IMP")
+               (for ([r all-registers])
+                 (add-edge! cur-graph r live-location))] ;this adds repeat edges for caller saved registers, TODO: check if graph handles multiple edges as single. if not? then change all registers to callee-saved registers only
+              ))]
+         [_ (void)])
+       ]))
   cur-graph)
 
-(define (build-interference-graph blocks locals)
+(define (build-interference-graph blocks locals-types)
   (define interference-graph (undirected-graph '()))
 
   (for ([reg all-registers]) ;TODO: do we need to add vertices of all registers or only caller saved ones or none at all here?
     (add-vertex! interference-graph reg))
 
-  (for ([var locals]) ;need to do this otherwise error on var_test 6 or something
+  (for ([var (dict-keys locals-types)]) ;need to do this otherwise error on var_test 6 or something
     (add-vertex! interference-graph (Var var)))
   
   (for ([block_key (dict-keys blocks)])
@@ -737,7 +927,7 @@
     (match block
       [(Block sinfo instrs)
        (define live-sets (dict-ref sinfo 'live-sets))
-       (set! interference-graph (build-intereference-graph-block instrs live-sets interference-graph))
+       (set! interference-graph (build-intereference-graph-block instrs live-sets interference-graph locals-types))
        ;(print-graph interference-graph)
        ]))
   
@@ -748,8 +938,8 @@
 (define (build_interference p)
   (match p
     [(X86Program info blocks)
-     (define locals (dict-keys (dict-ref info 'locals-types)))
-     (define interference-graph (build-interference-graph blocks locals))
+     (define locals-types (dict-ref info 'locals-types))
+     (define interference-graph (build-interference-graph blocks locals-types))
      (X86Program (dict-set info 'conflicts interference-graph) blocks)]))
 
 (define graph-coloring-comparator                         
@@ -776,7 +966,7 @@
        (for ([instr instrs])
          (match instr
            ;no need to handle movzbq because it always moves al (rax) to something and no need of move biasing for rax
-           [(Instr 'movq (list arg1 arg2))
+           [(Instr 'movq (list arg1 arg2)) ;TODO: check if we also need to use get-locations function here too: prolly not
             (match* (arg1 arg2)
               [((Var x) (Var y))
                (add-edge! graph arg1 arg2)]
@@ -791,25 +981,29 @@
        ]))
   graph)
 
-(define (find-mex s cur)
+(define (find-mex s cur cur-node-type)
   (cond
+    [(and (> cur 10) (and cur-node-type (odd? cur))) ;vectors are assigned even colors ;change here everytime when available registers for coloring change
+     (find-mex s (+ cur 1) cur-node-type)]
+    [(and (> cur 10) (and (not cur-node-type) (even? cur))) ;non-vectors are assigned odd colors ;change here everytime when available registers for coloring change
+     (find-mex s (+ cur 1) cur-node-type)]
     [(set-member? s cur)
-     (find-mex s (+ cur 1))]
+     (find-mex s (+ cur 1) cur-node-type)]
     [else
      cur]))
 
-(define (find-correct-color potential-colors interfering-colors)
+(define (find-correct-color potential-colors interfering-colors cur-node-type)
   (define allowed-colors (set-subtract potential-colors interfering-colors))
-  (define mex (find-mex interfering-colors 0))
+  (define mex (find-mex interfering-colors 0 cur-node-type))
   (cond
     [(set-empty? allowed-colors)
      mex]
     [else
      (let ([move-bias-color (set-first allowed-colors)])
        (cond
-         [(< move-bias-color 13)
+         [(< move-bias-color 11) ;change here and in next case everytime there is a change in the available registers for coloring
           move-bias-color]
-         [(< mex 13)
+         [(< mex 11) ;TODO: check if move biasing will cause a problem in vectors being spilled to root stack
           mex]
          [else
           move-bias-color]))]))
@@ -884,7 +1078,7 @@
 ;    [_ pq]))
   
 
-(define (color-recur interference-graph move-graph saturation move-bias visited color pq)
+(define (color-recur interference-graph move-graph saturation move-bias visited color pq locals-types)
   (cond
     [(equal? (pqueue-count pq) 0)
      color]
@@ -893,12 +1087,13 @@
             [vis (dict-ref visited cur-node)])
        (match vis
          [#t
-          (color-recur interference-graph move-graph saturation move-bias visited color pq)]
+          (color-recur interference-graph move-graph saturation move-bias visited color pq locals-types)]
          [#f
           (define neighbors (for/list ([u (in-neighbors interference-graph cur-node)]) u)) ; maybe modify here to return only variables that are interfering: NOT NEEDED
           (define potential-colors (find-move-biasing-colors move-graph cur-node color (list->set neighbors) visited)) ; returns a set
           (define interfering-colors (find-interfering-colors color neighbors visited)); returns a set
-          (define cur-color (find-correct-color potential-colors interfering-colors))
+          (define cur-node-type (ptr-bool? (dict-ref locals-types (get-variable-name cur-node))))
+          (define cur-color (find-correct-color potential-colors interfering-colors cur-node-type))
           ;(displayln "cur-node neighbors potential-colors interfering-colors cur-color")
           ;(displayln cur-node)
           ;(displayln neighbors)
@@ -915,7 +1110,7 @@
           (define updated-visited (dict-set visited cur-node #t))
           (define updated-color (dict-set color cur-node cur-color))
           (define updated-pq (update-pq pq updated-saturation updated-move-bias neighbors))
-          (color-recur interference-graph move-graph updated-saturation updated-move-bias updated-visited updated-color updated-pq)]))]))
+          (color-recur interference-graph move-graph updated-saturation updated-move-bias updated-visited updated-color updated-pq locals-types)]))]))
 
 (define (get-initial-saturation-helper cur-saturation u u-color v-list)
   (match v-list
@@ -968,7 +1163,7 @@
     [_ cur-move-bias]))
 
 
-(define (color-graph interference-graph locals move-graph)
+(define (color-graph interference-graph locals move-graph locals-types)
 
   ;(display "locals: ")
   ;(displayln locals)
@@ -1008,15 +1203,15 @@
     (define cur-move-bias (dict-ref move-bias (Var var))) ; TODO: update move bias here using 'move-bias' ??
     (define cur-node (color_priority_node (Var var) cur-saturation cur-move-bias))
     (pqueue-push! pq cur-node))
-  (color-recur interference-graph move-graph saturation move-bias visited color pq))
+  (color-recur interference-graph move-graph saturation move-bias visited color pq locals-types))
 
 (define (get-used-callee-registers locals cur-used-callee variable-colors)
   (match locals
     [(cons var rest)
      (define var-color (dict-ref variable-colors (Var var)))
      (cond
-       [(and (>= var-color 8) (<= var-color 11)) (get-used-callee-registers rest (set-add cur-used-callee (dict-ref color-to-register var-color)) variable-colors)] ;TODO: change this hardcoded colors to something more general
-       [else (get-used-callee-registers rest cur-used-callee variable-colors)])] 
+       [(and (>= var-color 7) (<= var-color 10)) (get-used-callee-registers rest (set-add cur-used-callee (dict-ref color-to-register var-color)) variable-colors)] ;TODO: change this hardcoded colors to something more general
+       [else (get-used-callee-registers rest cur-used-callee variable-colors)])] ;change above everytime there is a change in registers available for coloring
     [_ cur-used-callee]))
 
 
@@ -1025,10 +1220,14 @@
     [(cons var rest)
      (define var-color (dict-ref variable-colors (Var var)))
      (cond
-       [(<= var-color 11)
+       [(<= var-color 10) ;change here everytime there is a change in registers available for coloring
         (assign-home-to-locals rest variable-colors used-callee (dict-set cur-locals-homes var (dict-ref color-to-register var-color)))]
-       [else
-        (define offset (* -8 (- (+ var-color used-callee) 11)))
+       [(even? var-color)
+        (define offset (* -8 (/ (- var-color 10) 2))) ;change here everytime there is a change in registers available for coloring, 10 is the max color of a register
+        (assign-home-to-locals rest variable-colors used-callee (dict-set cur-locals-homes var (Deref 'r15 offset)))]
+       [else ;(odd? var-color) ;first spill goes in -8(%rbp)
+        (define place (/ (- (+ var-color 1) 10) 2)) ;change here everytime there is a change in registers available for coloring, 10 is the max color of a register
+        (define offset (* -8 (+ place used-callee))) 
         (assign-home-to-locals rest variable-colors used-callee (dict-set cur-locals-homes var (Deref 'rbp offset)))])]
     [_ cur-locals-homes]))
 
@@ -1037,11 +1236,22 @@
     [(cons var rest)
      (define var-color (dict-ref variable-colors (Var var)))
      (cond
-       [(<= var-color 11)
+       [(or (<= var-color 10) (even? var-color)) ;change above everytime there is a change in registers available for coloring
         (get-stack-colors rest variable-colors cur-stack-colors)]
        [else
         (get-stack-colors rest variable-colors (set-add cur-stack-colors var-color))])]
     [_ cur-stack-colors]))
+
+(define (get-vector-stack-colors locals variable-colors cur-vector-stack-colors)
+  (match locals
+    [(cons var rest)
+     (define var-color (dict-ref variable-colors (Var var)))
+     (cond
+       [(or (<= var-color 10) (odd? var-color)) ;change above everytime there is a change in registers available for coloring
+        (get-vector-stack-colors rest variable-colors cur-vector-stack-colors)]
+       [else
+        (get-vector-stack-colors rest variable-colors (set-add cur-vector-stack-colors var-color))])]
+    [_ cur-vector-stack-colors]))
 
 (define (assign-homes-instr instrs locals-home)
   (match instrs
@@ -1066,13 +1276,16 @@
      ;(display "move-graph: ")
      ;(print-graph move-graph)
      ;(displayln "move-graph end")
-     (define variable-colors (color-graph interference-graph locals move-graph))
+     (define variable-colors (color-graph interference-graph locals move-graph (dict-ref info 'locals-types)))
      ;(display "variable-colors: ")
      ;(displayln variable-colors)
      (define used-callee (get-used-callee-registers locals (set) variable-colors))
      (define new-info (dict-set info 'used_callee used-callee))
      (define locals-homes (assign-home-to-locals locals variable-colors (set-count used-callee) '()))
      (define stack-variable-colors (get-stack-colors locals variable-colors (set)))
+     (define vector-stack-variable-colors (get-vector-stack-colors locals variable-colors (set)))
+     ;(define vector-stack-space (* 8 (set-count vector-stack-variable-colors)))
+     (set! new-info (dict-set new-info 'num-root-spills (set-count vector-stack-variable-colors)))
      (define stack-size (get-stack-space (set-count stack-variable-colors) (set-count used-callee)))
 
      (for ([block_key (dict-keys blocks)])
@@ -1081,7 +1294,7 @@
          [(Block sinfo instrs)
           (set! blocks (dict-set blocks block_key (Block sinfo (assign-homes-instr instrs locals-homes))))
           ]))
-       
+     
      (X86Program (dict-set new-info 'stack-space stack-size) blocks)]))
 
 ; assign homes of R1
@@ -1177,25 +1390,53 @@
 
      (X86Program info blocks)]))
 
-(define (pac-main stack-space used-callee)
+(define (pac-main stack-space used-callee vector-stack-spills)
   (define part-1 (list
                   (Instr 'pushq (list (Reg 'rbp)))
                   (Instr 'movq (list (Reg 'rsp) (Reg 'rbp)))))
+
   (define part-2 (for/list ([reg used-callee])
                    (Instr 'pushq (list reg))))
-  (define part-3 (list
-                  (Instr 'subq (list (Imm stack-space) (Reg 'rsp)))
-                  (Jmp 'start)))
-  (append part-1 part-2 part-3))
 
-(define (pac-conclusion stack-space reversed-used-callee)
+  (define part-3 (list
+                  (Instr 'subq (list (Imm stack-space) (Reg 'rsp)))))
+
+  (define heap_size 16384)
+  (define root_stack_size 16384)
+  
+  (define part-4 (list
+                  (Instr 'movq (list (Imm root_stack_size) (Reg 'rdi)))
+                  (Instr 'movq (list (Imm heap_size) (Reg 'rsi)))
+                  (Callq 'initialize 2)
+                  (Instr 'movq (list (Global 'rootstack_begin) (Reg 'r15)))))
+
+  (define part-5 (for/fold ([init_list '()])
+                           ([i (range (- vector-stack-spills 1) -1 -1)])
+                   (cons (Instr 'movq (list (Imm 0) (Deref 'r15 (* 8 i)))) init_list)))
+
+  ;(display "part-5: ")
+  ;(displayln part-5)
+                   
+  (define part-6 (list
+                  (Instr 'addq (list (Imm (* 8 vector-stack-spills)) (Reg 'r15)))))
+                   
+  (define part-7 (list
+                  (Jmp 'start)))
+                   
+  (append part-1 part-2 part-3 part-4 part-5 part-6 part-7))
+
+(define (pac-conclusion stack-space reversed-used-callee vector-stack-spills)
   (define part-1 (list
+                  (Instr 'subq (list (Imm (* 8 vector-stack-spills)) (Reg 'r15)))
                   (Instr 'addq (list (Imm stack-space) (Reg 'rsp)))))
+  
   (define part-2 (for/list ([reg reversed-used-callee])
                    (Instr 'popq (list reg))))
+
   (define part-3 (list
                   (Instr 'popq (list (Reg 'rbp)))
                   (Retq)))
+
   (append part-1 part-2 part-3))
 
 ;; prelude-and-conclusion : x86 -> x86
@@ -1205,8 +1446,9 @@
      (define used-callee (set->list (dict-ref info 'used_callee)))
      (define stack-space (- (dict-ref info 'stack-space) (* 8 (length used-callee))))
      ;(define start (dict-ref blocks 'start))
-     (define main (Block '() (pac-main stack-space used-callee)))
-     (define conclusion (Block '() (pac-conclusion stack-space (reverse used-callee))))
+     (define num-root-spills (dict-ref info 'num-root-spills))
+     (define main (Block '() (pac-main stack-space used-callee num-root-spills)))
+     (define conclusion (Block '() (pac-conclusion stack-space (reverse used-callee) num-root-spills)))
      (set! blocks (dict-set blocks 'main main))
      (set! blocks (dict-set blocks 'conclusion conclusion))
      (X86Program info blocks)]))
@@ -1217,19 +1459,20 @@
 ;; must be named "compiler.rkt"
 (define compiler-passes
   `(
-    ;("partial evaluator", pe-Lint, interp-Lvar)
-    ("shrink" ,shrink ,interp-Lwhile ,type-check-Lwhile)
-    ("uniquify" ,uniquify ,interp-Lwhile ,type-check-Lwhile)
-    ("uncover get" ,uncover-get! ,interp-Lwhile ,type-check-Lwhile)
-    ("remove complex opera*" ,remove-complex-opera* ,interp-Lwhile ,type-check-Lwhile)
-    ("explicate control" ,explicate-control ,interp-Cwhile ,type-check-Cwhile)
-    ("instruction selection" ,select-instructions ,interp-pseudo-x86-1)
-    ("constant propagation" ,constant-propagation ,interp-pseudo-x86-1)
-    ("liveness analysis" ,uncover_live ,interp-pseudo-x86-1)
-    ("build interference graph" ,build_interference ,interp-pseudo-x86-1)
-    ("register allocation" ,allocate_registers ,interp-x86-1)
-    ("remove jumps" ,remove-jumps ,interp-x86-1)
-    ("patch instructions" ,patch-instructions ,interp-x86-1)
-    ("prelude-and-conclusion" ,prelude-and-conclusion ,interp-x86-1)
+    ;("partial evaluator", pe-Lint, interp-Lvar)    
+    ("shrink" ,shrink ,interp-Lvec ,type-check-Lvec)
+    ("uniquify" ,uniquify ,interp-Lvec ,type-check-Lvec)
+    ("expose allocation" ,expose-allocation ,interp-Lvec-prime ,type-check-Lvec)
+    ("uncover get" ,uncover-get! ,interp-Lvec-prime ,type-check-Lvec)
+    ("remove complex opera*" ,remove-complex-opera* ,interp-Lvec-prime ,type-check-Lvec)
+    ("explicate control" ,explicate-control ,interp-Cvec ,type-check-Cvec)
+    ("instruction selection" ,select-instructions ,interp-pseudo-x86-2)
+    ("constant propagation" ,constant-propagation ,interp-pseudo-x86-2)
+    ("liveness analysis" ,uncover_live ,interp-pseudo-x86-2)
+    ("build interference graph" ,build_interference ,interp-pseudo-x86-2)
+    ("register allocation" ,allocate_registers ,interp-x86-2)
+    ("remove jumps" ,remove-jumps ,interp-x86-2)
+    ("patch instructions" ,patch-instructions ,interp-x86-2)
+    ("prelude-and-conclusion" ,prelude-and-conclusion ,interp-x86-2)
     ))
 
