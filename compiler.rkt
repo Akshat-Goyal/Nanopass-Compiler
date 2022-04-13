@@ -793,16 +793,20 @@
        ]))
   graph)
 
-(define (find-mex s cur)
+(define (find-mex s cur cur-node-type)
   (cond
+    [(and (> cur 10) (and cur-node-type (odd? cur))) ;vectors are assigned even colors ;change here everytime when available registers for coloring change
+     (find-mex s (+ cur 1) cur-node-type)]
+    [(and (> cur 10) (and (not cur-node-type) (even? cur))) ;non-vectors are assigned odd colors ;change here everytime when available registers for coloring change
+     (find-mex s (+ cur 1) cur-node-type)]
     [(set-member? s cur)
-     (find-mex s (+ cur 1))]
+     (find-mex s (+ cur 1) cur-node-type)]
     [else
      cur]))
 
-(define (find-correct-color potential-colors interfering-colors)
+(define (find-correct-color potential-colors interfering-colors cur-node-type)
   (define allowed-colors (set-subtract potential-colors interfering-colors))
-  (define mex (find-mex interfering-colors 0))
+  (define mex (find-mex interfering-colors 0 cur-node-type))
   (cond
     [(set-empty? allowed-colors)
      mex]
@@ -811,7 +815,7 @@
        (cond
          [(< move-bias-color 11) ;change here and in next case everytime there is a change in the available registers for coloring
           move-bias-color]
-         [(< mex 11)
+         [(< mex 11) ;TODO: check if move biasing will cause a problem in vectors being spilled to root stack
           mex]
          [else
           move-bias-color]))]))
@@ -886,7 +890,7 @@
 ;    [_ pq]))
   
 
-(define (color-recur interference-graph move-graph saturation move-bias visited color pq)
+(define (color-recur interference-graph move-graph saturation move-bias visited color pq locals-types)
   (cond
     [(equal? (pqueue-count pq) 0)
      color]
@@ -895,12 +899,13 @@
             [vis (dict-ref visited cur-node)])
        (match vis
          [#t
-          (color-recur interference-graph move-graph saturation move-bias visited color pq)]
+          (color-recur interference-graph move-graph saturation move-bias visited color pq locals-types)]
          [#f
           (define neighbors (for/list ([u (in-neighbors interference-graph cur-node)]) u)) ; maybe modify here to return only variables that are interfering: NOT NEEDED
           (define potential-colors (find-move-biasing-colors move-graph cur-node color (list->set neighbors) visited)) ; returns a set
           (define interfering-colors (find-interfering-colors color neighbors visited)); returns a set
-          (define cur-color (find-correct-color potential-colors interfering-colors))
+          (define cur-node-type (ptr-bool? (dict-ref locals-types (get-variable-name cur-node))))
+          (define cur-color (find-correct-color potential-colors interfering-colors cur-node-type))
           ;(displayln "cur-node neighbors potential-colors interfering-colors cur-color")
           ;(displayln cur-node)
           ;(displayln neighbors)
@@ -917,7 +922,7 @@
           (define updated-visited (dict-set visited cur-node #t))
           (define updated-color (dict-set color cur-node cur-color))
           (define updated-pq (update-pq pq updated-saturation updated-move-bias neighbors))
-          (color-recur interference-graph move-graph updated-saturation updated-move-bias updated-visited updated-color updated-pq)]))]))
+          (color-recur interference-graph move-graph updated-saturation updated-move-bias updated-visited updated-color updated-pq locals-types)]))]))
 
 (define (get-initial-saturation-helper cur-saturation u u-color v-list)
   (match v-list
@@ -970,7 +975,7 @@
     [_ cur-move-bias]))
 
 
-(define (color-graph interference-graph locals move-graph)
+(define (color-graph interference-graph locals move-graph locals-types)
 
   ;(display "locals: ")
   ;(displayln locals)
@@ -1010,7 +1015,7 @@
     (define cur-move-bias (dict-ref move-bias (Var var))) ; TODO: update move bias here using 'move-bias' ??
     (define cur-node (color_priority_node (Var var) cur-saturation cur-move-bias))
     (pqueue-push! pq cur-node))
-  (color-recur interference-graph move-graph saturation move-bias visited color pq))
+  (color-recur interference-graph move-graph saturation move-bias visited color pq locals-types))
 
 (define (get-used-callee-registers locals cur-used-callee variable-colors)
   (match locals
@@ -1029,8 +1034,12 @@
      (cond
        [(<= var-color 10) ;change here everytime there is a change in registers available for coloring
         (assign-home-to-locals rest variable-colors used-callee (dict-set cur-locals-homes var (dict-ref color-to-register var-color)))]
-       [else
-        (define offset (* -8 (- (+ var-color used-callee) 10))) ;change here everytime there is a change in registers available for coloring
+       [(even? var-color) ;below, it should be +8 itself and not -8 because vector stack grows upwards instead of downwards ;first vector spill goes in 0(%r15), next in +8(%r15)
+        (define offset (* 8 (/ (- var-color (+ 10 2)) 2))) ;change here everytime there is a change in registers available for coloring, 10 is the max color of a register
+        (assign-home-to-locals rest variable-colors used-callee (dict-set cur-locals-homes var (Deref 'r15 offset)))]
+       [else ;(odd? var-color) ;first spill goes in -8(%rbp)
+        (define place (/ (- (+ var-color 1) 10) 2)) ;change here everytime there is a change in registers available for coloring, 10 is the max color of a register
+        (define offset (* -8 (+ place used-callee))) 
         (assign-home-to-locals rest variable-colors used-callee (dict-set cur-locals-homes var (Deref 'rbp offset)))])]
     [_ cur-locals-homes]))
 
@@ -1039,11 +1048,22 @@
     [(cons var rest)
      (define var-color (dict-ref variable-colors (Var var)))
      (cond
-       [(<= var-color 10) ;change above everytime there is a change in registers available for coloring
+       [(or (<= var-color 10) (even? var-color)) ;change above everytime there is a change in registers available for coloring
         (get-stack-colors rest variable-colors cur-stack-colors)]
        [else
         (get-stack-colors rest variable-colors (set-add cur-stack-colors var-color))])]
     [_ cur-stack-colors]))
+
+(define (get-vector-stack-colors locals variable-colors cur-vector-stack-colors)
+  (match locals
+    [(cons var rest)
+     (define var-color (dict-ref variable-colors (Var var)))
+     (cond
+       [(or (<= var-color 10) (odd? var-color)) ;change above everytime there is a change in registers available for coloring
+        (get-vector-stack-colors rest variable-colors cur-vector-stack-colors)]
+       [else
+        (get-vector-stack-colors rest variable-colors (set-add cur-vector-stack-colors var-color))])]
+    [_ cur-vector-stack-colors]))
 
 (define (assign-homes-instr instrs locals-home)
   (match instrs
@@ -1068,13 +1088,16 @@
      ;(display "move-graph: ")
      ;(print-graph move-graph)
      ;(displayln "move-graph end")
-     (define variable-colors (color-graph interference-graph locals move-graph))
+     (define variable-colors (color-graph interference-graph locals move-graph (dict-ref info 'locals-types)))
      ;(display "variable-colors: ")
      ;(displayln variable-colors)
      (define used-callee (get-used-callee-registers locals (set) variable-colors))
      (define new-info (dict-set info 'used_callee used-callee))
      (define locals-homes (assign-home-to-locals locals variable-colors (set-count used-callee) '()))
      (define stack-variable-colors (get-stack-colors locals variable-colors (set)))
+     (define vector-stack-variable-colors (get-vector-stack-colors locals variable-colors (set)))
+     ;(define vector-stack-space (* 8 (set-count vector-stack-variable-colors)))
+     (set! new-info (dict-set new-info 'num-root-spills (set-count vector-stack-variable-colors)))
      (define stack-size (get-stack-space (set-count stack-variable-colors) (set-count used-callee)))
 
      (for ([block_key (dict-keys blocks)])
@@ -1083,7 +1106,7 @@
          [(Block sinfo instrs)
           (set! blocks (dict-set blocks block_key (Block sinfo (assign-homes-instr instrs locals-homes))))
           ]))
-       
+     
      (X86Program (dict-set new-info 'stack-space stack-size) blocks)]))
 
 ; assign homes of R1
@@ -1228,9 +1251,9 @@
     ("instruction selection" ,select-instructions ,interp-pseudo-x86-2)
     ("liveness analysis" ,uncover_live ,interp-pseudo-x86-2)
     ("build interference graph" ,build_interference ,interp-pseudo-x86-2)
-;    ("register allocation" ,allocate_registers ,interp-x86-1)
-;    ("remove jumps" ,remove-jumps ,interp-x86-1)
-;    ("patch instructions" ,patch-instructions ,interp-x86-1)
+    ("register allocation" ,allocate_registers ,interp-x86-2)
+    ("remove jumps" ,remove-jumps ,interp-x86-2)
+    ("patch instructions" ,patch-instructions ,interp-x86-2)
 ;    ("prelude-and-conclusion" ,prelude-and-conclusion ,interp-x86-1)
     ))
 
