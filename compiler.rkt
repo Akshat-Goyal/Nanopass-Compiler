@@ -373,18 +373,18 @@
 
 (define (explicate-effect e cont)
   (match e
-    [(Var x) cont]
-    [(Int n) cont]
-    [(Bool b) cont]
-    [(Void) cont]
-    [(Prim 'read '()) (Seq (Prim 'read '()) cont)]
-    [(Prim op es) cont]
+    [(Var x) (force cont)]
+    [(Int n) (force cont)]
+    [(Bool b) (force cont)]
+    [(Void) (force cont)]
+    [(Prim 'read '()) (Seq (Prim 'read '()) (force cont))]
+    [(Prim op es) (force cont)]
     [(Let x rhs body) (explicate-assign rhs x (explicate-effect body cont))]
     [(If cnd thn els)
      (define cont-block (create_block cont))
      (define B1 (explicate-effect thn cont-block))
      (define B2 (explicate-effect els cont-block))
-     (explicate_pred cnd B1 B2)]
+     (force (explicate_pred cnd B1 B2))]
     [(SetBang x rhs) (explicate-assign rhs x cont)]
     [(Begin es body)
      (match es
@@ -394,7 +394,7 @@
      (define loop-label (gensym 'block))
      (define thn (explicate-effect body (Goto loop-label)))
      (define els cont)
-     (define loop (explicate_pred cnd thn els))
+     (define loop (force (explicate_pred cnd thn els)))
      (set! basic-blocks (cons (cons loop-label loop) basic-blocks))
      (Goto loop-label)]
     [else (error "explicate-effect unhandled case" e)]))
@@ -417,7 +417,7 @@
      (define loop-label (gensym 'block))
      (define thn (explicate-effect body (Goto loop-label)))
      (define els (Return (Void)))
-     (define loop (explicate_pred cnd thn els))
+     (define loop (force (explicate_pred cnd thn els)))
      (set! basic-blocks (cons (cons loop-label loop) basic-blocks))
      (Goto loop-label)]
     [else (error "explicate-tail unhandled case" e)]))
@@ -444,7 +444,7 @@
      (define loop-label (gensym 'block))
      (define thn (explicate-effect body (Goto loop-label)))
      (define els (Seq (Assign (Var x) (Void)) cont))
-     (define loop (explicate_pred cnd thn els))
+     (define loop (force (explicate_pred cnd thn els)))
      (set! basic-blocks (cons (cons loop-label loop) basic-blocks))
      (Goto loop-label)]
     [else (error "explicate-assign unhandled case" e)]))
