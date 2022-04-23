@@ -201,10 +201,6 @@
     [(Prim op es)
      (Prim op (for/list ([e es]) (shrink-exp e)))]))
 
-;(define (shrink p)
-;  (match p
-;    [(Program info e) (Program info (shrink-exp e))]))
-
 (define (shrink p)
   (match p
     [(ProgramDefsExp info defs body)
@@ -240,13 +236,41 @@
       [(WhileLoop cnd body)
        (WhileLoop ((uniquify-exp env) cnd) ((uniquify-exp env) body))]
       [(HasType e T) (HasType ((uniquify-exp env) e) T)]
+      [(Apply func-name es)
+       (Apply ((uniquify-exp env) func-name) (for/list ([e es]) ((uniquify-exp env) e)))]
       [(Prim op es)
        (Prim op (for/list ([e es]) ((uniquify-exp env) e)))])))
 
 ;; uniquify : R1 -> R1
+;(define (uniquify p)
+;  (match p
+;    [(Program info e) (Program info ((uniquify-exp '()) e))]))
+
 (define (uniquify p)
   (match p
-    [(Program info e) (Program info ((uniquify-exp '()) e))]))
+    [(ProgramDefs info defs)
+     (define uniquify-env (for/fold ([env_tmp '()])
+                           ([d defs])
+                   (match d
+                     [(Def func-name args ret-type env exp)
+                      (cond
+                        [(equal? func-name 'main)
+                         (dict-set env_tmp func-name func-name)]
+                        [else
+                         (dict-set env_tmp func-name (gensym func-name))])])))
+     (define uniquified-defs (for/list ([d defs])
+                               (match d
+                                    [(Def func-name (list `[,xs : ,ps] ...) ret-type env exp)
+                                     ; need to updated uniquify-env here to take args into account
+                                     (define local-env (for/fold ([env-temp uniquify-env])
+                                                                 ([arg-name xs])
+                                                         (dict-set env-temp arg-name (gensym arg-name))))
+                                     (define uniquified-args (for/fold ([temp '()])
+                                                                       ([x xs]
+                                                                        [p ps])
+                                                               (append temp (list `[,(dict-ref local-env x) : ,p]))))
+                                     (Def (dict-ref local-env func-name) uniquified-args ret-type env ((uniquify-exp local-env) exp))])))
+     (ProgramDefs info uniquified-defs)]))
 
 (define (expose-allocation-exp exp)
   (match exp
@@ -1479,7 +1503,7 @@
   `(
     ;("partial evaluator", pe-Lint, interp-Lvar)    
     ("shrink" ,shrink ,interp-Lfun ,type-check-Lfun)
-    ;("uniquify" ,uniquify ,interp-Lvec ,type-check-Lvec)
+    ("uniquify" ,uniquify ,interp-Lfun ,type-check-Lfun)
     ;("expose allocation" ,expose-allocation ,interp-Lvec-prime ,type-check-Lvec)
     ;("uncover get" ,uncover-get! ,interp-Lvec-prime ,type-check-Lvec)
     ;("remove complex opera*" ,remove-complex-opera* ,interp-Lvec-prime ,type-check-Lvec)
