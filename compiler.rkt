@@ -23,6 +23,7 @@
 ;(require "type-check-Cvec.rkt")
 (require "type-check-Lfun.rkt")
 (require "interp-Lfun.rkt")
+(require "interp-Lfun-prime.rkt")
 (require "utilities.rkt")
 (require graph)
 (require "./priority_queue.rkt")
@@ -241,11 +242,6 @@
       [(Prim op es)
        (Prim op (for/list ([e es]) ((uniquify-exp env) e)))])))
 
-;; uniquify : R1 -> R1
-;(define (uniquify p)
-;  (match p
-;    [(Program info e) (Program info ((uniquify-exp '()) e))]))
-
 (define (uniquify p)
   (match p
     [(ProgramDefs info defs)
@@ -272,6 +268,74 @@
                                      (Def (dict-ref local-env func-name) uniquified-args ret-type env ((uniquify-exp local-env) exp))])))
      (ProgramDefs info uniquified-defs)]))
 
+
+(define (reveal-exp env local-arities)
+  (lambda (e)
+    (match e
+      [(Var x)
+       (cond
+         [(set-member? env x)
+          ; this is a let bound variable not a function
+          (Var x)]
+         [else
+          (displayln "COMING HERE !!!!!")
+          (displayln x)
+          (FunRef x (dict-ref local-arities x))])]
+      [(Int n) (Int n)]
+      [(Bool b) (Bool b)]
+      [(Void) (Void)]
+      [(Let x e body)
+       (define new-e ((reveal-exp env local-arities) e))
+       (define new-env (set-add env x))
+       (define new-body ((reveal-exp new-env local-arities) body))
+       (Let x new-e new-body)]
+      [(If cnd thn els)
+       (If ((reveal-exp env local-arities) cnd) ((reveal-exp env local-arities) thn) ((reveal-exp env local-arities) els))]
+      [(SetBang x rhs)
+       (SetBang x ((reveal-exp env local-arities) rhs))]
+      [(Begin es body)
+       (Begin (for/list ([e es]) ((reveal-exp env local-arities) e)) ((reveal-exp env local-arities) body))]
+      [(WhileLoop cnd body)
+       (WhileLoop ((reveal-exp env local-arities) cnd) ((reveal-exp env local-arities) body))]
+      [(HasType e T) (HasType ((reveal-exp env local-arities) e) T)]
+      [(Apply func-name es)
+       (Apply ((reveal-exp env local-arities) func-name) (for/list ([e es]) ((reveal-exp env local-arities) e)))]
+      [(Prim op es)
+       (Prim op (for/list ([e es]) ((reveal-exp env local-arities) e)))])))
+
+(define (reveal_functions p)
+  (match p
+    [(ProgramDefs info defs)
+     (define global-arities (for/fold ([tmp '()]) ([d defs])
+                              (match d
+                                [(Def func-name args ret-type env exp)
+                                 (dict-set tmp func-name (length args))])))
+     (define revealed-defs (for/list ([d defs])
+                             (match d
+                               [(Def func-name (list `[,xs : ,ps] ...) ret-type env exp)
+                                (define-values (local-arities env) (for/fold ([tmp global-arities] [tmp-env (set)])
+                                                                ([x xs] [p ps])
+                                                              (values
+                                                               (match p
+                                                                 [`(,ts* ... -> ,rt)
+                                                                  (dict-set tmp x (length ts*))]
+                                                                 [el
+                                                                  ; not a function
+                                                                  tmp])
+                                                               (match p
+                                                                 [`(,ts* ... -> ,rt)
+                                                                  tmp-env]
+                                                                 [el
+                                                                  (set-add tmp-env x)]))))
+                                ; restoring args back again. There should be a better way to do this.
+                                (define args (for/fold ([temp '()])
+                                                       ([x xs] [p ps])
+                                               (append temp (list `[,x : ,p]))))
+                                (Def func-name args ret-type env ((reveal-exp env local-arities) exp))])))
+     (ProgramDefs info revealed-defs)]))
+     
+ 
+ 
 (define (expose-allocation-exp exp)
   (match exp
     [(Var x) (Var x)]
@@ -1504,6 +1568,7 @@
     ;("partial evaluator", pe-Lint, interp-Lvar)    
     ("shrink" ,shrink ,interp-Lfun ,type-check-Lfun)
     ("uniquify" ,uniquify ,interp-Lfun ,type-check-Lfun)
+    ("reveal functions" ,reveal_functions ,interp-Lfun-prime ,type-check-Lfun)
     ;("expose allocation" ,expose-allocation ,interp-Lvec-prime ,type-check-Lvec)
     ;("uncover get" ,uncover-get! ,interp-Lvec-prime ,type-check-Lvec)
     ;("remove complex opera*" ,remove-complex-opera* ,interp-Lvec-prime ,type-check-Lvec)
@@ -1517,4 +1582,3 @@
     ;("patch instructions" ,patch-instructions ,interp-x86-2)
     ;("prelude-and-conclusion" ,prelude-and-conclusion ,interp-x86-2)
     ))
-
