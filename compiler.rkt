@@ -602,6 +602,16 @@
     [(Void) #t]
     [_ #f]))
 
+(define (not-atom-in-list L ind)
+  (match L
+    [(cons first rest)
+     (cond
+       [(Atm? first)
+        (not-atom-in-list rest (+ 1 ind))]
+       [else ind])]
+    [else
+     ind]))
+
 (define (rco-exp env)
   (lambda (e)
     (match e
@@ -626,7 +636,22 @@
       [(Allocate len T) (Allocate len T)]
       [(GlobalValue var) (GlobalValue var)]
       [(Apply fun-name es)
-       (Apply ((rco-exp env) fun-name) (for/list ([e es]) ((rco-exp env) e)))]
+       (cond
+         [(Atm? fun-name)
+          ; arguments may still not be atomic
+          (define first-ind (not-atom-in-list es 0))
+          (cond
+            [(>= first-ind (length es))
+             ; every argument is an atom
+             (Apply fun-name es)]
+            [else
+             (define complex-argument (list-ref es first-ind))
+             (define tmp-var ((rco-atom env) complex-argument))
+             (define new-es (list-set es first-ind (Var tmp-var)))
+             (Let tmp-var ((rco-exp env) complex-argument) ((rco-exp env) (Apply fun-name new-es)))])]
+         [else
+          (define tmp-var ((rco-atom env) fun-name))
+          (Let tmp-var ((rco-exp env) fun-name) ((rco-exp env) (Apply (Var tmp-var) es)))])]
       [(Prim op (list e1))
        (cond
          [(Atm? e1) (Prim op (list e1))]
@@ -803,13 +828,19 @@
     [else (error "explicate-assign unhandled case" e)]))
 
 ;; explicate-control : R1 -> C0
-(define (explicate-control p)
-  (match p 
-    [(Program info e)
+(define (explicate-control-def d)
+  (match d
+    [(Def func-name args ret-type info exp)
      (set! basic-blocks (list))
-     (define tail (explicate-tail e))
+     (define tail (explicate-tail exp))
      (set! basic-blocks (cons (cons 'start tail) basic-blocks))
-     (CProgram info basic-blocks)]))
+     (Def func-name args ret-type info basic-blocks)]))
+
+
+(define (explicate-control p)
+  (match p
+    [(ProgramDefs info defs)
+     (ProgramDefs info (for/list ([d defs]) (explicate-control-def d)))]))
 
 (define (si-atm e)
   (match e
