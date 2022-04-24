@@ -462,6 +462,7 @@
 (define (expose-allocation-exp exp)
   (match exp
     [(Var x) (Var x)]
+    [(FunRef x n) (FunRef x n)]
     [(Int n) (Int n)]
     [(Bool b) (Bool b)]
     [(Void) (Void)]
@@ -512,13 +513,21 @@
             body))
 
         vector-element-exps])]
+    [(Apply fun-name es)
+     (Apply (expose-allocation-exp fun-name) (for/list ([e es]) (expose-allocation-exp e)))]
     ; e cannot be anything else? TODO: check this
     [(Prim op es)
      (Prim op (for/list ([e es]) (expose-allocation-exp e)))]))
 
+(define (expose-allocation-def d)
+  (match d
+    [(Def func-name args ret-type env exp)
+     (Def func-name args ret-type env (expose-allocation-exp exp))]))
+
 (define (expose-allocation p)
   (match p
-    [(Program info e) (Program info (expose-allocation-exp e))]))
+    [(ProgramDefs info defs)
+     (ProgramDefs info (for/list ([d defs]) (expose-allocation-def d)))]))
 
 (define (collect-set! e)
   (match e
@@ -1693,7 +1702,7 @@
     ("uniquify" ,uniquify ,interp-Lfun ,type-check-Lfun)
     ("reveal functions" ,reveal_functions ,interp-Lfun-prime ,type-check-Lfun)
     ("limit functions" ,limit_functions ,interp-Lfun-prime ,type-check-Lfun)
-    ;("expose allocation" ,expose-allocation ,interp-Lvec-prime ,type-check-Lvec)
+    ("expose allocation" ,expose-allocation ,interp-Lfun-prime ,type-check-Lfun)
     ;("uncover get" ,uncover-get! ,interp-Lvec-prime ,type-check-Lvec)
     ;("remove complex opera*" ,remove-complex-opera* ,interp-Lvec-prime ,type-check-Lvec)
     ;("explicate control" ,explicate-control ,interp-Cvec ,type-check-Cvec)
