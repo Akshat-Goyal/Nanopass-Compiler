@@ -280,6 +280,8 @@
          [else
           (displayln "COMING HERE !!!!!")
           (displayln x)
+
+          ; NO NEED TO PASS (Int n) HERE ???????????????????
           (FunRef x (dict-ref local-arities x))])]
       [(Int n) (Int n)]
       [(Bool b) (Bool b)]
@@ -292,6 +294,7 @@
       [(If cnd thn els)
        (If ((reveal-exp env local-arities) cnd) ((reveal-exp env local-arities) thn) ((reveal-exp env local-arities) els))]
       [(SetBang x rhs)
+       ; do we need to change here ??
        (SetBang x ((reveal-exp env local-arities) rhs))]
       [(Begin es body)
        (Begin (for/list ([e es]) ((reveal-exp env local-arities) e)) ((reveal-exp env local-arities) body))]
@@ -313,7 +316,7 @@
      (define revealed-defs (for/list ([d defs])
                              (match d
                                [(Def func-name (list `[,xs : ,ps] ...) ret-type env exp)
-                                (define-values (local-arities env) (for/fold ([tmp global-arities] [tmp-env (set)])
+                                (define-values (local-arities reveal-env) (for/fold ([tmp global-arities] [tmp-env (set)])
                                                                 ([x xs] [p ps])
                                                               (values
                                                                (match p
@@ -331,11 +334,131 @@
                                 (define args (for/fold ([temp '()])
                                                        ([x xs] [p ps])
                                                (append temp (list `[,x : ,p]))))
-                                (Def func-name args ret-type env ((reveal-exp env local-arities) exp))])))
+                                (Def func-name args ret-type env ((reveal-exp reveal-env local-arities) exp))])))
      (ProgramDefs info revealed-defs)]))
      
- 
- 
+
+(define (first-n L n res)
+  (cond
+    [(<= n 0)
+     res]
+    [(first-n (cdr L) (- n 1) (append res (list (car L))))]))
+
+(define (except-n L n res)
+  (cond
+    [(> n 0)
+     (except-n (cdr L) (- n 1) res)]
+    [else
+     (match L
+       [(cons first rest)
+        (except-n (cdr L) n (append res (list first)))]
+       [_
+        res])]))
+
+(define (limit_functions_exp e env tup)
+  (match e
+    [(Var x)
+     (cond
+       [(dict-has-key? env x)
+        ; this is a function argument
+        (define ind (dict-ref env x))
+        (if (equal? ind -1)
+            (Var x)
+            (Prim 'vector-ref (list (Var tup) (Int ind))))]
+       [else
+        (Var x)])]
+    [(FunRef x n)
+     ;(cond
+     ;  [(dict-has-key? env x)
+     ;   ; this is a function argument
+     ;   (define ind (dict-ref env x))
+     ;   (if (equal? ind -1)
+     ;       (FunRef x n)
+     ;       (FunRef  (Prim 'vector-ref (list tup (Int ind))) n))]
+     ;  [else
+     ;   (FunRef x n)])]
+
+     ; NOT SURE WHAT TO DO HERE
+     (FunRef x n)]
+    [(Int n) (Int n)]
+    [(Bool b) (Bool b)]
+    [(Void) (Void)]
+    [(Let x e body)
+     (Let x (limit_functions_exp e env tup) (limit_functions_exp body env tup))]
+    [(If cnd thn els)
+     (If (limit_functions_exp cnd env tup) (limit_functions_exp thn env tup) (limit_functions_exp els env tup))]
+    [(SetBang x rhs)
+     (cond
+       [(dict-has-key? env x)
+        ; this is a function argument
+        (define ind (dict-ref env x))
+        (if (equal? ind -1)
+            (Var x)
+            (Prim 'vector-set (list (Var tup) (Int ind) (limit_functions_exp rhs env tup))))]  
+       [else
+        (SetBang x (limit_functions_exp rhs env tup))])]
+    [(Begin es body)
+     (Begin (for/list ([e es]) (limit_functions_exp e env tup)) (limit_functions_exp body env tup))]
+    [(WhileLoop cnd body)
+     (WhileLoop (limit_functions_exp cnd env tup) (limit_functions_exp body env tup))]
+    [(HasType e T) (HasType (limit_functions_exp e env tup) T)]
+    [(Apply func-name es)
+     (define updated-es (for/list ([e es]) (limit_functions_exp e env tup)))
+     (define updated-func-name (limit_functions_exp func-name env tup))
+     (cond
+       [(< (length updated-es) 7)
+        (Apply updated-func-name updated-es)]
+       [else
+        (define starting-es (first-n updated-es 5 '()))
+        (define rem-es (except-n updated-es 5 '()))
+        (Apply updated-func-name (append starting-es (list (Prim 'vector rem-es))))])]
+    [(Prim op es)
+     (Prim op (for/list ([e es]) (limit_functions_exp e env tup)))]))
+
+(define (limit_functions_def d)
+  (match d
+    [(Def func-name args ret-type env exp)
+     (cond
+       [(< (length args) 7)
+        ; we still need to updated body of function here
+        (match args
+          [(list `[,xs : ,ps] ...)
+           (define limit-env (for/fold ([tmp '()]) ([x xs])
+                               (dict-set tmp x -1)))
+           (define updated-exp (limit_functions_exp exp limit-env ""))
+           (Def func-name args ret-type env updated-exp)])]
+       [else
+        (match args
+          [(list `[,xs : ,ps] ...)
+           (define starting-xs (first-n xs 5 '()))
+           (define rem-xs (except-n xs 5 '()))
+           (define starting-ps (first-n ps 5 '()))
+           (define rem-ps (except-n ps 5 '()))
+           (define new-tup (gensym 'tup))
+           (define updated-xs (append starting-xs (list new-tup)))
+           (displayln "writing rem-ps")
+           (displayln rem-ps)
+           (define updated-ps (append starting-ps (list (append `(Vector) rem-ps))))
+           (displayln updated-ps)
+           (define updated-args (for/fold ([temp '()])
+                                          ([x updated-xs] [p updated-ps])
+                                  (append temp (list `[,x : ,p]))))
+           (displayln updated-args)
+           (displayln "")
+           (define limit-env-temp (for/fold ([tmp '()]) ([x starting-xs])
+                              (dict-set tmp x -1)))
+           (define limit-env (for/fold ([tmp limit-env-temp]) ([x rem-xs] [ind (in-naturals)])
+                         (dict-set tmp x ind)))
+           (define updated-exp (limit_functions_exp exp limit-env new-tup))
+           (Def func-name updated-args ret-type env updated-exp)])])]))
+           
+
+(define (limit_functions p)
+  (match p
+    [(ProgramDefs info defs)
+     (ProgramDefs info (for/list ([d defs]) (limit_functions_def d)))]))
+
+
 (define (expose-allocation-exp exp)
   (match exp
     [(Var x) (Var x)]
@@ -1569,6 +1692,7 @@
     ("shrink" ,shrink ,interp-Lfun ,type-check-Lfun)
     ("uniquify" ,uniquify ,interp-Lfun ,type-check-Lfun)
     ("reveal functions" ,reveal_functions ,interp-Lfun-prime ,type-check-Lfun)
+    ("limit functions" ,limit_functions ,interp-Lfun-prime ,type-check-Lfun)
     ;("expose allocation" ,expose-allocation ,interp-Lvec-prime ,type-check-Lvec)
     ;("uncover get" ,uncover-get! ,interp-Lvec-prime ,type-check-Lvec)
     ;("remove complex opera*" ,remove-complex-opera* ,interp-Lvec-prime ,type-check-Lvec)

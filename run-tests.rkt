@@ -40,7 +40,7 @@
 ;(interp-tests "while" type-check-Lvec compiler-passes interp-Lvec "while_test" (tests-for "while"))
 ;(interp-tests "cond" type-check-Lvec compiler-passes interp-Lvec "cond_test" (tests-for "cond"))
 ;(interp-tests "var" type-check-Lvec compiler-passes interp-Lvec "var_test" (tests-for "var"))
-(interp-tests "funcctions" type-check-Lfun compiler-passes interp-Lfun "functions_test" (tests-for "functions"))
+(interp-tests "func" type-check-Lfun compiler-passes interp-Lfun "func_test" (tests-for "func"))
 
 
 ;; Uncomment the following when all the passes are complete to
