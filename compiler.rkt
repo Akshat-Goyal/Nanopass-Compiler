@@ -374,7 +374,7 @@
         (define ind (dict-ref env x))
         (if (equal? ind -1)
             (FunRef x n)
-            (Prim 'vector-ref (list tup (Int ind))))]
+            (Prim 'vector-ref (list (Var tup) (Int ind))))]
        [else
         (FunRef x n)])]
 
@@ -392,7 +392,7 @@
         (define ind (dict-ref env x))
         (if (equal? ind -1)
             (SetBang x (limit_functions_exp rhs env tup))
-            (Prim 'vector-set (list (Var tup) (Int ind) (limit_functions_exp rhs env tup))))]  
+            (Prim 'vector-set! (list (Var tup) (Int ind) (limit_functions_exp rhs env tup))))]  
        [else
         (SetBang x (limit_functions_exp rhs env tup))])]
     [(Begin es body)
@@ -1715,8 +1715,8 @@
     ("uniquify" ,uniquify ,interp-Lfun ,type-check-Lfun)
     ("reveal functions" ,reveal_functions ,interp-Lfun-prime ,type-check-Lfun)
     ("limit functions" ,limit_functions ,interp-Lfun-prime ,type-check-Lfun)
-    ("expose allocation" ,expose-allocation ,interp-Lfun-prime ,type-check-Lfun)
-    ("uncover get" ,uncover-get! ,interp-Lfun-prime ,type-check-Lfun)
+    ;("expose allocation" ,expose-allocation ,interp-Lfun-prime ,type-check-Lfun)
+    ;("uncover get" ,uncover-get! ,interp-Lfun-prime ,type-check-Lfun)
     ;("remove complex opera*" ,remove-complex-opera* ,interp-Lvec-prime ,type-check-Lvec)
     ;("explicate control" ,explicate-control ,interp-Cvec ,type-check-Cvec)
     ;("instruction selection" ,select-instructions ,interp-pseudo-x86-2)
