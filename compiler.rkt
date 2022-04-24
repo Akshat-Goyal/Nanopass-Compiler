@@ -24,6 +24,8 @@
 (require "type-check-Lfun.rkt")
 (require "interp-Lfun.rkt")
 (require "interp-Lfun-prime.rkt")
+(require "interp-Cfun.rkt")
+(require "type-check-Cfun.rkt")
 (require "utilities.rkt")
 (require graph)
 (require "./priority_queue.rkt")
@@ -737,6 +739,12 @@
      (explicate_pred cnd^ B1 B2)]
     [(Begin es body)
      (explicate-effect (Begin es (Void)) (explicate_pred body thn els))]
+    [(Apply fun-name es)
+     (define tmp (gensym 'tmp))
+     (Seq (Assign (Var tmp) (Call fun-name es))
+                     (IfStmt (Prim 'eq? (list (Var tmp) (Bool #t)))
+                             (create_block thn)
+                             (create_block els)))]
     [else (error "explicate_pred unhandled case" cnd)]))
 
 ; (let ([x (if (let ([x #t]) (if x x (not x))) #t #f)]) (if x 10 (- 10)))
@@ -744,6 +752,7 @@
 (define (explicate-effect e cont)
   (match e
     [(Var x) cont]
+    [(FunRef x n) cont]
     [(Int n) cont]
     [(Bool b) cont]
     [(Void) cont]
@@ -768,6 +777,7 @@
      (define loop (explicate_pred cnd thn els))
      (set! basic-blocks (cons (cons loop-label loop) basic-blocks))
      (Goto loop-label)]
+    [(Apply fun-name es) cont]
     [(Allocate len T) cont]
     [(GlobalValue var) cont]
     [(Collect bytes) (Seq (Collect bytes) cont)]
@@ -777,6 +787,7 @@
   (match e
     [(Var x) (Return (Var x))]
     [(Int n) (Return (Int n))]
+    [(FunRef x n) (Return (FunRef x n))]
     [(Bool b) (Return (Bool b))]
     [(Void) (Return (Void))]
     [(Let x rhs body) (explicate-assign rhs x (explicate-tail body))]
@@ -794,6 +805,8 @@
      (define loop (explicate_pred cnd thn els))
      (set! basic-blocks (cons (cons loop-label loop) basic-blocks))
      (Goto loop-label)]
+    [(Apply fun-name es)
+     (TailCall fun-name es)]
     [(Allocate len T) (Return (Allocate len T))]
     [(GlobalValue var) (Return (GlobalValue var))]
     [else (error "explicate-tail unhandled case" e)]))
@@ -804,6 +817,7 @@
     [(Int n) (Seq (Assign (Var x) (Int n)) cont)]
     [(Bool b) (Seq (Assign (Var x) (Bool b)) cont)]
     [(Void) (Seq (Assign (Var x) (Void)) cont)]
+    [(FunRef x n) (Seq (Assign (Var x) (FunRef x n)) cont)]
     [(Let y rhs body) (explicate-assign rhs y (explicate-assign body x cont))]
     [(Prim op es) (Seq (Assign (Var x) e) cont)] ;handles vector operations too
     [(If cnd exp1 exp2)
@@ -822,21 +836,24 @@
      (define loop (explicate_pred cnd thn els))
      (set! basic-blocks (cons (cons loop-label loop) basic-blocks))
      (Goto loop-label)]
+    [(Apply fun-name es) (Seq (Assign (Var x) (Call fun-name es)) cont)]
     [(Allocate len T) (Seq (Assign (Var x) e) cont)]
     [(GlobalValue var) (Seq (Assign (Var x) e) cont)]
     [(Collect bytes) (Seq (Collect bytes) cont)]
     [else (error "explicate-assign unhandled case" e)]))
 
-;; explicate-control : R1 -> C0
+
 (define (explicate-control-def d)
   (match d
     [(Def func-name args ret-type info exp)
      (set! basic-blocks (list))
      (define tail (explicate-tail exp))
-     (set! basic-blocks (cons (cons 'start tail) basic-blocks))
+     
+     (set! basic-blocks (cons (cons (symbol-append func-name 'start) tail) basic-blocks))
+     ;(set! basic-blocks (cons (cons 'mainstart tail) basic-blocks))
      (Def func-name args ret-type info basic-blocks)]))
 
-
+;; explicate-control : R1 -> C0
 (define (explicate-control p)
   (match p
     [(ProgramDefs info defs)
@@ -1757,7 +1774,7 @@
     ("expose allocation" ,expose-allocation ,interp-Lfun-prime ,type-check-Lfun)
     ("uncover get" ,uncover-get! ,interp-Lfun-prime ,type-check-Lfun)
     ("remove complex opera*" ,remove-complex-opera* ,interp-Lfun-prime ,type-check-Lfun)
-    ;("explicate control" ,explicate-control ,interp-Cvec ,type-check-Cvec)
+    ("explicate control" ,explicate-control ,interp-Cfun ,type-check-Cfun)
     ;("instruction selection" ,select-instructions ,interp-pseudo-x86-2)
     ;("constant propagation" ,constant-propagation ,interp-pseudo-x86-2)
     ;("liveness analysis" ,uncover_live ,interp-pseudo-x86-2)
