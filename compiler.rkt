@@ -282,8 +282,6 @@
          [else
           (displayln "COMING HERE !!!!!")
           (displayln x)
-
-          ; NO NEED TO PASS (Int n) HERE ???????????????????
           (FunRef x (dict-ref local-arities x))])]
       [(Int n) (Int n)]
       [(Bool b) (Bool b)]
@@ -329,7 +327,7 @@
                                                                   tmp])
                                                                (match p
                                                                  [`(,ts* ... -> ,rt)
-                                                                  tmp-env]
+                                                                  (set-add tmp-env x)]
                                                                  [el
                                                                   (set-add tmp-env x)]))))
                                 ; restoring args back again. There should be a better way to do this.
@@ -901,14 +899,12 @@
 (define (si-exp v e cont [op-x86-dict '((+ . addq) (- . subq))])
   (match e
     [(Var y) (cons (Instr 'movq (list (si-atm e) v)) cont)]
+    [(FunRef x n) (cons (Instr 'leaq (list (Global x) v)) cont)]
     [(Int n) (cons (Instr 'movq (list (si-atm e) v)) cont)]
     [(Bool b) (cons (Instr 'movq (list (si-atm e) v)) cont)]
     [(Void) (cons (Instr 'movq (list (si-atm e) v)) cont)]
     [(GlobalValue var) (cons (Instr 'movq (list (Global var) v)) cont)]
     [(Allocate len `(Vector ,T ...))
-     ;(display "2: ")
-     ;(displayln T)
-     ;(displayln (cdr T))
      (define tag (get-vector-metadata len T 0 7))
      (append (list (Instr 'movq (list (Global 'free_ptr) (Reg 'r11)))
                    (Instr 'addq (list (Imm (* 8 (+ len 1))) (Global 'free_ptr)))
@@ -954,7 +950,12 @@
     [(Prim '+ (list e1 e2))
      #:when (equal? e2 v) (cons (Instr 'addq (list (si-atm e1) v)) cont)]
     [(Prim op (list e1 e2))
-     (append (list (Instr 'movq (list (si-atm e1) v)) (Instr (dict-ref op-x86-dict op) (list (si-atm e2) v))) cont)]))
+     (append (list (Instr 'movq (list (si-atm e1) v)) (Instr (dict-ref op-x86-dict op) (list (si-atm e2) v))) cont)]
+    [(Call fun-name args)
+      (define argument-instructions (for/list ([arg args] [reg argument-registers]) (Instr 'movq (list (si-atm arg) reg))))
+      (define callq-instr (IndirectCallq fun-name (length args)))
+      (define mov-instr (Instr 'movq (list (Reg 'rax) v)))
+      (append argument-instructions (list callq-instr) (list mov-instr))]))
 
 (define (si-stmt e cont)
   (match e
@@ -967,10 +968,10 @@
                                    (Instr 'movq (list (Imm bytes) (Reg 'rsi)))
                                    (Callq 'collect 2)) cont)]))
 
-(define (si-tail e)
+(define (si-tail e func-name)
   (match e
-    [(Return exp) (si-exp (Reg 'rax) exp (list (Jmp 'conclusion)))]
-    [(Seq stmt tail) (si-stmt stmt (si-tail tail))]
+    [(Return exp) (si-exp (Reg 'rax) exp (list (Jmp  (symbol-append func-name 'conclusion))))]
+    [(Seq stmt tail) (si-stmt stmt (si-tail tail func-name))]
     [(Goto label)
      (list (Jmp label))]
     [(IfStmt (Prim 'eq? (list atm1 atm2)) (Goto thn) (Goto els))
@@ -982,14 +983,33 @@
     [(IfStmt (Prim '> (list atm1 atm2)) (Goto thn) (Goto els))
      (list (Instr 'cmpq (list (si-atm atm2) (si-atm atm1))) (JmpIf 'g thn) (Jmp els))]
     [(IfStmt (Prim '>= (list atm1 atm2)) (Goto thn) (Goto els))
-     (list (Instr 'cmpq (list (si-atm atm2) (si-atm atm1))) (JmpIf 'ge thn) (Jmp els))]))
+     (list (Instr 'cmpq (list (si-atm atm2) (si-atm atm1))) (JmpIf 'ge thn) (Jmp els))]
+    [(TailCall func-name args)
+     (displayln args)
+     (displayln argument-registers)
+     (define argument-instructions (for/list ([arg args] [reg argument-registers]) (Instr 'movq (list (si-atm arg) reg))))
+     (define tail-jmp-instr (TailJmp func-name (length args)))
+     (append argument-instructions (list tail-jmp-instr))]))
+(define (select-instruction-def d)
+  (match d
+    [(Def func-name (list `[,xs : ,ps] ...) ret-type info blocks)
+     (define partial-x86-blocks (for/fold ([partial-x86-blocks '()]) ([block blocks]) (dict-set partial-x86-blocks (car block) (Block '() (si-tail (cdr block) func-name)))))
+     (define start-block (dict-ref partial-x86-blocks (symbol-append func-name 'start)))
+     (define argument-instructions (for/list ([arg xs] [reg argument-registers]) (Instr 'movq (list reg (Var arg)))))
+     (define updated-start-block (match start-block
+                                   [(Block info exp)
+                                    (Block info (append argument-instructions exp))]))
+     (define updated-partial-x86-blocks (dict-set partial-x86-blocks  (symbol-append func-name 'start) updated-start-block))
+     (set! info (dict-set info 'num-params (length xs)))
+     (set! info (dict-set info 'local-types (append (map cons xs ps)
+                                                    (dict-ref info 'locals-types))))
+     (Def func-name '() ret-type info updated-partial-x86-blocks)]))
 
-;; select-instructions : C0 -> pseudo-x86
+;; explicate-control : R1 -> C0
 (define (select-instructions p)
   (match p
-    [(CProgram info e)
-     (define partial-x86-blocks (for/fold ([partial-x86-blocks '()]) ([block e]) (dict-set partial-x86-blocks (car block) (Block '() (si-tail (cdr block))))))
-     (X86Program info partial-x86-blocks)]))
+    [(ProgramDefs info defs)
+     (ProgramDefs info (for/list ([d defs]) (select-instruction-def d)))]))
 
 (define (constant-propagation-instrs instrs env)
   (match instrs
@@ -1775,7 +1795,7 @@
     ("uncover get" ,uncover-get! ,interp-Lfun-prime ,type-check-Lfun)
     ("remove complex opera*" ,remove-complex-opera* ,interp-Lfun-prime ,type-check-Lfun)
     ("explicate control" ,explicate-control ,interp-Cfun ,type-check-Cfun)
-    ;("instruction selection" ,select-instructions ,interp-pseudo-x86-2)
+    ("instruction selection" ,select-instructions ,interp-pseudo-x86-4)
     ;("constant propagation" ,constant-propagation ,interp-pseudo-x86-2)
     ;("liveness analysis" ,uncover_live ,interp-pseudo-x86-2)
     ;("build interference graph" ,build_interference ,interp-pseudo-x86-2)
