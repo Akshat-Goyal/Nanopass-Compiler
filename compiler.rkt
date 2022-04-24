@@ -368,18 +368,16 @@
        [else
         (Var x)])]
     [(FunRef x n)
-     ;(cond
-     ;  [(dict-has-key? env x)
-     ;   ; this is a function argument
-     ;   (define ind (dict-ref env x))
-     ;   (if (equal? ind -1)
-     ;       (FunRef x n)
-     ;       (FunRef  (Prim 'vector-ref (list tup (Int ind))) n))]
-     ;  [else
-     ;   (FunRef x n)])]
+     (cond
+       [(dict-has-key? env x)
+        ; this is a function argument
+        (define ind (dict-ref env x))
+        (if (equal? ind -1)
+            (FunRef x n)
+            (Prim 'vector-ref (list tup (Int ind))))]
+       [else
+        (FunRef x n)])]
 
-     ; NOT SURE WHAT TO DO HERE
-     (FunRef x n)]
     [(Int n) (Int n)]
     [(Bool b) (Bool b)]
     [(Void) (Void)]
@@ -393,7 +391,7 @@
         ; this is a function argument
         (define ind (dict-ref env x))
         (if (equal? ind -1)
-            (Var x)
+            (SetBang x (limit_functions_exp rhs env tup))
             (Prim 'vector-set (list (Var tup) (Int ind) (limit_functions_exp rhs env tup))))]  
        [else
         (SetBang x (limit_functions_exp rhs env tup))])]
@@ -532,6 +530,7 @@
 (define (collect-set! e)
   (match e
     [(Var x) (set)]
+    [(FunRef x n) (set)]
     [(Int n) (set)]
     [(Bool b) (set)]
     [(Void) (set)]
@@ -546,6 +545,9 @@
      (set-union set!-es-vars (collect-set! body))]
     [(WhileLoop cnd body)
      (set-union (collect-set! cnd) (collect-set! body))]
+    [(Apply fun-name es)
+     (define set!-es-vars (for/fold ([set!-vars (set)]) ([e es]) (set-union set!-vars (collect-set! e))))
+     (set-union set!-es-vars (collect-set! fun-name))]
     [(Prim op es)
      (for/fold ([set!-vars (set)]) ([e es]) (set-union set!-vars (collect-set! e)))]
     [_ (set)]))
@@ -556,6 +558,9 @@
      (if (set-member? set!-vars x)
         (GetBang x)
         (Var x))]
+    [(FunRef x n)
+     ; for now assuming that function variables are not mutable
+     (FunRef x n)]
     [(Int n) (Int n)]
     [(Bool b) (Bool b)]
     [(Void) (Void)]
@@ -569,13 +574,21 @@
      (Begin (for/list ([e es]) ((uncover-get!-exp set!-vars) e)) ((uncover-get!-exp set!-vars) body))]
     [(WhileLoop cnd body)
      (WhileLoop ((uncover-get!-exp set!-vars) cnd) ((uncover-get!-exp set!-vars) body))]
+    [(Apply fun-name es)
+     (Apply ((uncover-get!-exp set!-vars) fun-name) (for/list ([e es]) ((uncover-get!-exp set!-vars) e)))]
     [(Prim op es)
      (Prim op (for/list ([e es]) ((uncover-get!-exp set!-vars) e)))]
     [_ e])) ;_ should cover Collect, Allocate, and GlobalValue
 
+(define (uncover-get!-def d)
+  (match d
+    [(Def func-name args ret-type env exp)
+     (Def func-name args ret-type env ((uncover-get!-exp (collect-set! exp)) exp))]))
+
 (define (uncover-get! p)
   (match p
-    [(Program info e) (Program info ((uncover-get!-exp (collect-set! e)) e))]))
+    [(ProgramDefs info defs)
+     (ProgramDefs info (for/list ([d defs]) (uncover-get!-def d)))]))
 
 (define (rco-atom env)
   (lambda (e)
@@ -1703,7 +1716,7 @@
     ("reveal functions" ,reveal_functions ,interp-Lfun-prime ,type-check-Lfun)
     ("limit functions" ,limit_functions ,interp-Lfun-prime ,type-check-Lfun)
     ("expose allocation" ,expose-allocation ,interp-Lfun-prime ,type-check-Lfun)
-    ;("uncover get" ,uncover-get! ,interp-Lvec-prime ,type-check-Lvec)
+    ("uncover get" ,uncover-get! ,interp-Lfun-prime ,type-check-Lfun)
     ;("remove complex opera*" ,remove-complex-opera* ,interp-Lvec-prime ,type-check-Lvec)
     ;("explicate control" ,explicate-control ,interp-Cvec ,type-check-Cvec)
     ;("instruction selection" ,select-instructions ,interp-pseudo-x86-2)
