@@ -606,6 +606,7 @@
   (lambda (e)
     (match e
       [(Var x) (Var x)]
+      [(FunRef x n) (FunRef x n)]
       [(Int n) (Int n)]
       [(Bool b) (Bool b)]
       [(Void) (Void)]
@@ -624,6 +625,8 @@
       [(Collect bytes) (Collect bytes)]
       [(Allocate len T) (Allocate len T)]
       [(GlobalValue var) (GlobalValue var)]
+      [(Apply fun-name es)
+       (Apply ((rco-exp env) fun-name) (for/list ([e es]) ((rco-exp env) e)))]
       [(Prim op (list e1))
        (cond
          [(Atm? e1) (Prim op (list e1))]
@@ -653,10 +656,15 @@
           (Let tmp-var ((rco-exp env) e3) ((rco-exp env) (Prim op (list e1 e2 (Var tmp-var)))))]
          [else (Prim op (list e1 e2 e3))])])))
 
-;; remove-complex-opera* : R1 -> R1
+(define (remove-complex-opera*-def d)
+  (match d
+    [(Def func-name args ret-type env exp)
+     (Def func-name args ret-type env ((rco-exp '()) exp))]))
+
 (define (remove-complex-opera* p)
   (match p
-    [(Program info e) (Program info ((rco-exp '()) e))]))
+    [(ProgramDefs info defs)
+     (ProgramDefs info (for/list ([d defs]) (remove-complex-opera*-def d)))]))
 
 (define (create_block tail)
   (match tail
@@ -1715,9 +1723,9 @@
     ("uniquify" ,uniquify ,interp-Lfun ,type-check-Lfun)
     ("reveal functions" ,reveal_functions ,interp-Lfun-prime ,type-check-Lfun)
     ("limit functions" ,limit_functions ,interp-Lfun-prime ,type-check-Lfun)
-    ;("expose allocation" ,expose-allocation ,interp-Lfun-prime ,type-check-Lfun)
-    ;("uncover get" ,uncover-get! ,interp-Lfun-prime ,type-check-Lfun)
-    ;("remove complex opera*" ,remove-complex-opera* ,interp-Lvec-prime ,type-check-Lvec)
+    ("expose allocation" ,expose-allocation ,interp-Lfun-prime ,type-check-Lfun)
+    ("uncover get" ,uncover-get! ,interp-Lfun-prime ,type-check-Lfun)
+    ("remove complex opera*" ,remove-complex-opera* ,interp-Lfun-prime ,type-check-Lfun)
     ;("explicate control" ,explicate-control ,interp-Cvec ,type-check-Cvec)
     ;("instruction selection" ,select-instructions ,interp-pseudo-x86-2)
     ;("constant propagation" ,constant-propagation ,interp-pseudo-x86-2)
