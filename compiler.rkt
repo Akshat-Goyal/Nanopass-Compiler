@@ -817,7 +817,7 @@
     [(Int n) (Seq (Assign (Var x) (Int n)) cont)]
     [(Bool b) (Seq (Assign (Var x) (Bool b)) cont)]
     [(Void) (Seq (Assign (Var x) (Void)) cont)]
-    [(FunRef x n) (Seq (Assign (Var x) (FunRef x n)) cont)]
+    [(FunRef fun n) (Seq (Assign (Var x) (FunRef fun n)) cont)]
     [(Let y rhs body) (explicate-assign rhs y (explicate-assign body x cont))]
     [(Prim op es) (Seq (Assign (Var x) e) cont)] ;handles vector operations too
     [(If cnd exp1 exp2)
