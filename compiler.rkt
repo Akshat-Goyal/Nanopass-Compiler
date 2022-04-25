@@ -280,8 +280,8 @@
           ; this is a let bound variable not a function
           (Var x)]
          [else
-          (displayln "COMING HERE !!!!!")
-          (displayln x)
+          ;(displayln "COMING HERE !!!!!")
+          ;(displayln x)
           (FunRef x (dict-ref local-arities x))])]
       [(Int n) (Int n)]
       [(Bool b) (Bool b)]
@@ -434,15 +434,15 @@
            (define rem-ps (except-n ps 5 '()))
            (define new-tup (gensym 'tup))
            (define updated-xs (append starting-xs (list new-tup)))
-           (displayln "writing rem-ps")
-           (displayln rem-ps)
+           ;(displayln "writing rem-ps")
+           ;(displayln rem-ps)
            (define updated-ps (append starting-ps (list (append `(Vector) rem-ps))))
-           (displayln updated-ps)
+           ;(displayln updated-ps)
            (define updated-args (for/fold ([temp '()])
                                           ([x updated-xs] [p updated-ps])
                                   (append temp (list `[,x : ,p]))))
-           (displayln updated-args)
-           (displayln "")
+           ;(displayln updated-args)
+           ;(displayln "")
            (define limit-env-temp (for/fold ([tmp '()]) ([x starting-xs])
                               (dict-set tmp x -1)))
            (define limit-env (for/fold ([tmp limit-env-temp]) ([x rem-xs] [ind (in-naturals)])
@@ -728,7 +728,9 @@
                   (define new-cont (IfStmt (Prim 'eq? (list (Var tmp) (Bool #t))) (create_block thn)
                                            (create_block els)))
                   (Seq (Assign (Var tmp) cnd) new-cont)]
-    [(Bool b) (if b thn els)]
+    ;[(Bool b) (if b thn els)]
+    [(Bool b) 
+     (IfStmt (Prim 'eq? (list (Bool b) (Bool #t))) (create_block thn) (create_block els))]
     [(If cnd^ thn^ els^)
      (define thn-block (create_block thn))
      (define els-block (create_block els))
@@ -955,7 +957,7 @@
       (define argument-instructions (for/list ([arg args] [reg argument-registers]) (Instr 'movq (list (si-atm arg) reg))))
       (define callq-instr (IndirectCallq fun-name (length args)))
       (define mov-instr (Instr 'movq (list (Reg 'rax) v)))
-      (append argument-instructions (list callq-instr) (list mov-instr))]))
+      (append argument-instructions (list callq-instr) (list mov-instr) cont)]))
 
 (define (si-stmt e cont)
   (match e
@@ -985,11 +987,13 @@
     [(IfStmt (Prim '>= (list atm1 atm2)) (Goto thn) (Goto els))
      (list (Instr 'cmpq (list (si-atm atm2) (si-atm atm1))) (JmpIf 'ge thn) (Jmp els))]
     [(TailCall func-name args)
-     (displayln args)
-     (displayln argument-registers)
+     ;(displayln args)
+     ;(displayln argument-registers)
      (define argument-instructions (for/list ([arg args] [reg argument-registers]) (Instr 'movq (list (si-atm arg) reg))))
      (define tail-jmp-instr (TailJmp func-name (length args)))
+     ;(define tail-jmp-instr (IndirectCallq func-name (length args)))
      (append argument-instructions (list tail-jmp-instr))]))
+
 (define (select-instruction-def d)
   (match d
     [(Def func-name (list `[,xs : ,ps] ...) ret-type info blocks)
@@ -1001,7 +1005,7 @@
                                     (Block info (append argument-instructions exp))]))
      (define updated-partial-x86-blocks (dict-set partial-x86-blocks  (symbol-append func-name 'start) updated-start-block))
      (set! info (dict-set info 'num-params (length xs)))
-     (set! info (dict-set info 'local-types (append (map cons xs ps)
+     (set! info (dict-set info 'locals-types (append (map cons xs ps)
                                                     (dict-ref info 'locals-types))))
      (Def func-name '() ret-type info updated-partial-x86-blocks)]))
 
@@ -1047,6 +1051,7 @@
     [(Deref r offset) (set (Reg r))]
     [(Global var) (set)]
     [(Imm n) (set)]
+    [(FunRef x n) (set)] ;TODO: check this: prolly not needed but keep it anyways
     [_ (set arg)]))
 
 (define (compute-write-locations instr)
@@ -1057,6 +1062,8 @@
     [(Instr x86-op (list arg1 arg2)) (get-locations arg2)] ; arg2 cannot be immediate since we are writing into arg2
     [(Instr x86-op (list arg1)) (get-locations arg1)] ; arg1 cannot be immediate, x86-op should only be negq
     [(Callq func-name n) (list->set caller-saved-registers)]
+    [(IndirectCallq func-name n) (list->set caller-saved-registers)]
+    [(TailJmp func-name n) (list->set caller-saved-registers)]
     [_ (set)]))
 
 (define (compute-read-locations instr)
@@ -1068,6 +1075,7 @@
        [else (get-locations arg1)])]
     [(Instr 'set es) (set)]
     [(Instr 'movzbq es) (set (Reg 'rax))]
+    [(Instr 'leaq (list arg1 arg2)) (get-locations arg1)]
     [(Instr x86-op (list arg1 arg2))
      ; handles xorq cmpq addq subq 
      (match* (arg1 arg2)
@@ -1080,6 +1088,10 @@
      (cond
        [(<= n 6) (list->set (take argument-registers n))]
        [else (list->set (take argument-registers 6))])]
+    [(IndirectCallq func-name n)
+     (set-union (get-locations func-name) (list->set (take argument-registers n)))]
+    [(TailJmp func-name n)
+     (set-union (get-locations func-name) (list->set (take argument-registers n)))]
     [_ (set)]))
 
 (define (find-live-sets instrs live-sets)
@@ -1095,7 +1107,7 @@
     [else live-sets]))
     
 ;; uncover_live: pseudo-x86 -> pseudo-x86
-(define (generate-label-graph e graph)
+(define (generate-label-graph e graph func-name)
   (match e
     [(cons cur rest)
      (match cur
@@ -1104,12 +1116,16 @@
         (define reverse-instrs (reverse instrs))
         (define last-instr (car reverse-instrs))
 
-        ; last instruction is always a jmp instruction
-        (define label1 (Jmp-target last-instr))
-        (cond
-          [(not (eq? label1 'conclusion))
-           (add-vertex! graph label1)
-           (add-directed-edge! graph label1 label)]
+        ; last instruction might be a jmp instruction
+        (match last-instr
+          [(Jmp l)
+           (define label1 (Jmp-target last-instr))
+           (cond
+             [(not (eq? label1 (symbol-append func-name 'conclusion)))
+              (add-vertex! graph label1)
+              (add-directed-edge! graph label1 label)]
+             [else
+              #f])]
           [else
            #f])
        
@@ -1126,7 +1142,7 @@
               #f])]
           [else
            #f])
-        (generate-label-graph rest graph)])]
+        (generate-label-graph rest graph func-name)])]
 
     [else
      graph]))
@@ -1174,14 +1190,19 @@
     [(equal? live-afters updated-live-afters) updated-blocks]
     [else (analyze_dataflow G transfer updated-live-afters join updated-blocks)]))
 
+(define (uncover-live-def d)
+  (match d
+    [(Def func-name '() ret-type info blocks)
+     (define label-graph (generate-label-graph blocks (make-multigraph '()) func-name))
+     (define label-list (for/list ([block blocks]) (car block)))
+     (define initial-live-afters (for/fold ([initial-live-afters '()]) ([label label-list]) (dict-set initial-live-afters label (set))))
+     (define updated-blocks (analyze_dataflow label-graph transfer initial-live-afters set-union blocks))
+     (Def func-name '() ret-type info updated-blocks)]))
+
 (define (uncover_live p)
   (match p
-    [(X86Program info e)
-     (define label-graph (generate-label-graph e (make-multigraph '())))
-     (define label-list (for/list ([block e]) (car block)))
-     (define initial-live-afters (for/fold ([initial-live-afters '()]) ([label label-list]) (dict-set initial-live-afters label (set))))
-     (define updated-blocks (analyze_dataflow label-graph transfer initial-live-afters set-union e))
-     (X86Program info updated-blocks)]))
+    [(ProgramDefs info defs)
+     (ProgramDefs info (for/list ([d defs]) (uncover-live-def d)))]))
 
 (define (print-graph graph)
   (for ([u (in-vertices graph)])
@@ -1227,7 +1248,16 @@
            [(not (equal? live-location write-location))
             (add-edge! cur-graph live-location write-location)]))
        (match instr
-         [(Callq 'collect n)
+         [(Callq func-name n)
+          (for ([live-location live-set])
+            (cond
+              [(and (not (set-member? (list->set all-registers) live-location))
+                    (ptr-bool? (dict-ref locals-types (get-variable-name live-location))))
+               ;(displayln "***************: tuple variable is live during call to collect IMP IMP IMP")
+               (for ([r all-registers])
+                 (add-edge! cur-graph r live-location))] ;this adds repeat edges for caller saved registers, TODO: check if graph handles multiple edges as single. if not? then change all registers to callee-saved registers only
+              ))]
+         [(IndirectCallq func-name n)
           (for ([live-location live-set])
             (cond
               [(and (not (set-member? (list->set all-registers) live-location))
@@ -1262,12 +1292,17 @@
   interference-graph)
  
 ;; build_interference: pseudo-x86 -> pseudo-x86
-(define (build_interference p)
-  (match p
-    [(X86Program info blocks)
+(define (build_interference-def d)
+  (match d
+    [(Def func-name '() ret-type info blocks)
      (define locals-types (dict-ref info 'locals-types))
      (define interference-graph (build-interference-graph blocks locals-types))
-     (X86Program (dict-set info 'conflicts interference-graph) blocks)]))
+     (Def func-name '() ret-type (dict-set info 'conflicts interference-graph) blocks)]))
+
+(define (build_interference p)
+  (match p
+    [(ProgramDefs info defs)
+     (ProgramDefs info (for/list ([d defs]) (build_interference-def d)))]))
 
 (define graph-coloring-comparator                         
   (lambda (node1 node2)
@@ -1586,6 +1621,10 @@
      (cons (Instr x86-op (for/list ([arg args]) 
                            (if (Var? arg) (dict-ref locals-home (Var-name arg)) arg))) 
            (assign-homes-instr ss locals-home))]
+    [(cons (IndirectCallq func-name n) ss)
+     (cons (IndirectCallq (if (Var? func-name) (dict-ref locals-home (Var-name func-name)) func-name) n) (assign-homes-instr ss locals-home))]
+    [(cons (TailJmp func-name n) ss)
+     (cons (TailJmp (if (Var? func-name) (dict-ref locals-home (Var-name func-name)) func-name) n) (assign-homes-instr ss locals-home))]
     [(cons instr ss) (cons instr (assign-homes-instr ss locals-home))]
     [else instrs]))
 
@@ -1594,9 +1633,9 @@
   (if (zero? (remainder stack-size 16)) stack-size (+ 8 stack-size)))
      
 ;; allocate_registers: pseudo-x86 -> pseudo-x86
-(define (allocate_registers p)
-  (match p
-    [(X86Program info blocks)
+(define (allocate_registers-def d)
+  (match d
+    [(Def func-name '() ret-type info blocks)
      (define locals (dict-keys (dict-ref info 'locals-types)))
      (define interference-graph (dict-ref info 'conflicts))
      (define move-graph (build-move-graph blocks locals))
@@ -1621,8 +1660,13 @@
          [(Block sinfo instrs)
           (set! blocks (dict-set blocks block_key (Block sinfo (assign-homes-instr instrs locals-homes))))
           ]))
-     
-     (X86Program (dict-set new-info 'stack-space stack-size) blocks)]))
+     (Def func-name '() ret-type (dict-set new-info 'stack-space stack-size) blocks)]))
+
+(define (allocate_registers p)
+  (match p
+    [(ProgramDefs info defs)
+     (ProgramDefs info (for/list ([d defs]) (allocate_registers-def d)))]))
+
 
 ; assign homes of R1
 ;(define (assign-home-to-locals locals-types)
@@ -1692,6 +1736,12 @@
 
 (define (pi-instr instrs)
   (match instrs
+    [(cons (TailJmp (Reg 'rax) arity) ss)
+     (cons (TailJmp (Reg 'rax) arity) (pi-instr ss))]
+    [(cons (TailJmp arg arity) ss)
+     (append (list (Instr 'movq (list arg (Reg 'rax))) (TailJmp (Reg 'rax) arity)) (pi-instr ss))]
+    [(cons (Instr 'leaq (list arg1 (Deref arg2 n2))) ss)
+     (append (list (Instr 'movq (list (Deref arg2 n2) (Reg 'rax))) (Instr 'leaq (list arg1 (Reg 'rax)))) (pi-instr ss))]
     [(cons (Instr 'movq (list arg1 arg2)) ss)
      #:when (equal? arg1 arg2) (pi-instr ss)]
     [(cons (Instr 'movzbq (list arg1 (Deref arg2 n2))) ss)
@@ -1704,20 +1754,22 @@
     [else instrs]))
 
 ;; patch-instructions : psuedo-x86 -> x86
+(define (patch-instructions-def d)
+  (match d
+    [(Def label '() type info blocks)
+     (for ([block_key (dict-keys blocks)])
+        (define block (dict-ref blocks block_key))
+        (match block
+          [(Block info^ instrs)
+           (set! blocks (dict-set blocks block_key (Block info^ (pi-instr instrs))))]))
+     (Def label '() type info blocks)]))
+
 (define (patch-instructions p)
   (match p
-    [(X86Program info blocks)
+    [(ProgramDefs info defs)
+     (ProgramDefs info (for/list ([d defs]) (patch-instructions-def d)))]))
 
-     (for ([block_key (dict-keys blocks)])
-       (define block (dict-ref blocks block_key))
-       (match block
-         [(Block sinfo instrs)
-          (set! blocks (dict-set blocks block_key (Block sinfo (pi-instr instrs))))
-          ]))
-
-     (X86Program info blocks)]))
-
-(define (pac-main stack-space used-callee vector-stack-spills)
+(define (pac-prelude def-name stack-space used-callee vector-stack-spills)
   (define part-1 (list
                   (Instr 'pushq (list (Reg 'rbp)))
                   (Instr 'movq (list (Reg 'rsp) (Reg 'rbp)))))
@@ -1731,11 +1783,14 @@
   (define heap_size 16384)
   (define root_stack_size 16384)
   
-  (define part-4 (list
-                  (Instr 'movq (list (Imm root_stack_size) (Reg 'rdi)))
-                  (Instr 'movq (list (Imm heap_size) (Reg 'rsi)))
-                  (Callq 'initialize 2)
-                  (Instr 'movq (list (Global 'rootstack_begin) (Reg 'r15)))))
+  (define part-4 
+    (if (equal? def-name 'main)
+      (list
+        (Instr 'movq (list (Imm root_stack_size) (Reg 'rdi)))
+        (Instr 'movq (list (Imm heap_size) (Reg 'rsi)))
+        (Callq 'initialize 2)
+        (Instr 'movq (list (Global 'rootstack_begin) (Reg 'r15))))
+      (list)))
 
   (define part-5 (for/fold ([init_list '()])
                            ([i (range (- vector-stack-spills 1) -1 -1)])
@@ -1748,11 +1803,11 @@
                   (Instr 'addq (list (Imm (* 8 vector-stack-spills)) (Reg 'r15)))))
                    
   (define part-7 (list
-                  (Jmp 'start)))
+                  (Jmp (symbol-append def-name 'start))))
                    
   (append part-1 part-2 part-3 part-4 part-5 part-6 part-7))
 
-(define (pac-conclusion stack-space reversed-used-callee vector-stack-spills)
+(define (pac-conclusion-instrs stack-space reversed-used-callee vector-stack-spills)
   (define part-1 (list
                   (Instr 'subq (list (Imm (* 8 vector-stack-spills)) (Reg 'r15)))
                   (Instr 'addq (list (Imm stack-space) (Reg 'rsp)))))
@@ -1761,24 +1816,55 @@
                    (Instr 'popq (list reg))))
 
   (define part-3 (list
-                  (Instr 'popq (list (Reg 'rbp)))
-                  (Retq)))
+                  (Instr 'popq (list (Reg 'rbp)))))
 
   (append part-1 part-2 part-3))
 
-;; prelude-and-conclusion : x86 -> x86
-(define (prelude-and-conclusion p)
-  (match p
-    [(X86Program info blocks)
+(define (pac-conclusion stack-space reversed-used-callee vector-stack-spills)
+  (append (pac-conclusion-instrs stack-space reversed-used-callee vector-stack-spills) (list (Retq))))
+
+(define (process-tailJmp-block block stack-space reversed-used-callee vector-stack-spills)
+  (match block
+    [(Block info instrs)
+     (Block
+      info
+      (append*
+       (for/list ([instr instrs])
+         (match instr
+           [(TailJmp arg arity)
+            (append (pac-conclusion-instrs stack-space reversed-used-callee vector-stack-spills)
+                    (list (IndirectJmp arg)))]
+           [_ (list instr)]))))]))
+
+(define (prelude-and-conclusion-def d)
+  (match d
+    [(Def def-name '() type info blocks)
      (define used-callee (set->list (dict-ref info 'used_callee)))
      (define stack-space (- (dict-ref info 'stack-space) (* 8 (length used-callee))))
      ;(define start (dict-ref blocks 'start))
      (define num-root-spills (dict-ref info 'num-root-spills))
-     (define main (Block '() (pac-main stack-space used-callee num-root-spills)))
+     (set! blocks
+       (for/list ([(label block) (in-dict blocks)])
+         ;(display "1: ")
+         ;(displayln label)
+         ;(displayln block)
+         (cons label
+               (process-tailJmp-block block stack-space (reverse used-callee) num-root-spills))))
+     ;(display "blocks: ")
+     ;(displayln blocks)
+     
+     (define prelude (Block '() (pac-prelude def-name stack-space used-callee num-root-spills)))
      (define conclusion (Block '() (pac-conclusion stack-space (reverse used-callee) num-root-spills)))
-     (set! blocks (dict-set blocks 'main main))
-     (set! blocks (dict-set blocks 'conclusion conclusion))
-     (X86Program info blocks)]))
+     (set! blocks (dict-set blocks def-name prelude))
+     (set! blocks (dict-set blocks (symbol-append def-name 'conclusion) conclusion))
+     (Def def-name '() type info blocks)]))
+
+;; prelude-and-conclusion : x86 -> x86
+(define (prelude-and-conclusion p)
+  (match p
+    [(ProgramDefs info defs)
+     (define new-defs (for/list ([d defs]) (prelude-and-conclusion-def d)))
+     (X86Program info (append-map Def-body new-defs))]))
 
 
 ;; Define the compiler passes to be used by interp-tests and the grader
@@ -1795,12 +1881,12 @@
     ("uncover get" ,uncover-get! ,interp-Lfun-prime ,type-check-Lfun)
     ("remove complex opera*" ,remove-complex-opera* ,interp-Lfun-prime ,type-check-Lfun)
     ("explicate control" ,explicate-control ,interp-Cfun ,type-check-Cfun)
-    ("instruction selection" ,select-instructions ,interp-pseudo-x86-4)
+    ("instruction selection" ,select-instructions ,interp-pseudo-x86-3)
     ;("constant propagation" ,constant-propagation ,interp-pseudo-x86-2)
-    ;("liveness analysis" ,uncover_live ,interp-pseudo-x86-2)
-    ;("build interference graph" ,build_interference ,interp-pseudo-x86-2)
-    ;("register allocation" ,allocate_registers ,interp-x86-2)
+    ("liveness analysis" ,uncover_live ,interp-pseudo-x86-3)
+    ("build interference graph" ,build_interference ,interp-pseudo-x86-3)
+    ("register allocation" ,allocate_registers ,interp-x86-3)
     ;("remove jumps" ,remove-jumps ,interp-x86-2)
-    ;("patch instructions" ,patch-instructions ,interp-x86-2)
-    ;("prelude-and-conclusion" ,prelude-and-conclusion ,interp-x86-2)
+    ("patch instructions" ,patch-instructions ,interp-x86-3)
+    ("prelude-and-conclusion" ,prelude-and-conclusion ,#f)
     ))
