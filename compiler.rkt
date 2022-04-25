@@ -1740,8 +1740,10 @@
      (cons (TailJmp (Reg 'rax) arity) (pi-instr ss))]
     [(cons (TailJmp arg arity) ss)
      (append (list (Instr 'movq (list arg (Reg 'rax))) (TailJmp (Reg 'rax) arity)) (pi-instr ss))]
+    ;[(cons (Instr 'leaq (list arg1 (Deref arg2 n2))) ss)
+    ; (append (list (Instr 'movq (list (Deref arg2 n2) (Reg 'rax))) (Instr 'leaq (list arg1 (Reg 'rax)))) (pi-instr ss))]
     [(cons (Instr 'leaq (list arg1 (Deref arg2 n2))) ss)
-     (append (list (Instr 'movq (list (Deref arg2 n2) (Reg 'rax))) (Instr 'leaq (list arg1 (Reg 'rax)))) (pi-instr ss))]
+     (append (list (Instr 'leaq (list arg1 (Reg 'rax))) (Instr 'movq (list (Reg 'rax) (Deref arg2 n2)))) (pi-instr ss))]
     [(cons (Instr 'movq (list arg1 arg2)) ss)
      #:when (equal? arg1 arg2) (pi-instr ss)]
     [(cons (Instr 'movzbq (list arg1 (Deref arg2 n2))) ss)
