@@ -13,6 +13,8 @@
 (require "type-check-Lif.rkt")
 (require "type-check-Lwhile.rkt")
 (require "type-check-Lvec.rkt")
+(require "type-check-Lfun.rkt")
+(require "interp-Lfun.rkt")
 (require "interp-Cvar.rkt")
 (require "compiler.rkt")
 
@@ -34,6 +36,8 @@
           (string=? r (car (string-split p "_"))))
         all-tests)))
 
+;(interp-tests "functions" type-check-Lfun compiler-passes interp-Lfun "functions_test" (tests-for "functions"))
+;(interp-tests "functions" type-check-Lfun compiler-passes interp-Lfun "r4_test" (tests-for "r4"))
 ;(interp-tests "vectors" type-check-Lvec compiler-passes interp-Lvec "vectors_test" (tests-for "vectors"))
 ;(interp-tests "while" type-check-Lvec compiler-passes interp-Lvec "while_test" (tests-for "while"))
 ;(interp-tests "cond" type-check-Lvec compiler-passes interp-Lvec "cond_test" (tests-for "cond"))
@@ -41,8 +45,10 @@
 
 ;; Uncomment the following when all the passes are complete to
 ;; test the final x86 code.
-(compiler-tests "vectors" type-check-Lvec compiler-passes "vectors_test" (tests-for "vectors"))
-;(compiler-tests "while" type-check-Lvec compiler-passes "while_test" (tests-for "while"))
-;(compiler-tests "cond" type-check-Lvec compiler-passes "cond_test" (tests-for "cond"))
-;(compiler-tests "var" type-check-Lvec compiler-passes "var_test" (tests-for "var"))
+(compiler-tests "functions" type-check-Lfun compiler-passes "functions_test" (tests-for "functions"))
+(compiler-tests "functions" type-check-Lfun compiler-passes "r4_test" (tests-for "r4"))
+(compiler-tests "vectors" type-check-Lfun compiler-passes "vectors_test" (tests-for "vectors"))
+(compiler-tests "while" type-check-Lfun compiler-passes "while_test" (tests-for "while"))
+(compiler-tests "cond" type-check-Lfun compiler-passes "cond_test" (tests-for "cond"))
+(compiler-tests "var" type-check-Lfun compiler-passes "var_test" (tests-for "var"))
 
