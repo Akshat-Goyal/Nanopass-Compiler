@@ -36,12 +36,12 @@
           (string=? r (car (string-split p "_"))))
         all-tests)))
 
-;(interp-tests "functions" type-check-Lfun compiler-passes interp-Lfun "functions_test" (tests-for "functions"))
-;(interp-tests "functions" type-check-Lfun compiler-passes interp-Lfun "r4_test" (tests-for "r4"))
-;(interp-tests "vectors" type-check-Lvec compiler-passes interp-Lvec "vectors_test" (tests-for "vectors"))
-;(interp-tests "while" type-check-Lvec compiler-passes interp-Lvec "while_test" (tests-for "while"))
-;(interp-tests "cond" type-check-Lvec compiler-passes interp-Lvec "cond_test" (tests-for "cond"))
-;(interp-tests "var" type-check-Lvec compiler-passes interp-Lvec "var_test" (tests-for "var"))
+(interp-tests "functions" type-check-Lfun compiler-passes interp-Lfun "functions_test" (tests-for "functions"))
+(interp-tests "functions" type-check-Lfun compiler-passes interp-Lfun "r4_test" (tests-for "r4"))
+(interp-tests "vectors" type-check-Lfun compiler-passes interp-Lfun "vectors_test" (tests-for "vectors"))
+(interp-tests "while" type-check-Lfun compiler-passes interp-Lfun "while_test" (tests-for "while"))
+(interp-tests "cond" type-check-Lfun compiler-passes interp-Lfun "cond_test" (tests-for "cond"))
+(interp-tests "var" type-check-Lfun compiler-passes interp-Lfun "var_test" (tests-for "var"))
 
 ;; Uncomment the following when all the passes are complete to
 ;; test the final x86 code.
