@@ -1,3 +1,6 @@
+# Nano-pass-compiler
+A (small subset of) Racket to x86_64 nanopass compiler with a static type checker and a (two-space copying) GC, written in Racket with some C runtime support. The source language has integers, booleans, tuples, vectors, comparisons, functions, etc.
+
 ## A4: Compiler for *L<sub>Fun</sub>* Language
 
 1. Implement all passes required to support functions by exending *L<sub>Tup</sub>* to *L<sub>Fun</sub>*. Refer fig. 7.10 and exercise 33 from textbook for reference.
@@ -38,6 +41,11 @@ to *L<sub>while</sub>*. Use fig. 5.8 from textbook for reference.
 
 ## Deadline
 28rd February, 23:59
+
+<br><br>
+
+## Textbook 
+Essentials of Compilation - An Incremental Approach in Racket by Jeremy G. Siek
 
 ## Homework instructions
 
